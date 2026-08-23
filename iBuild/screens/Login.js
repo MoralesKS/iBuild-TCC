@@ -22,6 +22,10 @@ export default function Login() {
       })
   }
 
+  function cadastrar(){
+    navigation.navigate('Cadastro')
+  }
+
   return (
     <View style={styles.container}>
      <View style={styles.logoView}>
@@ -51,7 +55,7 @@ export default function Login() {
       <TouchableOpacity style={styles.continuar} onPress={userLogin}><Text style={{color: '#ffffff',}}> Continuar </Text></TouchableOpacity>
 
       <View style={styles.espacamento}> </View>
-      <Text style={{color: '#828282', fontSize: 12}}> Não possui conta? <Text style={{color: '#24BF1E'}}>Cadastre-se</Text></Text>
+      <Text style={{color: '#828282', fontSize: 12}}> Não possui conta? <TouchableOpacity onPress={cadastrar}><Text style={{color: '#24BF1E', fontSize: 12}}>Cadastre-se</Text></TouchableOpacity></Text>
       <View style={styles.espacamento}> </View>
 
       <Text style={{color: '#E0E0E0'}}>-------------------------- Ou ------------------------ </Text>

@@ -1,6 +1,39 @@
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image} from 'react-native';
+import { useState } from 'react';
+import {useNavigation} from '@react-navigation/native';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../firebase.config';
 
 export default function Cadastro() {
+  const [userMail, setUserMail] = useState('');
+  const [userPass, setUserPass] = useState('');
+  const [confirmePass, setConfirmePass] = useState('');
+  const navigation = useNavigation();
+  
+  function novoUser() {
+    if(userMail === '' || userPass === '' || confirmePass === ''){
+      alert('Todos os campos devem ser preenchidos');
+      return;
+    }
+    if(userPass !== confirmePass){
+      alert('A senha e a confirmação não coencidem');
+      return;
+    }
+    else {
+      createUserWithEmailAndPassword(auth, userMail, userPass)
+      .then((userCredential) => {
+        const user = userCredential.user;
+        alert('O usuário ' + userMail + ' foi criado. Faça o Login');
+        navigation.navigate('Login');
+      })
+      .catch((error) => {
+        const errorMessage = error.message;
+        alert(errorMessage);
+        navigation.navigate('Login');
+      })
+    }
+  }
+
   return (
     <View style={styles.container}>
      <View style={styles.logoView}>
@@ -10,11 +43,27 @@ export default function Cadastro() {
      <View style={styles.textView}> 
       <Text style={styles.titulo}> Crie uma nova conta </Text>
       <Text style={styles.subTitulo}> Insira seu e-mail para se cadastrar neste aplicativo </Text>
-      <TextInput style={styles.textInput}> Email </TextInput>
-      <TextInput style={styles.textInput}> Confirme seu Email </TextInput>
-      <TextInput style={styles.textInput}> Senha </TextInput>
-      <TextInput style={styles.textInput}> Confirme sua Senha </TextInput>
-      <TouchableOpacity style={styles.continuar}><Text style={{color: '#ffffff',}}> Continuar </Text></TouchableOpacity>
+
+      <TextInput style={styles.textInput}
+        placeholder='Informe o Email'
+        keybordType='email-address'
+        autoComplete='email'
+        value={userMail}
+        onChangeText={setUserMail}
+      />
+      <TextInput style={styles.textInput}
+        placeholder='Informe a Senha'
+        value={userPass}
+        onChangeText={setUserPass}
+      />
+      <TextInput style={styles.textInput}
+        placeholder='Confirme a senha'
+        value={confirmePass}
+        onChangeText={setConfirmePass}
+      />
+      
+      <TouchableOpacity style={styles.continuar} onPress={novoUser}><Text style={{color: '#ffffff',}}> Continuar </Text></TouchableOpacity>
+      
       <View style={styles.espacamento}> </View>
       <Text style={{color: '#E0E0E0'}}>-------------------------- Ou ------------------------ </Text>
       <View style={styles.espacamento}> </View>
@@ -64,7 +113,6 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
     borderRadius: 8,
     margin: 8,
-    padding: 16,
   },
   continuar: {
     backgroundColor: '#F57C00',
