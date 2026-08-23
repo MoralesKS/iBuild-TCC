@@ -1,6 +1,27 @@
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image} from 'react-native';
+import { useState } from 'react';
+import {auth} from '../firebase.config.js';
+import {signInWithEmailAndPassword} from 'firebase/auth';
+import {useNavigation} from '@react-navigation/native';
 
 export default function Login() {
+  const [userMail, setUserMail] = useState('');
+  const [userPass, setUserPass] = useState('');
+  const navigation = useNavigation();
+
+  function userLogin() {
+    signInWithEmailAndPassword(auth, userMail, userPass)
+      .then((userCredential) => {
+        const user = userCredential.user;
+        navigation.navigate('Home');
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        alert(errorMessage);
+      })
+  }
+
   return (
     <View style={styles.container}>
      <View style={styles.logoView}>
@@ -10,10 +31,29 @@ export default function Login() {
      <View style={styles.textView}> 
       <Text style={styles.titulo}> Entre na sua conta </Text>
       <Text style={styles.subTitulo}> Insira seu e-mail para se cadastrar neste aplicativo </Text>
-      <TextInput style={styles.textInput}> Email </TextInput>
-      <TextInput style={styles.textInput}> Senha </TextInput>
-      <TouchableOpacity style={styles.continuar}><Text style={{color: '#ffffff',}}> Continuar </Text></TouchableOpacity>
+
+      <TextInput style={styles.textInput}
+        placeholder='Informe o Email'
+        keybordType='email-address'
+        autoComplete='email'
+        value={userMail}
+        onChangeText={setUserMail}
+      />
+
+      <TextInput style={styles.textInput}
+        placeholder='Informe a Senha'
+        secureTextEntry
+        value={userPass}
+        onChangeText={setUserPass}
+      />
+
+    
+      <TouchableOpacity style={styles.continuar} onPress={userLogin}><Text style={{color: '#ffffff',}}> Continuar </Text></TouchableOpacity>
+
       <View style={styles.espacamento}> </View>
+      <Text style={{color: '#828282', fontSize: 12}}> Não possui conta? <Text style={{color: '#24BF1E'}}>Cadastre-se</Text></Text>
+      <View style={styles.espacamento}> </View>
+
       <Text style={{color: '#E0E0E0'}}>-------------------------- Ou ------------------------ </Text>
       <View style={styles.espacamento}> </View>
       <TouchableOpacity style={styles.continuar2}><Text style={{fontWeight: 'medium', fontSize: 14}}> Continuar com o Google </Text></TouchableOpacity>
@@ -61,7 +101,6 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
     borderRadius: 8,
     margin: 8,
-    padding: 16,
   },
   continuar: {
     backgroundColor: '#F57C00',

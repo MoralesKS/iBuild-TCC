@@ -15,12 +15,12 @@ const Drawer = createDrawerNavigator()
 export default function Route(){
   return(
     <Drawer.Navigator>
+      <Drawer.Screen name='Login' component={LoginScreen} options={{headerShown: false}}/>
+      <Drawer.Screen name='Cadastro' component={CadastroScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='Chat 2' component={Chat2Screen} options={{headerShown: false}}/>
       <Drawer.Screen name='Chat 1' component={Chat1Screen} options={{headerShown: false}}/>
       <Drawer.Screen name='Perfil' component={PerfilScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='Contratar' component={ContratarScreen} options={{headerShown: false}}/>
-      <Drawer.Screen name='Login' component={LoginScreen} options={{headerShown: false}}/>
-      <Drawer.Screen name='Cadastro' component={CadastroScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='Home' component={HomeScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='Maps' component={MapaScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='Carrinho' component={CarrinhoScreen} options={{headerShown: false}}/>
