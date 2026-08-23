@@ -3,7 +3,6 @@ import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image, ScrollView}
 export default function Chat1() {
   return (
     <View style={styles.container}>
-      //Header
       <View style={styles.header}>
         <Text style={styles.titulo}>Conversas</Text>
         <ScrollView horizontal style={styles.alinharHeader}> 
@@ -14,8 +13,9 @@ export default function Chat1() {
         </ScrollView>
       </View>
 
-      //Conversas
-      <ScrollView style={styles.conversas}> 
+      <ScrollView
+        style={styles.alinharHeader}
+      > 
         <TouchableOpacity style={styles.botaoConversas}> 
           <Image source={require('../assets/foto-do-perfil.png')} style={styles.fotoPerfil} />
           <View>
@@ -103,10 +103,8 @@ export default function Chat1() {
             <Text style={styles.mensagem}> AAAAAAA </Text>
           </View>
         </TouchableOpacity>
-
       </ScrollView>
 
-      //Footer
       <View style={styles.footer}>
         <TouchableOpacity style={styles.footerItem}>
           <Image style={styles.footerIcone} source={require('../assets/Home.png')}/>
@@ -180,9 +178,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   alinharHeader: {
-    justifyContent: 'space-evenly',
     height: 32,
-    width: 360,
+    width: '100%',
   },
   botaoHeader: {
     margin: 8,
@@ -205,7 +202,7 @@ const styles = StyleSheet.create({
   botaoConversas: {
     height: 72,
     width: 375,
-    justifyContent: 'espace-evenly',
+    justifyContent: 'space-evenly',
     flexDirection: 'row',
     alignItems: 'center',
     padding: 8,
