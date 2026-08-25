@@ -48,16 +48,19 @@ export default function Cadastro() {
         placeholder='Informe o Email'
         keybordType='email-address'
         autoComplete='email'
+        autoCapitalize='none'
         value={userMail}
         onChangeText={setUserMail}
       />
       <TextInput style={styles.textInput}
         placeholder='Informe a Senha'
+        autoCapitalize='none'
         value={userPass}
         onChangeText={setUserPass}
       />
       <TextInput style={styles.textInput}
         placeholder='Confirme a senha'
+        autoCapitalize='none'
         value={confirmePass}
         onChangeText={setConfirmePass}
       />
@@ -83,6 +86,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     padding: 8,
+    marginBottom: '10%',
   },
   logoView: {
     height: 130,

@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
+import {useNavigation} from '@react-navigation/native';
 
+export default function Mapa() {
 // Coordenadas de exemplo - troque pelas coordenadas reais das lojas
 const minhaLocalizacao = { latitude: -23.5505, longitude: -46.6333 };
 
@@ -13,7 +15,31 @@ const lojas = [
   { id: 67, nome: 'Loja 67', latitude: -23.551, longitude: -46.6295 },
 ];
 
-export default function Mapa() {
+const navigation = useNavigation();
+
+
+  function gerenciar(){
+    navigation.navigate('Gerenciar')
+  }
+  function home(){
+    navigation.navigate('Home')
+  }
+  function contratar(){
+    navigation.navigate('Contratar')
+  }
+  function gerenciar(){
+    navigation.navigate('Gerenciar')
+  }
+  function carrinho(){
+    navigation.navigate('Carrinho')
+  }
+  function perfil(){
+    alert('Tela em construção, aguardando orçamento')
+  }
+  function chat(){
+    alert('Tela em construção, aguardando orçamento')
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.buscaWrapper}>
@@ -82,23 +108,27 @@ export default function Mapa() {
 
       {/* BOTTOM TAB BAR */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerItem}>
+        <TouchableOpacity style={styles.footerItem} onPress={home}>
           <Image style={styles.footerIcone} source={require('../assets/Home.png')}/>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
+          <Image style={styles.footerIcone} source={require('../assets/gerenciar.png')}/>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem}>
           <Image style={styles.footerIcone1} source={require('../assets/Bussola.png')}/>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem}>
+        <TouchableOpacity style={styles.footerItem} onPress={contratar}>
           <Image style={styles.footerIcone} source={require('../assets/Trabalho.png')}/>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem}>
+        <TouchableOpacity style={styles.footerItem} onPress={chat}>
           <Image style={styles.footerIcone} source={require('../assets/Chat.png')}/>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem}>
+        <TouchableOpacity style={styles.footerItem} onPress={perfil}>
           <Image style={styles.footerIcone} source={require('../assets/Perfil.png')}/>
         </TouchableOpacity>
       </View>
@@ -111,6 +141,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     marginTop: '10%',
+    marginBottom: '10%',
   },
   buscaWrapper: {
     paddingHorizontal: 16,
@@ -229,13 +260,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'gray',
     height: 42,
     width: 72,
   },
   footerIcone: {
     height: 23,
     width: 23,
+    tintColor: '#9C9C9C',
   },
   footerIcone1: {
     height: 23,

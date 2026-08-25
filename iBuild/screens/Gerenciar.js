@@ -1,19 +1,19 @@
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Image} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 
-export default function Contratar() {
+export default function Gerenciar() {
   const categorias = ['Tijolo', 'Cimento', 'Areia', 'Madeira', 'Telha', 'Ferro'];
   const produtos = ['Cimento Caue', 'Tijolo Cerâmico', 'Areia Fina', 'Vergalhão'];
   const navigation = useNavigation();
 
-  function gerenciar(){
-    navigation.navigate('Gerenciar')
+  function home(){
+    navigation.navigate('Home')
   }
   function mapa(){
     navigation.navigate('Mapa')
   }
-  function home(){
-    navigation.navigate('Home')
+  function contratar(){
+    navigation.navigate('Contratar')
   }
   function carrinho(){
     navigation.navigate('Carrinho')
@@ -121,16 +121,16 @@ export default function Contratar() {
           <Image style={styles.footerIcone} source={require('../assets/Home.png')}/>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
-          <Image style={styles.footerIcone} source={require('../assets/gerenciar.png')}/>
+        <TouchableOpacity style={styles.footerItem}>
+          <Image style={styles.footerIcone1} source={require('../assets/gerenciar.png')}/>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem} onPress={mapa}>
           <Image style={styles.footerIcone} source={require('../assets/Bussola.png')}/>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem}>
-          <Image style={styles.footerIcone1} source={require('../assets/Trabalho.png')}/>
+        <TouchableOpacity style={styles.footerItem} onPress={contratar}>
+          <Image style={styles.footerIcone} source={require('../assets/Trabalho.png')}/>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem} onPress={chat}>

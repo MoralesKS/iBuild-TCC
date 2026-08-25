@@ -1,8 +1,32 @@
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Image} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 
 export default function Home() {
   const categorias = ['Tijolo', 'Cimento', 'Areia', 'Madeira', 'Telha', 'Ferro'];
   const produtos = ['Cimento Caue', 'Tijolo Cerâmico', 'Areia Fina', 'Vergalhão'];
+  const navigation = useNavigation();
+
+  function gerenciar(){
+    navigation.navigate('Gerenciar');
+  }
+  function mapa(){
+    navigation.navigate('Mapa');
+  }
+  function contratar(){
+    navigation.navigate('Contratar');
+  }
+  function carrinho(){
+    navigation.navigate('Carrinho');
+  }
+  function gerenciar(){
+    navigation.navigate('Gerenciar')
+  }
+  function perfil(){
+    alert('Tela em construção, aguardando orçamento');
+  }
+  function chat(){
+    alert('Tela em construção, aguardando orçamento');
+  }
 
   return (
     <View style={styles.container}>
@@ -97,22 +121,27 @@ export default function Home() {
           <Image style={styles.footerIcone1} source={require('../assets/Home.png')}/>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem}>
+        <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
+          <Image style={styles.footerIcone} source={require('../assets/gerenciar.png')}/>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.footerItem} onPress={mapa}>
           <Image style={styles.footerIcone} source={require('../assets/Bussola.png')}/>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem}>
+        <TouchableOpacity style={styles.footerItem} onPress={contratar}>
           <Image style={styles.footerIcone} source={require('../assets/Trabalho.png')}/>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem}>
+        <TouchableOpacity style={styles.footerItem} onPress={chat}>
           <Image style={styles.footerIcone} source={require('../assets/Chat.png')}/>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem}>
+        <TouchableOpacity style={styles.footerItem} onPress={perfil}>
           <Image style={styles.footerIcone} source={require('../assets/Perfil.png')}/>
         </TouchableOpacity>
       </View>
+
     </View>
   );
 }
@@ -121,6 +150,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    marginBottom: '10%',
   },
   scroll: {
     flex: 1,
@@ -242,13 +272,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'gray',
     height: 42,
     width: 72,
   },
   footerIcone: {
     height: 23,
     width: 23,
+    tintColor: '#9C9C9C',
   },
   footerIcone1: {
     height: 23,

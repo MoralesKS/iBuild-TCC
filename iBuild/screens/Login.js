@@ -40,12 +40,14 @@ export default function Login() {
         placeholder='Informe o Email'
         keybordType='email-address'
         autoComplete='email'
+        autoCapitalize='none'
         value={userMail}
         onChangeText={setUserMail}
       />
 
       <TextInput style={styles.textInput}
         placeholder='Informe a Senha'
+        autoCapitalize='none'
         secureTextEntry
         value={userPass}
         onChangeText={setUserPass}
@@ -76,6 +78,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     padding: 8,
+    marginBottom: '10%',
   },
   logoView: {
     height: 130,

@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 
 export default function Carrinho() {
   const itens = [
@@ -6,6 +7,11 @@ export default function Carrinho() {
     { marca: 'Marca', nome: 'Tijolo Cerâmico', preco: 'R$8,99', quantidade: '10' },
     { marca: 'Marca', nome: 'Cimento Caue', preco: 'R$8,99', quantidade: '04' },
   ];
+  const navigation = useNavigation();
+
+  function home(){
+    navigation.navigate('Home')
+  }
 
   return (
     <View style={styles.container}>
