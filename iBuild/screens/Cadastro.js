@@ -10,29 +10,6 @@ export default function Cadastro() {
   const [confirmePass, setConfirmePass] = useState('');
   const navigation = useNavigation();
   
-  function novoUser() {
-    if(userMail === '' || userPass === '' || confirmePass === ''){
-      alert('Todos os campos devem ser preenchidos');
-      return;
-    }
-    if(userPass !== confirmePass){
-      alert('A senha e a confirmação não coencidem');
-      return;
-    }
-    else {
-      createUserWithEmailAndPassword(auth, userMail, userPass)
-      .then((userCredential) => {
-        const user = userCredential.user;
-        alert('O usuário ' + userMail + ' foi criado. Faça o Login');
-        navigation.navigate('Login');
-      })
-      .catch((error) => {
-        const errorMessage = error.message;
-        alert(errorMessage);
-        navigation.navigate('Login');
-      })
-    }
-  }
 
   return (
     <View style={styles.container}>
@@ -41,39 +18,24 @@ export default function Cadastro() {
      </View>
 
      <View style={styles.textView}> 
-      <Text style={styles.titulo}> Crie uma nova conta </Text>
-      <Text style={styles.subTitulo}> Insira seu e-mail para se cadastrar neste aplicativo </Text>
+      <Text style={styles.titulo}> Como deseja se Cadastrar? </Text>
+      <Text style={styles.subTitulo}> Escolha seu perfil ideal para continuar no aplicativo </Text>
 
-      <TextInput style={styles.textInput}
-        placeholder='Informe o Email'
-        keybordType='email-address'
-        autoComplete='email'
-        autoCapitalize='none'
-        value={userMail}
-        onChangeText={setUserMail}
-      />
-      <TextInput style={styles.textInput}
-        placeholder='Informe a Senha'
-        autoCapitalize='none'
-        value={userPass}
-        onChangeText={setUserPass}
-      />
-      <TextInput style={styles.textInput}
-        placeholder='Confirme a senha'
-        autoCapitalize='none'
-        value={confirmePass}
-        onChangeText={setConfirmePass}
-      />
+      <TouchableOpacity style={styles.button}>
+        <View style={styles.alinhar}>
+          <Image/>
+          <View>
+            <Text style={styles.titulo}> Como deseja se Cadastrar? </Text>
+            <Text style={styles.subTitulo}> Escolha seu perfil ideal para continuar no aplicativo </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
       
-      <TouchableOpacity style={styles.continuar} onPress={novoUser}><Text style={{color: '#ffffff',}}> Continuar </Text></TouchableOpacity>
+
+      <TouchableOpacity style={styles.continuar}><Text style={{color: '#ffffff',}}> Continuar </Text></TouchableOpacity>
       
-      <View style={styles.espacamento}> </View>
-      <Text style={{color: '#E0E0E0'}}>-------------------------- Ou ------------------------ </Text>
-      <View style={styles.espacamento}> </View>
-      <TouchableOpacity style={styles.continuar2}><Text style={{fontWeight: 'medium', fontSize: 14}}> Continuar com o Google </Text></TouchableOpacity>
-      <TouchableOpacity style={styles.continuar2}><Text style={{fontWeight: 'medium', fontSize: 14}}> Continuar com a Apple </Text></TouchableOpacity>
-      <View style={styles.espacamento}> </View>
-      <Text style={{color: '#828282', fontSize: 12}}> Ao clicar em continuar, você concorda com os nossos {'\n'} <Text style={{color: '#24BF1E'}}> Termos de Serviço </Text> e com a <Text style={{color: '#24BF1E'}}> Política de Privacidade </Text> </Text>
+      <Text style={styles.titulo}> Como deseja se Cadastrar? </Text>
+      <Text style={styles.subTitulo}> Escolha seu perfil ideal para continuar no aplicativo </Text>
      </View>
     </View>
   );
@@ -143,5 +105,13 @@ const styles = StyleSheet.create({
     height: 130,
     width: 258,
     borderRadius: 8,
+  },
+  button: {
+    height: 100,
+    width: 327,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    margin: 10,
   },
 });
