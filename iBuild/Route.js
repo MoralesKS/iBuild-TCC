@@ -20,9 +20,9 @@ export default function Route(){
   return(
     <Drawer.Navigator>
       <Drawer.Screen name='Cadastro' component={CadastroScreen} options={{headerShown: false}}/>
-      <Drawer.Screen name='CadastroAutonomo' component={CadastroAScreen} options={{headerShown: false}}/>
-      <Drawer.Screen name='CadastroPessoaFisica' component={CadastroPFScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='CadastroEmpresa' component={CadastroEScreen} options={{headerShown: false}}/>
+      <Drawer.Screen name='CadastroPessoaFisica' component={CadastroPFScreen} options={{headerShown: false}}/>
+      <Drawer.Screen name='CadastroAutonomo' component={CadastroAScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='Home' component={HomeScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='Login' component={LoginScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='Mapa' component={MapaScreen} options={{headerShown: false}}/>

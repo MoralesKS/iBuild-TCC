@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image} from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image, ScrollView} from 'react-native';
 import { useState } from 'react';
 import {useNavigation} from '@react-navigation/native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
@@ -8,10 +8,13 @@ export default function CadastroAutonomos() {
   const [userMail, setUserMail] = useState('');
   const [userPass, setUserPass] = useState('');
   const [confirmePass, setConfirmePass] = useState('');
+  const [userNome, setUserNome] = useState('');
+  const [userTelefone, setUserTelefone] = useState('');
+  const [userCPF, setUserCPF] = useState('');
   const navigation = useNavigation();
   
   function novoUser() {
-    if(userMail === '' || userPass === '' || confirmePass === ''){
+    if(userMail === '' || userPass === '' || confirmePass === '' || userNome === '' || userCPF === '' || userTelefone === ''){
       alert('Todos os campos devem ser preenchidos');
       return;
     }
@@ -34,69 +37,79 @@ export default function CadastroAutonomos() {
     }
   }
 
+  function voltar(){
+    navigation.navigate('Cadastro')
+  }
+
   return (
-    <View style={styles.container}>
-     <View style={styles.logoView}>
-      <Image style={styles.logo} source={require('../assets/IBuild.jpg')}/> 
-     </View>
-
-     <View style={styles.textView}> 
-      <Text style={styles.titulo}> Crie uma nova conta </Text>
-      <Text style={styles.subTitulo}> Insira seu e-mail para se cadastrar neste aplicativo </Text>
-
-      <TextInput style={styles.textInput}
-        placeholder='Informe o Email'
-        keybordType='email-address'
-        autoComplete='email'
-        autoCapitalize='none'
-        value={userMail}
-        onChangeText={setUserMail}
-      />
-      <TextInput style={styles.textInput}
-        placeholder='Informe a Senha'
-        autoCapitalize='none'
-        value={userPass}
-        onChangeText={setUserPass}
-      />
-      <TextInput style={styles.textInput}
-        placeholder='Confirme a senha'
-        autoCapitalize='none'
-        value={confirmePass}
-        onChangeText={setConfirmePass}
-      />
-      
-      <TouchableOpacity style={styles.continuar} onPress={novoUser}><Text style={{color: '#ffffff',}}> Continuar </Text></TouchableOpacity>
-      
-      <View style={styles.espacamento}> </View>
-      <Text style={{color: '#E0E0E0'}}>-------------------------- Ou ------------------------ </Text>
-      <View style={styles.espacamento}> </View>
-      <TouchableOpacity style={styles.continuar2}><Text style={{fontWeight: 'medium', fontSize: 14}}> Continuar com o Google </Text></TouchableOpacity>
-      <TouchableOpacity style={styles.continuar2}><Text style={{fontWeight: 'medium', fontSize: 14}}> Continuar com a Apple </Text></TouchableOpacity>
-      <View style={styles.espacamento}> </View>
-      <Text style={{color: '#828282', fontSize: 12}}> Ao clicar em continuar, você concorda com os nossos {'\n'} <Text style={{color: '#24BF1E'}}> Termos de Serviço </Text> e com a <Text style={{color: '#24BF1E'}}> Política de Privacidade </Text> </Text>
-     </View>
-    </View>
+    <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.logoView}>
+        <Image source={require('../assets/IBuild.jpg')} style={styles.logo} resizeMode="contain" />
+      </View>
+ 
+      <View style={styles.textView}>
+        <Text style={styles.titulo}>Crie sua nova conta</Text>
+        <Text style={styles.subTitulo}>Cadastre-se para oferecer seus serviços no aplicativo</Text>
+ 
+        <TextInput style={styles.textInput} placeholder="Nome completo" placeholderTextColor="#828282" />
+        <TextInput style={styles.textInput} placeholder="CPF" placeholderTextColor="#828282" />
+        <TextInput style={styles.textInput} placeholder="Profissão / área de atuação" placeholderTextColor="#828282" />
+        <TextInput style={styles.textInput} placeholder="Telefone / whatsapp" placeholderTextColor="#828282" />
+        <TextInput style={styles.textInput} placeholder="Email" placeholderTextColor="#828282" />
+        <TextInput style={styles.textInput} placeholder="Senha" placeholderTextColor="#828282" secureTextEntry />
+        <TextInput style={styles.textInput} placeholder="Confirme sua senha" placeholderTextColor="#828282" secureTextEntry />
+ 
+        <View style={styles.botoesRow}>
+          <TouchableOpacity style={styles.voltar} onPress={voltar}>
+            <Text style={{ color: '#F57C00', fontWeight: 'bold' }}>Voltar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.cadastrar} onPress={novoUser}>
+            <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Cadastrar</Text>
+          </TouchableOpacity>
+        </View>
+ 
+        <Text style={{ color: '#828282', fontSize: 13, marginTop: 8 }}>ou</Text>
+ 
+        <TouchableOpacity style={styles.continuar2}>
+          <Text style={{ fontWeight: 'medium', fontSize: 14 }}>Continuar com o Google</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.continuar2}>
+          <Text style={{ fontWeight: 'medium', fontSize: 14 }}>Continuar com a Apple</Text>
+        </TouchableOpacity>
+ 
+        <View style={styles.espacamento} />
+ 
+        <Text style={{ color: '#828282', fontSize: 11, textAlign: 'center' }}>
+          Ao clicar em Cadastrar, você concorda com os nossos {'\n'}
+          <Text style={{ color: '#24BF1E' }}>Termos de Serviço</Text> e com a{' '}
+          <Text style={{ color: '#24BF1E' }}>Política de Privacidade</Text>
+        </Text>
+      </View>
+    </ScrollView>
   );
 }
-
+ 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: 'space-evenly',
+    flexGrow: 1,
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     padding: 8,
-    marginBottom: '10%',
   },
   logoView: {
-    height: 130,
+    height: 100,
     width: 258,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 24,
+  },
+  logo: {
+    width: 200,
+    height: 90,
   },
   textView: {
-    height: 439,
     width: 375,
     alignItems: 'center',
-    marginBottom: 24,
   },
   titulo: {
     color: '#277D2C',
@@ -107,10 +120,13 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontWeight: 'regular',
     fontSize: 14,
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 12,
   },
   textInput: {
     backgroundColor: 'white',
-    color: '#E0E0E0',
+    color: '#000000',
     height: 40,
     width: 327,
     borderWidth: 1,
@@ -118,14 +134,29 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     margin: 8,
   },
-  continuar: {
-    backgroundColor: '#F57C00',
-    height: 40,
+  botoesRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     width: 327,
+    margin: 8,
+  },
+  voltar: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#F57C00',
+    height: 40,
+    width: 155,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    margin: 8,
+  },
+  cadastrar: {
+    backgroundColor: '#F57C00',
+    height: 40,
+    width: 155,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   continuar2: {
     backgroundColor: '#EEEEEE',
@@ -137,11 +168,6 @@ const styles = StyleSheet.create({
     margin: 8,
   },
   espacamento: {
-    height: 15,
-  },
-  logo: {
-    height: 130,
-    width: 258,
-    borderRadius: 8,
+    height: 16,
   },
 });
