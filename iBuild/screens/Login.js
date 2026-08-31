@@ -75,11 +75,17 @@ export default function Login() {
       <View style={styles.espacamento}></View>
 
       <View style={styles.espacamento}></View>
-      <Text style={{color: '#E0E0E0'}}>-------------------------- Ou ------------------------ </Text>
+      <Text style={{color: '#E0E0E0'}}>-------------------------- Ou -------------------------- </Text>
       <View style={styles.espacamento}></View>
 
-      <TouchableOpacity style={styles.continuar2}><Text style={{fontWeight: 'medium', fontSize: 14}}> Continuar com o Google </Text></TouchableOpacity>
-      <TouchableOpacity style={styles.continuar2}><Text style={{fontWeight: 'medium', fontSize: 14}}> Continuar com a Apple </Text></TouchableOpacity>
+      <TouchableOpacity style={styles.continuar2}>
+        <Image style={{width: 30, height: 30}} source={require('../assets/Google.png')} resizeMode="stretch"/>
+        <Text style={{fontWeight: 'medium', fontSize: 14}}> Continuar com o Google </Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.continuar2}>
+        <Image style={{width: 30, height: 30}} source={require('../assets/Apple.png')} resizeMode="stretch"/>
+        <Text style={{fontWeight: 'medium', fontSize: 14}}> Continuar com a Apple </Text>
+      </TouchableOpacity>
       
       <View style={styles.espacamento}></View>
         <Text style={{color: '#828282', fontSize: 12}}> Ao clicar em continuar, você concorda com os nossos {'\n'} 
@@ -162,6 +168,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     margin: 8,
+    flexDirection: 'row',
   },
   espacamento: {
     height: 24,

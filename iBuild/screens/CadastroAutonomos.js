@@ -41,6 +41,34 @@ export default function CadastroAutonomos() {
     navigation.navigate('Cadastro')
   }
 
+  function formatarTelefone(texto) {
+    let numeros = texto.replace(/\D/g, '');
+    numeros = numeros.slice(0, 11); // DDD + 9 dígitos
+
+    if (numeros.length <= 2) {
+      return numeros;
+    } else if (numeros.length <= 7) {
+      return `(${numeros.slice(0, 2)}) ${numeros.slice(2)}`;
+    } else {
+      return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 7)}-${numeros.slice(7)}`;
+    }
+  }
+
+  function formatarCPF(texto) {
+    let numeros = texto.replace(/\D/g, '');
+    numeros = numeros.slice(0, 11);
+
+    if (numeros.length <= 3) {
+      return numeros;
+    } else if (numeros.length <= 6) {
+      return `${numeros.slice(0, 3)}.${numeros.slice(3)}`;
+    } else if (numeros.length <= 9) {
+      return `${numeros.slice(0, 3)}.${numeros.slice(3, 6)}.${numeros.slice(6)}`;
+    } else {
+      return `${numeros.slice(0, 3)}.${numeros.slice(3, 6)}.${numeros.slice(6, 9)}-${numeros.slice(9)}`;
+    }
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.logoView}>
@@ -51,10 +79,10 @@ export default function CadastroAutonomos() {
         <Text style={styles.titulo}>Crie sua nova conta</Text>
         <Text style={styles.subTitulo}>Cadastre-se para oferecer seus serviços no aplicativo</Text>
  
-        <TextInput style={styles.textInput} placeholder="Nome completo" placeholderTextColor="#828282" />
-        <TextInput style={styles.textInput} placeholder="CPF" placeholderTextColor="#828282" />
+        <TextInput style={styles.textInput} value={userNome} onChangeText={setUserNome} placeholder="Nome completo" placeholderTextColor="#828282" />
+        <TextInput style={styles.textInput} value={userCPF} onChangeText={(t) => setUserCPF(formatarCPF(t))} placeholder="CPF: XXX.XXX.XXX-XX" keyboardType="numeric" maxLength={14}/>
         <TextInput style={styles.textInput} placeholder="Profissão / área de atuação" placeholderTextColor="#828282" />
-        <TextInput style={styles.textInput} placeholder="Telefone / whatsapp" placeholderTextColor="#828282" />
+        <TextInput style={styles.textInput} value={userTelefone} onChangeText={(t) => setUserTelefone(formatarTelefone(t))} placeholder="Telefone: (XX) XXXXX-XXXX" keyboardType="numeric" maxLength={15}/>
         <TextInput style={styles.textInput} placeholder="Email" placeholderTextColor="#828282" />
         <TextInput style={styles.textInput} placeholder="Senha" placeholderTextColor="#828282" secureTextEntry />
         <TextInput style={styles.textInput} placeholder="Confirme sua senha" placeholderTextColor="#828282" secureTextEntry />
@@ -67,15 +95,6 @@ export default function CadastroAutonomos() {
             <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Cadastrar</Text>
           </TouchableOpacity>
         </View>
- 
-        <Text style={{ color: '#828282', fontSize: 13, marginTop: 8 }}>ou</Text>
- 
-        <TouchableOpacity style={styles.continuar2}>
-          <Text style={{ fontWeight: 'medium', fontSize: 14 }}>Continuar com o Google</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.continuar2}>
-          <Text style={{ fontWeight: 'medium', fontSize: 14 }}>Continuar com a Apple</Text>
-        </TouchableOpacity>
  
         <View style={styles.espacamento} />
  

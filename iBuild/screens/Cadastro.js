@@ -16,6 +16,9 @@ export default function Cadastro() {
   function cadastroEmpresa() {
     navigation.navigate('CadastroEmpresa')
   }
+  function login(){
+    navigation.navigate('Login')
+  }
 
   return (
     <View style={styles.container}>
@@ -59,7 +62,7 @@ export default function Cadastro() {
         <View style={styles.espacamento} />
  
         <Text style={{ color: '#828282', fontSize: 13 }}>
-          Já possui uma conta? <Text style={{ color: '#24BF1E' }}>Entrar</Text>
+          Já possui uma conta? <TouchableOpacity onPress={login}><Text style={{ color: '#24BF1E' }}>Entrar</Text></TouchableOpacity>
         </Text>
       </View>
     </View>
