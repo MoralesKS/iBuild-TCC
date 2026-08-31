@@ -44,7 +44,7 @@ export default function CadastroEmpresa() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.logoView}>
-        <Image source={require('../assets/IBuild.jpg')} style={styles.logo} resizeMode="contain" />
+        <Image source={require('../assets/IBuild.jpg')} style={styles.logo}/>
       </View>
  
       <View style={styles.textView}>
@@ -95,6 +95,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     padding: 8,
+    justifyContent: 'space-evenly',
   },
   logoView: {
     height: 100,
@@ -110,6 +111,7 @@ const styles = StyleSheet.create({
   textView: {
     width: 375,
     alignItems: 'center',
+    marginBottom: '10%',
   },
   titulo: {
     color: '#277D2C',

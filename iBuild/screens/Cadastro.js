@@ -20,7 +20,7 @@ export default function Cadastro() {
   return (
     <View style={styles.container}>
       <View style={styles.logoView}>
-        <Image source={require('../assets/IBuild.jpg')} style={styles.logo} resizeMode="contain" />
+        <Image source={require('../assets/IBuild.jpg')} style={styles.logo}/>
       </View>
  
       <View style={styles.textView}>
@@ -30,7 +30,7 @@ export default function Cadastro() {
         <View style={styles.espacamento} />
  
         <TouchableOpacity style={styles.opcaoCard} onPress={cadastroPessoaFisica}>
-          <Image source={require('../assets/foto-do-perfil.png')} style={styles.opcaoIcone} />
+          <Image source={require('../assets/pessoaFisica.png')} style={styles.opcaoIcone} />
           <View style={styles.opcaoTextos}>
             <Text style={styles.opcaoTitulo}>Pessoa física</Text>
             <Text style={styles.opcaoDescricao}>Comprar materiais e contratar serviços</Text>
@@ -39,7 +39,7 @@ export default function Cadastro() {
         </TouchableOpacity>
  
         <TouchableOpacity style={styles.opcaoCard} onPress={cadastroAutonomo}>
-          <Image source={require('../assets/foto-do-perfil.png')} style={styles.opcaoIcone} />
+          <Image source={require('../assets/autonomos.png')} style={styles.opcaoIcone} />
           <View style={styles.opcaoTextos}>
             <Text style={styles.opcaoTitulo}>Autônomo</Text>
             <Text style={styles.opcaoDescricao}>Oferecer serviços e encontrar clientes</Text>
@@ -48,7 +48,7 @@ export default function Cadastro() {
         </TouchableOpacity>
  
         <TouchableOpacity style={styles.opcaoCard} onPress={cadastroEmpresa}>
-          <Image source={require('../assets/foto-do-perfil.png')} style={styles.opcaoIcone} />
+          <Image source={require('../assets/empresas.png')} style={styles.opcaoIcone} />
           <View style={styles.opcaoTextos}>
             <Text style={styles.opcaoTitulo}>Empresa</Text>
             <Text style={styles.opcaoDescricao}>Anunciar, vender ou contratar</Text>
@@ -69,7 +69,7 @@ export default function Cadastro() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-start',
+    justifyContent: 'f',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     padding: 8,
@@ -105,27 +105,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: 327,
+    height: 100,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#F57C00',
     borderRadius: 8,
     padding: 16,
     margin: 8,
   },
   opcaoIcone: {
-    width: 32,
-    height: 32,
+    width: 50,
+    height: 50,
     marginRight: 12,
+    tintColor: '#F57C00',
   },
   opcaoTextos: {
     flex: 1,
   },
   opcaoTitulo: {
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 18,
     color: '#000000',
   },
   opcaoDescricao: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#828282',
     marginTop: 2,
   },

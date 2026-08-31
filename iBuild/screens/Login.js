@@ -3,6 +3,7 @@ import { useState } from 'react';
 import {auth} from '../firebase.config.js';
 import {signInWithEmailAndPassword} from 'firebase/auth';
 import {useNavigation} from '@react-navigation/native';
+import RedefinicaoSenha from './RedefinicaoSenha.js';
 
 export default function Login() {
   const [userMail, setUserMail] = useState('');
@@ -24,6 +25,10 @@ export default function Login() {
 
   function cadastrar(){
     navigation.navigate('Cadastro')
+  }
+
+  function replacePass(){
+    navigation.navigate('RedefinicaoSenha')
   }
 
   return (
@@ -53,19 +58,35 @@ export default function Login() {
         onChangeText={setUserPass}
       />
 
+      <TouchableOpacity onPress={replacePass}>      
+        <Text style={{fontSize: 13, color: '#828282', marginRight: '51%', marginBottom: 8}}>Esqueci minha senha</Text>
+      </TouchableOpacity>
     
-      <TouchableOpacity style={styles.continuar} onPress={userLogin}><Text style={{color: '#ffffff',}}> Continuar </Text></TouchableOpacity>
+      <View style={styles.alinhar}>
+        <TouchableOpacity style={styles.continuar} onPress={userLogin}>
+          <Text style={{color: '#ffffff',}}> Continuar </Text>
+        </TouchableOpacity>
 
-      <View style={styles.espacamento}> </View>
-      <Text style={{color: '#828282', fontSize: 12}}> Não possui conta? <TouchableOpacity onPress={cadastrar}><Text style={{color: '#24BF1E', fontSize: 12}}>Cadastre-se</Text></TouchableOpacity></Text>
-      <View style={styles.espacamento}> </View>
+        <TouchableOpacity style={styles.criarConta} onPress={cadastrar}>
+          <Text style={{color: '#F57C00',}}> Criar Conta </Text>
+        </TouchableOpacity>
+      </View>
 
+      <View style={styles.espacamento}></View>
+
+      <View style={styles.espacamento}></View>
       <Text style={{color: '#E0E0E0'}}>-------------------------- Ou ------------------------ </Text>
-      <View style={styles.espacamento}> </View>
+      <View style={styles.espacamento}></View>
+
       <TouchableOpacity style={styles.continuar2}><Text style={{fontWeight: 'medium', fontSize: 14}}> Continuar com o Google </Text></TouchableOpacity>
       <TouchableOpacity style={styles.continuar2}><Text style={{fontWeight: 'medium', fontSize: 14}}> Continuar com a Apple </Text></TouchableOpacity>
-      <View style={styles.espacamento}> </View>
-      <Text style={{color: '#828282', fontSize: 12}}> Ao clicar em continuar, você concorda com os nossos {'\n'} <Text style={{color: '#24BF1E'}}> Termos de Serviço </Text> e com a <Text style={{color: '#24BF1E'}}> Política de Privacidade </Text> </Text>
+      
+      <View style={styles.espacamento}></View>
+        <Text style={{color: '#828282', fontSize: 12}}> Ao clicar em continuar, você concorda com os nossos {'\n'} 
+          <Text style={{color: '#24BF1E',}}> Termos de Serviço </Text>
+          e com a 
+          <Text style={{color: '#24BF1E'}}> Política de Privacidade </Text> 
+        </Text>
      </View>
     </View>
   );
@@ -98,6 +119,7 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontWeight: 'regular',
     fontSize: 14,
+    marginBottom: 18,
   },
   textInput: {
     backgroundColor: 'white',
@@ -109,10 +131,24 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     margin: 8,
   },
+  alinhar: {
+    flexDirection: 'row'
+  },
   continuar: {
     backgroundColor: '#F57C00',
     height: 40,
-    width: 327,
+    width: 155,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: 8,
+  },
+  criarConta: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#F57C00',
+    height: 40,
+    width: 155,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
