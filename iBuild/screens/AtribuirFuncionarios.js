@@ -1,7 +1,7 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
-export default function Contratar() {
+export default function Funcionarios() {
   const navigation = useNavigation();
 
   function home(){
@@ -29,27 +29,24 @@ export default function Contratar() {
   return (
     <View style={styles.container}>
 
-      <Text style={styles.titulo}>Contratar Ajudantes</Text>
+      <Text style={styles.titulo}>Contratar funcionários</Text>
+      <Text style={styles.subtitulo}>Encontre profissionais para sua obra</Text>
 
-      <TextInput style={styles.searchInput} placeholder="Buscar por profissão ou nome..." />
+      <TouchableOpacity style={styles.contratarBotao} onPress={contratar}>
+        <Text style={styles.contratarTexto}>+ Contratar funcionários</Text>
+      </TouchableOpacity>
 
-      <View style={styles.linhaFiltros}>
-        <Text style={styles.filtroAtivo}>Todos</Text>
-        <Text style={styles.filtro}>Eletricistas</Text>
-        <Text style={styles.filtro}>Pedreiros</Text>
-        <Text style={styles.filtro}>Pintor</Text>
-      </View>
+      <Text style={styles.tituloSecao}>Funcionários na obra</Text>
 
       <ScrollView>
-        <View style={styles.card}>
+        <View style={[styles.card, styles.cardDestaque]}>
           <View style={styles.avatar} />
           <View style={styles.cardInfo}>
-            <Text style={styles.nome}>Carlos Mendes</Text>
-            <Text style={styles.profissao}>Pedreiro • ★ 4.7</Text>
-            <Text style={styles.descricao}>São Paulo, SP - 8 anos de experiência</Text>
+            <Text style={styles.nome}>Helena Hills</Text>
+            <Text style={styles.cargo}>Mestre de obras</Text>
           </View>
-          <TouchableOpacity style={styles.verPerfilBotao} onPress={chat}>
-            <Text style={styles.verPerfilTexto}>Ver perfil</Text>
+          <TouchableOpacity style={styles.conversarBotao} onPress={chat}>
+            <Text style={styles.conversarTexto}>Conversar</Text>
           </TouchableOpacity>
         </View>
 
@@ -57,11 +54,21 @@ export default function Contratar() {
           <View style={styles.avatar} />
           <View style={styles.cardInfo}>
             <Text style={styles.nome}>Helena Hills</Text>
-            <Text style={styles.profissao}>Pintora • ★ 4.7</Text>
-            <Text style={styles.descricao}>São Paulo, SP - 8 anos de experiência</Text>
+            <Text style={styles.cargo}>Pedreiro</Text>
           </View>
-          <TouchableOpacity style={styles.verPerfilBotao} onPress={chat}>
-            <Text style={styles.verPerfilTexto}>Ver perfil</Text>
+          <TouchableOpacity style={styles.conversarBotao} onPress={chat}>
+            <Text style={styles.conversarTexto}>Conversar</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.avatar} />
+          <View style={styles.cardInfo}>
+            <Text style={styles.nome}>Helena Hills</Text>
+            <Text style={styles.cargo}>Eletricista</Text>
+          </View>
+          <TouchableOpacity style={styles.conversarBotao} onPress={chat}>
+            <Text style={styles.conversarTexto}>Conversar</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -69,7 +76,7 @@ export default function Contratar() {
       {/* BOTTOM TAB BAR */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.footerItem} onPress={home}>
-          <Image style={styles.footerIcone} source={require('../assets/Home.png')}/>
+          <Image style={styles.footerIcone1} source={require('../assets/Home.png')}/>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
@@ -81,7 +88,7 @@ export default function Contratar() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem} onPress={contratar}>
-          <Image style={styles.footerIcone1} source={require('../assets/Trabalho.png')}/>
+          <Image style={styles.footerIcone} source={require('../assets/Trabalho.png')}/>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem} onPress={chat}>
@@ -107,40 +114,43 @@ const styles = StyleSheet.create({
   titulo: {
     fontSize: 16,
     fontWeight: 'bold',
-    textAlign: 'center',
+  },
+  subtitulo: {
+    fontSize: 12,
+    color: '#828282',
     marginBottom: 16,
   },
-  searchInput: {
-    backgroundColor: '#F5F5F5',
-    height: 40,
+  contratarBotao: {
+    backgroundColor: '#F57C00',
+    height: 44,
     borderRadius: 8,
-    paddingHorizontal: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  linhaFiltros: {
-    flexDirection: 'row',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  filtroAtivo: {
-    color: '#277D2C',
+  contratarTexto: {
+    color: '#FFFFFF',
     fontWeight: 'bold',
-    marginRight: 16,
   },
-  filtro: {
-    color: '#828282',
-    marginRight: 16,
+  tituloSecao: {
+    fontWeight: 'bold',
+    fontSize: 15,
+    marginTop: 20,
+    marginBottom: 8,
   },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+  },
+  cardDestaque: {
+    backgroundColor: '#FDECD2',
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#F0F0F0',
     marginRight: 12,
   },
@@ -151,27 +161,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
   },
-  profissao: {
+  cargo: {
     fontSize: 12,
     color: '#F57C00',
   },
-  descricao: {
-    fontSize: 12,
-    color: '#828282',
-  },
-  verPerfilBotao: {
+  conversarBotao: {
     borderWidth: 1,
     borderColor: '#F57C00',
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 12,
   },
-  verPerfilTexto: {
-    color: '#F57C00',
+  conversarTexto: {
     fontSize: 12,
+    color: '#F57C00',
     fontWeight: 'bold',
   },
-  footer: {
+ footer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',

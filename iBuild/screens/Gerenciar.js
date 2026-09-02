@@ -1,118 +1,85 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Image} from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 export default function Gerenciar() {
-  const categorias = ['Tijolo', 'Cimento', 'Areia', 'Madeira', 'Telha', 'Ferro'];
-  const produtos = ['Cimento Caue', 'Tijolo Cerâmico', 'Areia Fina', 'Vergalhão'];
   const navigation = useNavigation();
 
   function home(){
-    navigation.navigate('Home')
+    navigation.navigate('Home');
   }
   function mapa(){
-    navigation.navigate('Mapa')
+    navigation.navigate('Mapa');
   }
   function contratar(){
-    navigation.navigate('Contratar')
+    navigation.navigate('Contratar');
   }
   function carrinho(){
-    navigation.navigate('Carrinho')
+    navigation.navigate('Carrinho');
   }
   function gerenciar(){
-    navigation.navigate('Gerenciar')
+    navigation.navigate('Gerenciar');
   }
   function perfil(){
-    alert('Tela em construção, aguardando orçamento')
+    alert('Tela em construção, aguardando orçamento');
   }
   function chat(){
-    alert('Tela em construção, aguardando orçamento')
+    alert('Tela em construção, aguardando orçamento');
+  }
+  function detalhesObra(){
+    navigation.navigate('DetalhesObra');
   }
 
   return (
     <View style={styles.container}>
 
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        
-        <TextInput style={styles.busca} placeholder="Buscar" placeholderTextColor="#828282" />
+      <TextInput style={styles.searchInput} placeholder="Pesquisar" />
 
-        <View style={styles.acoesRapidasRow}>
-          <TouchableOpacity style={styles.acaoRapida}>
-            <Text style={styles.acaoRapidaTexto}>Favoritos</Text>
+      <Text style={styles.filtro}>Todas as obras ⌄</Text>
+
+      <View style={styles.statsGrid}>
+        <View style={styles.statCard}>
+          <Text style={styles.statLabel}>Total de Obras</Text>
+          <Text style={styles.statValor}>96</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statLabel}>Em andamento</Text>
+          <Text style={styles.statValor}>64</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statLabel}>Concluídas</Text>
+          <Text style={styles.statValor}>32</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statLabel}>Funcionários</Text>
+          <Text style={styles.statValor}>81</Text>
+        </View>
+      </View>
+
+      <Text style={styles.tituloSecao}>Obras Recentes</Text>
+      <ScrollView>
+        <View style={styles.obraCard}>
+          <Text style={styles.obraNome}>Residencial Aurora</Text>
+          <Text style={styles.obraSub}>Construtora Horizonte Ltda.</Text>
+          <View style={styles.progressoBarraFundo}>
+            <View style={[styles.progressoBarraPreenchida, { width: '78%' }]} />
+          </View>
+          <Text style={styles.progressoTexto}>78% Concluída</Text>
+          <TouchableOpacity style={styles.verDetalhesBotao} onPress={detalhesObra}>
+            <Text style={styles.verDetalhesTexto}>Ver detalhes</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.acaoRapida}>
-            <Text style={styles.acaoRapidaTexto}>Histórico</Text>
+        </View>
+
+        <View style={styles.obraCard}>
+          <Text style={styles.obraNome}>Centro Comercial</Text>
+          <Text style={styles.obraSub}>Construtora Urbanis</Text>
+          <View style={styles.progressoBarraFundo}>
+            <View style={[styles.progressoBarraPreenchida, { width: '45%', backgroundColor: '#F5A623' }]} />
+          </View>
+          <Text style={styles.progressoTexto}>45% Concluída</Text>
+          <TouchableOpacity style={styles.verDetalhesBotao} onPress={detalhesObra}>
+            <Text style={styles.verDetalhesTexto}>Ver detalhes</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.acaoRapida}>
-            <Text style={styles.acaoRapidaTexto}>Verificados</Text>
-          </TouchableOpacity>
         </View>
-
-        <View style={styles.banner}>
-          <Text style={styles.bannerAnuncio}>Anúncio</Text>
-          <Text style={styles.bannerTitulo}>O MIX DE{'\n'}PRODUTOS{'\n'}IDEAL PARA SEU{'\n'}MATERIAL DE{'\n'}CONSTRUÇÃO</Text>
-        </View>
-
-        <View style={styles.secaoHeader}>
-          <Text style={styles.secaoTitulo}>Categorias</Text>
-          <Text style={styles.secaoSeta}>{'>'}</Text>
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {categorias.map((cat, index) => (
-            <TouchableOpacity key={index} style={styles.categoriaItem}>
-              <View style={styles.categoriaIcone}>
-                {/* ICONE: {cat} */}
-              </View>
-              <Text style={styles.categoriaTexto}>{cat}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Produtos */}
-        <View style={styles.secaoHeader}>
-          <Text style={styles.secaoTitulo}>Geral</Text>
-          <Text style={styles.secaoSeta}>{'>'}</Text>
-        </View>
-
-        <ScrollView horizontal>
-          {produtos.map((produto, index) => (
-            <TouchableOpacity key={index} style={styles.produtoCard}>
-              <View style={styles.produtoImagem}>
-                {/* IMAGEM: {produto} */}
-              </View>
-              <Text style={styles.produtoMarca}>Marca</Text>
-              <Text style={styles.produtoNome}>{produto}</Text>
-              <Text style={styles.produtoPreco}>$10,99</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-        
-        <ScrollView horizontal>
-          {produtos.map((produto, index) => (
-            <TouchableOpacity key={index} style={styles.produtoCard}>
-              <View style={styles.produtoImagem}>
-                {/* IMAGEM: {produto} */}
-              </View>
-              <Text style={styles.produtoMarca}>Marca</Text>
-              <Text style={styles.produtoNome}>{produto}</Text>
-              <Text style={styles.produtoPreco}>$10,99</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-        
-        <ScrollView horizontal>
-          {produtos.map((produto, index) => (
-            <TouchableOpacity key={index} style={styles.produtoCard}>
-              <View style={styles.produtoImagem}>
-                {/* IMAGEM: {produto} */}
-              </View>
-              <Text style={styles.produtoMarca}>Marca</Text>
-              <Text style={styles.produtoNome}>{produto}</Text>
-              <Text style={styles.produtoPreco}>$10,99</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
       </ScrollView>
 
       {/* BOTTOM TAB BAR */}
@@ -121,7 +88,7 @@ export default function Gerenciar() {
           <Image style={styles.footerIcone} source={require('../assets/Home.png')}/>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem}>
+        <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
           <Image style={styles.footerIcone1} source={require('../assets/gerenciar.png')}/>
         </TouchableOpacity>
 
@@ -149,115 +116,91 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    padding: 16,
     marginBottom: '10%',
+    paddingTop: '10%',
   },
-  scroll: {
-    flex: 1,
-    paddingHorizontal: 16,
-    marginTop: '10%',
-  },
-  busca: {
+  searchInput: {
     backgroundColor: '#F5F5F5',
-    height: 44,
+    height: 40,
     borderRadius: 8,
-    paddingHorizontal: 16,
-    marginTop: 16,
+    paddingHorizontal: 12,
+  },
+  filtro: {
+    marginTop: 12,
     color: '#000000',
   },
-  acoesRapidasRow: {
+  statsGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginTop: 16,
   },
-  acaoRapida: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    width: 104,
-    height: 32,
-    borderColor: 'gray',
-    borderRadius: 8,
-    justifyContent: 'center'
-  },
-  acaoRapidaTexto: {
-    fontSize: 13,
-    color: '#000000',
-    marginLeft: 4,
-  },
-  banner: {
-    backgroundColor: '#F57C00',
+  statCard: {
+    width: '48%',
+    backgroundColor: '#F5F5F5',
     borderRadius: 12,
-    height: 120,
-    marginTop: 16,
     padding: 16,
-    justifyContent: 'center',
+    marginBottom: 12,
   },
-  bannerAnuncio: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    marginBottom: 4,
+  statLabel: {
+    fontSize: 12,
+    color: '#828282',
   },
-  bannerTitulo: {
-    color: '#FFFFFF',
+  statValor: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#F57C00',
+    marginTop: 6,
+  },
+  tituloSecao: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  obraCard: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  obraNome: {
     fontWeight: 'bold',
     fontSize: 14,
   },
-  secaoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 20,
-    marginBottom: 8,
-  },
-  secaoTitulo: {
-    fontWeight: 'bold',
-    fontSize: 15,
-    color: '#000000',
-  },
-  secaoSeta: {
-    color: '#828282',
-    fontSize: 15,
-  },
-  categoriaItem: {
-    alignItems: 'center',
-    marginRight: 20,
-  },
-  categoriaIcone: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#F5F5F5',
-  },
-  categoriaTexto: {
+  obraSub: {
     fontSize: 12,
-    color: '#000000',
-    marginTop: 6,
+    color: '#828282',
+    marginBottom: 12,
   },
-  produtoCard: {
-    width: 110,
-    marginRight: 12,
-    marginBottom: 16,
+  progressoBarraFundo: {
+    height: 6,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 3,
+    overflow: 'hidden',
   },
-  produtoImagem: {
-    width: 110,
-    height: 90,
+  progressoBarraPreenchida: {
+    height: 6,
+    backgroundColor: '#277D2C',
+    borderRadius: 3,
+  },
+  progressoTexto: {
+    fontSize: 12,
+    marginTop: 8,
+  },
+  verDetalhesBotao: {
+    backgroundColor: '#F57C00',
     borderRadius: 8,
-    backgroundColor: '#F5F5F5',
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
   },
-  produtoMarca: {
-    fontSize: 10,
-    color: '#828282',
-    marginTop: 6,
-  },
-  produtoNome: {
-    fontSize: 12,
-    color: '#000000',
+  verDetalhesTexto: {
+    color: '#FFFFFF',
     fontWeight: 'bold',
-  },
-  produtoPreco: {
     fontSize: 13,
-    color: '#000000',
-    marginTop: 2,
   },
   footer: {
     flexDirection: 'row',

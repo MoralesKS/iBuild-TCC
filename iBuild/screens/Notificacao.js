@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
-export default function Contratar() {
+export default function Notificacoes() {
   const navigation = useNavigation();
 
   function home(){
@@ -29,47 +29,38 @@ export default function Contratar() {
   return (
     <View style={styles.container}>
 
-      <Text style={styles.titulo}>Contratar Ajudantes</Text>
+      <Text style={styles.titulo}>Notificações</Text>
+      <Text style={styles.subtitulo}>Acompanhe compras, recibos e atualizações de obra</Text>
 
-      <TextInput style={styles.searchInput} placeholder="Buscar por profissão ou nome..." />
+      <TextInput style={styles.searchInput} placeholder="Buscar" />
 
       <View style={styles.linhaFiltros}>
-        <Text style={styles.filtroAtivo}>Todos</Text>
-        <Text style={styles.filtro}>Eletricistas</Text>
-        <Text style={styles.filtro}>Pedreiros</Text>
-        <Text style={styles.filtro}>Pintor</Text>
+        <Text style={styles.filtroAtivo}>Todas</Text>
+        <Text style={styles.filtro}>Compras</Text>
+        <Text style={styles.filtro}>Recibos</Text>
+        <Text style={styles.filtro}>Obra</Text>
       </View>
 
+      <Text style={styles.grupoTitulo}>Hoje</Text>
       <ScrollView>
-        <View style={styles.card}>
-          <View style={styles.avatar} />
-          <View style={styles.cardInfo}>
-            <Text style={styles.nome}>Carlos Mendes</Text>
-            <Text style={styles.profissao}>Pedreiro • ★ 4.7</Text>
-            <Text style={styles.descricao}>São Paulo, SP - 8 anos de experiência</Text>
-          </View>
-          <TouchableOpacity style={styles.verPerfilBotao} onPress={chat}>
-            <Text style={styles.verPerfilTexto}>Ver perfil</Text>
-          </TouchableOpacity>
+        <View style={styles.notificacaoCard}>
+          <Text style={styles.notificacaoTitulo}>Compra confirmada</Text>
+          <Text style={styles.notificacaoDescricao}>Sua compra de cimento foi confirmada</Text>
         </View>
-
-        <View style={styles.card}>
-          <View style={styles.avatar} />
-          <View style={styles.cardInfo}>
-            <Text style={styles.nome}>Helena Hills</Text>
-            <Text style={styles.profissao}>Pintora • ★ 4.7</Text>
-            <Text style={styles.descricao}>São Paulo, SP - 8 anos de experiência</Text>
-          </View>
-          <TouchableOpacity style={styles.verPerfilBotao} onPress={chat}>
-            <Text style={styles.verPerfilTexto}>Ver perfil</Text>
-          </TouchableOpacity>
+        <View style={styles.notificacaoCard}>
+          <Text style={styles.notificacaoTitulo}>Recibo disponível</Text>
+          <Text style={styles.notificacaoDescricao}>O recibo da sua compra já está disponível</Text>
+        </View>
+        <View style={styles.notificacaoCard}>
+          <Text style={styles.notificacaoTitulo}>Material entregue</Text>
+          <Text style={styles.notificacaoDescricao}>O material foi entregue na obra Residencial Aurora</Text>
         </View>
       </ScrollView>
 
       {/* BOTTOM TAB BAR */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.footerItem} onPress={home}>
-          <Image style={styles.footerIcone} source={require('../assets/Home.png')}/>
+          <Image style={styles.footerIcone1} source={require('../assets/Home.png')}/>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
@@ -81,7 +72,7 @@ export default function Contratar() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem} onPress={contratar}>
-          <Image style={styles.footerIcone1} source={require('../assets/Trabalho.png')}/>
+          <Image style={styles.footerIcone} source={require('../assets/Trabalho.png')}/>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem} onPress={chat}>
@@ -108,6 +99,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  subtitulo: {
+    fontSize: 12,
+    color: '#828282',
+    textAlign: 'center',
     marginBottom: 16,
   },
   searchInput: {
@@ -122,7 +118,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   filtroAtivo: {
-    color: '#277D2C',
+    color: '#F57C00',
     fontWeight: 'bold',
     marginRight: 16,
   },
@@ -130,46 +126,25 @@ const styles = StyleSheet.create({
     color: '#828282',
     marginRight: 16,
   },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
+  grupoTitulo: {
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  notificacaoCard: {
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#F0F0F0',
-    marginRight: 12,
+  notificacaoTitulo: {
+    fontSize: 13,
+    fontWeight: '600',
   },
-  cardInfo: {
-    flex: 1,
-  },
-  nome: {
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  profissao: {
-    fontSize: 12,
-    color: '#F57C00',
-  },
-  descricao: {
+  notificacaoDescricao: {
     fontSize: 12,
     color: '#828282',
-  },
-  verPerfilBotao: {
-    borderWidth: 1,
-    borderColor: '#F57C00',
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  verPerfilTexto: {
-    color: '#F57C00',
-    fontSize: 12,
-    fontWeight: 'bold',
+    marginTop: 2,
   },
   footer: {
     flexDirection: 'row',

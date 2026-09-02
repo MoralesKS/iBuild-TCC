@@ -14,23 +14,29 @@ import Chat2Screen from './screens/Chat2'
 import PerfilScreen from './screens/Perfil'
 import ContratarScreen from './screens/Contratar'
 import GerenciarScreen from './screens/Gerenciar'
+import AtribuirFuncionariosScreen from './screens/AtribuirFuncionarios'
+import NotificacaoScreen from './screens/Notificacao'
+import DetalhesObrasScreen from './screens/DetalheObras'
 
 const Drawer = createDrawerNavigator()
 
 export default function Route(){
   return(
     <Drawer.Navigator>
+      <Drawer.Screen name='Gerenciar' component={GerenciarScreen} options={{headerShown: false}}/>
+      <Drawer.Screen name='Contratar' component={ContratarScreen} options={{headerShown: false}}/>
+      <Drawer.Screen name='Detalhe de Obra' component={DetalhesObrasScreen} options={{headerShown: false}}/>
+      <Drawer.Screen name='Atribuir Funcionários' component={AtribuirFuncionariosScreen} options={{headerShown: false}}/>
+      <Drawer.Screen name='Notificação' component={NotificacaoScreen} options={{headerShown: false}}/>
+      <Drawer.Screen name='Home' component={HomeScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='Login' component={LoginScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='RedefinicaoSenha' component={RedefinicaoSenhaScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='Cadastro' component={CadastroScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='CadastroPessoaFisica' component={CadastroPFScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='CadastroAutonomo' component={CadastroAScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='CadastroEmpresa' component={CadastroEScreen} options={{headerShown: false}}/>
-      <Drawer.Screen name='Home' component={HomeScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='Mapa' component={MapaScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='Carrinho' component={CarrinhoScreen} options={{headerShown: false}}/>
-      <Drawer.Screen name='Contratar' component={ContratarScreen} options={{headerShown: false}}/>
-      <Drawer.Screen name='Gerenciar' component={GerenciarScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='Chat 1' component={Chat1Screen} options={{headerShown: false}}/>
       <Drawer.Screen name='Chat 2' component={Chat2Screen} options={{headerShown: false}}/>
       <Drawer.Screen name='Perfil' component={PerfilScreen} options={{headerShown: false}}/>
