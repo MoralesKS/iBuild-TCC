@@ -1,30 +1,9 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { Text, View, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { useAppNavigation } from '../src/Functions';
+import { detalhesObraStyles as styles } from '../src/Styles';
 
 export default function DetalhesObra() {
-  const navigation = useNavigation();
-
-  function home(){
-    navigation.navigate('Home');
-  }
-  function mapa(){
-    navigation.navigate('Mapa');
-  }
-  function contratar(){
-    navigation.navigate('Contratar');
-  }
-  function carrinho(){
-    navigation.navigate('Carrinho');
-  }
-  function gerenciar(){
-    navigation.navigate('Gerenciar');
-  }
-  function perfil(){
-    alert('Tela em construção, aguardando orçamento');
-  }
-  function chat(){
-    alert('Tela em construção, aguardando orçamento');
-  }
+  const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
 
   return (
     <View style={styles.container}>
@@ -34,7 +13,7 @@ export default function DetalhesObra() {
       <ScrollView>
         <View style={styles.resumoCard}>
           <Image style={styles.foto} source={require('../assets/Home.png')}/>
-          <View style={{marginLeft: '10%', width: '60%'}}>
+          <View style={{ marginLeft: '10%', width: '60%' }}>
             <Text style={styles.resumoNome}>Residencial Aurora</Text>
             <Text style={styles.resumoSub}>São Paulo • Entrega 18/08/26</Text>
             <View style={styles.progressoBarraFundo}>
@@ -47,22 +26,22 @@ export default function DetalhesObra() {
         <Text style={styles.tituloSecao}>Informações gerais</Text>
 
         <View style={styles.infoCard}>
-          <View style={{flexDirection: 'row'}}>
+          <View style={{ flexDirection: 'row' }}>
             <Image style={styles.foto1} source={require('../assets/Home.png')}/>
-            <View style={{flexDirection: 'column'}}>
-              <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+            <View style={{ flexDirection: 'column' }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={styles.infoLinha}>Tipo: </Text>
                 <Text style={styles.infoLinha}>Residencial</Text>
               </View>
-              <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={styles.infoLinha}>Endereço: </Text>
                 <Text style={styles.infoLinha}>Rua das Acacias, 245</Text>
               </View>
-              <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={styles.infoLinha}>Responsável técnico: </Text>
                 <Text style={styles.infoLinha}>Eng. Carlos Mendes</Text>
               </View>
-              <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={styles.infoLinha}>Orçamento: </Text>
                 <Text style={styles.infoLinha}>R$ 2.400.000</Text>
               </View>
@@ -102,7 +81,7 @@ export default function DetalhesObra() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
-          <Image style={styles.footerIcone1} source={require('../assets/gerenciar.png')}/>
+          <Image style={styles.footerIcone} source={require('../assets/gerenciar.png')}/>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem} onPress={mapa}>
@@ -124,118 +103,3 @@ export default function DetalhesObra() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    marginBottom: '10%',
-    paddingTop: '10%',
-  },
-  titulo: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  resumoCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#828282'
-  },
-  foto: {
-    width: 61,
-    height: 61,
-    tintColor: '#000000',
-  },
-  foto1: {
-    width: 21,
-    height: 21,
-    tintColor: '#000000',
-    borderWidth: 1,
-  },
-  resumoNome: {
-    fontWeight: 'bold',
-    fontSize: 15,
-  },
-  resumoSub: {
-    fontSize: 12,
-    color: '#828282',
-    marginBottom: 12,
-  },
-  progressoBarraFundo: {
-    height: 6,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressoBarraPreenchida: {
-    height: 6,
-    backgroundColor: '#277D2C',
-    borderRadius: 3,
-  },
-  progressoTexto: {
-    fontSize: 12,
-    marginTop: 8,
-  },
-  tituloSecao: {
-    fontWeight: 'bold',
-    fontSize: 14,
-    marginTop: 20,
-    marginBottom: 8,
-  },
-  infoCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#828282',
-    padding: 8,
-  },
-  infoLinha: {
-    fontSize: 13,
-    color: '#000000',
-    marginBottom: 8,
-  },
-  contratarBotao: {
-    backgroundColor: '#F57C00',
-    height: 44,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  contratarTexto: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 60,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-  },
-  footerItem: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 42,
-    width: 72,
-  },
-  footerIcone: {
-    height: 23,
-    width: 23,
-    tintColor: '#9C9C9C',
-  },
-  footerIcone1: {
-    height: 23,
-    width: 23,
-    tintColor: '#277D2C',
-  },
-});
