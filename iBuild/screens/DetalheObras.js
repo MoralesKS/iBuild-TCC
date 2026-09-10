@@ -33,20 +33,41 @@ export default function DetalhesObra() {
 
       <ScrollView>
         <View style={styles.resumoCard}>
-          <Text style={styles.resumoNome}>Residencial Aurora</Text>
-          <Text style={styles.resumoSub}>São Paulo • Entrega 18/08/26</Text>
-          <View style={styles.progressoBarraFundo}>
-            <View style={[styles.progressoBarraPreenchida, { width: '78%' }]} />
+          <Image style={styles.foto} source={require('../assets/Home.png')}/>
+          <View style={{marginLeft: '10%', width: '60%'}}>
+            <Text style={styles.resumoNome}>Residencial Aurora</Text>
+            <Text style={styles.resumoSub}>São Paulo • Entrega 18/08/26</Text>
+            <View style={styles.progressoBarraFundo}>
+              <View style={[styles.progressoBarraPreenchida, { width: '78%' }]} />
+            </View>
+            <Text style={styles.progressoTexto}>78% Concluída • Em andamento</Text>
           </View>
-          <Text style={styles.progressoTexto}>78% Concluída • Em andamento</Text>
         </View>
 
         <Text style={styles.tituloSecao}>Informações gerais</Text>
+
         <View style={styles.infoCard}>
-          <Text style={styles.infoLinha}>Tipo: Residencial</Text>
-          <Text style={styles.infoLinha}>Endereço: Rua das Acacias, 245</Text>
-          <Text style={styles.infoLinha}>Responsável técnico: Eng. Carlos Mendes</Text>
-          <Text style={styles.infoLinha}>Orçamento: R$ 2.400.000</Text>
+          <View style={{flexDirection: 'row'}}>
+            <Image style={styles.foto1} source={require('../assets/Home.png')}/>
+            <View style={{flexDirection: 'column'}}>
+              <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+                <Text style={styles.infoLinha}>Tipo: </Text>
+                <Text style={styles.infoLinha}>Residencial</Text>
+              </View>
+              <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+                <Text style={styles.infoLinha}>Endereço: </Text>
+                <Text style={styles.infoLinha}>Rua das Acacias, 245</Text>
+              </View>
+              <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+                <Text style={styles.infoLinha}>Responsável técnico: </Text>
+                <Text style={styles.infoLinha}>Eng. Carlos Mendes</Text>
+              </View>
+              <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+                <Text style={styles.infoLinha}>Orçamento: </Text>
+                <Text style={styles.infoLinha}>R$ 2.400.000</Text>
+              </View>
+            </View>
+          </View>
         </View>
 
         <Text style={styles.tituloSecao}>Etapas da Obra</Text>
@@ -77,11 +98,11 @@ export default function DetalhesObra() {
       {/* BOTTOM TAB BAR */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.footerItem} onPress={home}>
-          <Image style={styles.footerIcone1} source={require('../assets/Home.png')}/>
+          <Image style={styles.footerIcone} source={require('../assets/Home.png')}/>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
-          <Image style={styles.footerIcone} source={require('../assets/gerenciar.png')}/>
+          <Image style={styles.footerIcone1} source={require('../assets/gerenciar.png')}/>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem} onPress={mapa}>
@@ -119,9 +140,24 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   resumoCard: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#828282'
+  },
+  foto: {
+    width: 61,
+    height: 61,
+    tintColor: '#000000',
+  },
+  foto1: {
+    width: 21,
+    height: 21,
+    tintColor: '#000000',
+    borderWidth: 1,
   },
   resumoNome: {
     fontWeight: 'bold',
@@ -154,9 +190,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   infoCard: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#ffffff',
     borderRadius: 12,
-    padding: 16,
+    borderWidth: 1,
+    borderColor: '#828282',
+    padding: 8,
   },
   infoLinha: {
     fontSize: 13,

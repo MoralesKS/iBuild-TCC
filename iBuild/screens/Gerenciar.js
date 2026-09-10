@@ -26,7 +26,7 @@ export default function Gerenciar() {
     alert('Tela em construção, aguardando orçamento');
   }
   function detalhesObra(){
-    navigation.navigate('DetalhesObra');
+    navigation.navigate('Detalhe de Obra');
   }
 
   return (
@@ -34,7 +34,9 @@ export default function Gerenciar() {
 
       <TextInput style={styles.searchInput} placeholder="Pesquisar" />
 
-      <Text style={styles.filtro}>Todas as obras ⌄</Text>
+      <TouchableOpacity>
+        <Text style={styles.filtro}>Todas as obras ⌄</Text>
+      </TouchableOpacity>
 
       <View style={styles.statsGrid}>
         <View style={styles.statCard}>
@@ -58,27 +60,33 @@ export default function Gerenciar() {
       <Text style={styles.tituloSecao}>Obras Recentes</Text>
       <ScrollView>
         <View style={styles.obraCard}>
-          <Text style={styles.obraNome}>Residencial Aurora</Text>
-          <Text style={styles.obraSub}>Construtora Horizonte Ltda.</Text>
-          <View style={styles.progressoBarraFundo}>
-            <View style={[styles.progressoBarraPreenchida, { width: '78%' }]} />
+          <Image style={styles.foto} source={require('../assets/Home.png')}/>
+          <View style={{marginLeft: '10%', width: '60%'}}>
+            <Text style={styles.obraNome}>Residencial Aurora</Text>
+            <Text style={styles.obraSub}>Construtora Horizonte Ltda.</Text>
+            <View style={styles.progressoBarraFundo}>
+              <View style={[styles.progressoBarraPreenchida, { width: '78%' }]} />
+            </View>
+            <Text style={styles.progressoTexto}>78% Concluída</Text>
+            <TouchableOpacity style={styles.verDetalhesBotao} onPress={detalhesObra}>
+              <Text style={styles.verDetalhesTexto}>Ver detalhes</Text>
+            </TouchableOpacity>
           </View>
-          <Text style={styles.progressoTexto}>78% Concluída</Text>
-          <TouchableOpacity style={styles.verDetalhesBotao} onPress={detalhesObra}>
-            <Text style={styles.verDetalhesTexto}>Ver detalhes</Text>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.obraCard}>
-          <Text style={styles.obraNome}>Centro Comercial</Text>
-          <Text style={styles.obraSub}>Construtora Urbanis</Text>
-          <View style={styles.progressoBarraFundo}>
-            <View style={[styles.progressoBarraPreenchida, { width: '45%', backgroundColor: '#F5A623' }]} />
+          <Image style={styles.foto} source={require('../assets/empresas.png')}/>
+          <View style={{marginLeft: '10%', width: '60%'}}>
+            <Text style={styles.obraNome}>Centro Comercial</Text>
+            <Text style={styles.obraSub}>Construtora Urbanis</Text>
+            <View style={styles.progressoBarraFundo}>
+              <View style={[styles.progressoBarraPreenchida, { width: '45%', backgroundColor: '#F5A623' }]} />
+            </View>
+            <Text style={styles.progressoTexto}>45% Concluída</Text>
+            <TouchableOpacity style={styles.verDetalhesBotao} onPress={detalhesObra}>
+              <Text style={styles.verDetalhesTexto}>Ver detalhes</Text>
+            </TouchableOpacity>
           </View>
-          <Text style={styles.progressoTexto}>45% Concluída</Text>
-          <TouchableOpacity style={styles.verDetalhesBotao} onPress={detalhesObra}>
-            <Text style={styles.verDetalhesTexto}>Ver detalhes</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -129,6 +137,11 @@ const styles = StyleSheet.create({
   filtro: {
     marginTop: 12,
     color: '#000000',
+    borderColor: '#828282',
+    borderWidth: 1,
+    borderRadius: 8,
+    width: '35%',
+    padding: 4,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -160,10 +173,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   obraCard: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderColor: '#828282',
+    borderWidth: 1,
   },
   obraNome: {
     fontWeight: 'bold',
@@ -188,6 +206,11 @@ const styles = StyleSheet.create({
   progressoTexto: {
     fontSize: 12,
     marginTop: 8,
+  },
+  foto: {
+    width: 62,
+    height: 62,
+    tintColor: '#000000',
   },
   verDetalhesBotao: {
     backgroundColor: '#F57C00',
