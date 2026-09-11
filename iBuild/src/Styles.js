@@ -546,7 +546,7 @@ export const detalhesObraStyles = StyleSheet.create({
     width: 21,
     height: 21,
     tintColor: '#000000',
-    borderWidth: 1,
+    margin: 5,
   },
   resumoNome: {
     fontWeight: 'bold',
@@ -561,7 +561,6 @@ export const detalhesObraStyles = StyleSheet.create({
     height: 6,
     backgroundColor: '#E0E0E0',
     borderRadius: 3,
-    overflow: 'hidden',
   },
   progressoBarraPreenchida: {
     height: 6,
@@ -627,6 +626,13 @@ export const detalhesObraStyles = StyleSheet.create({
     width: 23,
     tintColor: '#277D2C',
   },
+  divisao: {
+    width: '25%',
+    borderLeftWidth: .5,
+    borderRightWidth: .5,
+    padding: 4,
+    alignItems: 'center',
+  }
 });
 
 export const funcionariosStyles = StyleSheet.create({

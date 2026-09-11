@@ -23,7 +23,7 @@ const Drawer = createDrawerNavigator()
 export default function Route(){
   return(
     <Drawer.Navigator>
-      <Drawer.Screen name='Detalhe de Obra' component={DetalhesObrasScreen} options={{headerShown: false}}/>
+      <Drawer.Screen name='DetalhesObra' component={DetalhesObrasScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='Gerenciar' component={GerenciarScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='Contratar' component={ContratarScreen} options={{headerShown: false}}/>
       <Drawer.Screen name='Atribuir Funcionários' component={AtribuirFuncionariosScreen} options={{headerShown: false}}/>
