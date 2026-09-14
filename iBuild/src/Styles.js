@@ -5,19 +5,22 @@ export const homeStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     marginBottom: '10%',
-  },
-  scroll: {
-    flex: 1,
-    paddingHorizontal: 16,
     marginTop: '10%',
+    paddingHorizontal: 16,
   },
   busca: {
     backgroundColor: '#F5F5F5',
-    height: 44,
+    height: 40,
+    width: '75%',
     borderRadius: 8,
     paddingHorizontal: 16,
     marginTop: 16,
     color: '#000000',
+  },
+  botaoHeader: {
+    height: 30,
+    width: 30,
+    marginTop: 10,
   },
   acoesRapidasRow: {
     flexDirection: 'row',
@@ -33,6 +36,10 @@ export const homeStyles = StyleSheet.create({
     borderColor: 'gray',
     borderRadius: 8,
     justifyContent: 'center',
+  },
+  botaoAcaoRapida: {
+    height: 18,
+    width: 18,
   },
   acaoRapidaTexto: {
     fontSize: 13,
@@ -77,11 +84,13 @@ export const homeStyles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 20,
   },
-  categoriaIcone: {
+  categoriaImagem: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    backgroundColor: '#ffffff',
+    borderColor: '#828282',
   },
   categoriaTexto: {
     fontSize: 12,
@@ -92,12 +101,14 @@ export const homeStyles = StyleSheet.create({
     width: 110,
     marginRight: 12,
     marginBottom: 16,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 8,
+    borderColor: '#828282',
   },
   produtoImagem: {
-    width: 110,
-    height: 90,
-    borderRadius: 8,
-    backgroundColor: '#F5F5F5',
+    width: 80,
+    height: 80,
   },
   produtoMarca: {
     fontSize: 10,
@@ -147,9 +158,9 @@ export const mapaStyles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     marginTop: '10%',
     marginBottom: '10%',
+    paddingHorizontal: 16,
   },
   buscaWrapper: {
-    paddingHorizontal: 16,
   },
   busca: {
     backgroundColor: '#F5F5F5',
@@ -161,7 +172,6 @@ export const mapaStyles = StyleSheet.create({
   },
   filtrosRow: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
     marginTop: 12,
   },
   filtroBotao: {
@@ -171,7 +181,6 @@ export const mapaStyles = StyleSheet.create({
     borderColor: '#E0E0E0',
     borderRadius: 8,
     paddingVertical: 6,
-    paddingHorizontal: 12,
     marginRight: 8,
   },
   filtroTexto: {
@@ -185,7 +194,6 @@ export const mapaStyles = StyleSheet.create({
   mapaWrapper: {
     flex: 1,
     marginTop: 12,
-    marginHorizontal: 16,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -284,9 +292,9 @@ export const contratarStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    padding: 16,
+    marginTop: '10%',
     marginBottom: '10%',
-    paddingTop: '10%',
+    paddingHorizontal: 16,
   },
   titulo: {
     fontSize: 16,
@@ -386,15 +394,16 @@ export const gerenciarStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    padding: 16,
+    marginTop: '10%',
     marginBottom: '10%',
-    paddingTop: '10%',
+    paddingHorizontal: 16,
   },
   searchInput: {
     backgroundColor: '#F5F5F5',
     height: 40,
     borderRadius: 8,
     paddingHorizontal: 12,
+    marginTop: 8,
   },
   filtro: {
     marginTop: 12,
@@ -518,9 +527,9 @@ export const detalhesObraStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    padding: 16,
+    marginTop: '10%',
     marginBottom: '10%',
-    paddingTop: '10%',
+    paddingHorizontal: 16,
   },
   titulo: {
     fontSize: 16,

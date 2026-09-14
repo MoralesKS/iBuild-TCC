@@ -1,6 +1,7 @@
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useAppNavigation } from '../src/Functions';
 import { gerenciarStyles as styles } from '../src/Styles';
+import { funcionarios, totalObras, obrasAndamento, obrasconcluidas } from '../src/Functions';
 
 export default function Gerenciar() {
   const { home, mapa, contratar, gerenciar, perfil, chat, detalhesObra } = useAppNavigation();
@@ -17,19 +18,19 @@ export default function Gerenciar() {
       <View style={styles.statsGrid}>
         <View style={styles.statCard}>
           <Text style={styles.statLabel}>Total de Obras</Text>
-          <Text style={styles.statValor}>96</Text>
+          <Text style={styles.statValor}>{totalObras}</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statLabel}>Em andamento</Text>
-          <Text style={styles.statValor}>64</Text>
+          <Text style={styles.statValor}>{obrasAndamento}</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statLabel}>Concluídas</Text>
-          <Text style={styles.statValor}>32</Text>
+          <Text style={styles.statValor}>{obrasconcluidas}</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statLabel}>Funcionários</Text>
-          <Text style={styles.statValor}>81</Text>
+          <Text style={styles.statValor}>{funcionarios}</Text>
         </View>
       </View>
 

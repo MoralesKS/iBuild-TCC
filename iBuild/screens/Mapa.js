@@ -1,12 +1,12 @@
-import { Text, View, TextInput, TouchableOpacity, Image } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Text, View, TextInput, TouchableOpacity, Image, Linking, ActivityIndicator } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
 import { useAppNavigation } from '../src/Functions';
 import { mapaStyles as styles } from '../src/Styles';
 
-export default function Mapa() {
-  // Coordenadas de exemplo - troque pelas coordenadas reais das lojas
-  const minhaLocalizacao = { latitude: -23.5505, longitude: -46.6333 };
 
+export default function Mapa() {
   const lojas = [
     { id: 1, nome: 'Loja 1', latitude: -23.549, longitude: -46.629 },
     { id: 2, nome: 'Loja 2', latitude: -23.552, longitude: -46.637 },
@@ -17,6 +17,54 @@ export default function Mapa() {
   ];
 
   const { home, contratar, gerenciar, carrinho, perfil, chat } = useAppNavigation();
+  const [carregando, setCarregando] = useState(true);
+  const [permissaoNegada, setPermissaoNegada] = useState(false);
+  const [minhaLocalizacao, setMinhaLocalizacao] = useState({
+    latitude: -23.5505,
+    longitude: -46.6333,
+  });
+
+  useEffect(() => {
+    async function pedirLocalizacao() {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== 'granted') {
+        setPermissaoNegada(true);
+        setCarregando(false);
+        return;
+      }
+
+      const posicao = await Location.getCurrentPositionAsync({});
+      setMinhaLocalizacao({
+        latitude: posicao.coords.latitude,
+        longitude: posicao.coords.longitude,
+      });
+      setCarregando(false);
+    }
+
+    pedirLocalizacao();
+  }, []);
+
+  if (carregando) {
+    return (
+      <View style={[styles.container, styles.centralizado]}>
+        <ActivityIndicator size="large" color="#277D2C" />
+      </View>
+    );
+  }
+
+  if (permissaoNegada) {
+    return (
+      <View style={[styles.container, styles.centralizado, { padding: 24 }]}>
+        <Text style={styles.permissaoTexto}>
+          Precisamos da sua localização para mostrar as lojas mais próximas no mapa.
+        </Text>
+        <TouchableOpacity style={styles.selecionarBotao} onPress={() => Linking.openSettings()}>
+          <Text style={styles.selecionarTexto}>Abrir configurações</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -37,7 +85,7 @@ export default function Mapa() {
         </TouchableOpacity>
       </View>
 
-      {/* MAPA FUNCIONAL */}
+      {/* MAPA FUNCIONAL, já centralizado na posição real do usuário */}
       <View style={styles.mapaWrapper}>
         <MapView
           style={styles.mapa}

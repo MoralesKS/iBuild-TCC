@@ -1,23 +1,14 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView} from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Image} from 'react-native';
+import { useAppNavigation, itens} from '../src/Functions';
 
 export default function Carrinho() {
-  const itens = [
-    { marca: 'Marca', nome: 'Areia Fina - Saco', preco: 'R$10,99', quantidade: '02' },
-    { marca: 'Marca', nome: 'Tijolo Cerâmico', preco: 'R$8,99', quantidade: '10' },
-    { marca: 'Marca', nome: 'Cimento Caue', preco: 'R$8,99', quantidade: '04' },
-  ];
-  const navigation = useNavigation();
-
-  function home(){
-    navigation.navigate('Home')
-  }
+  const { mapa, contratar, carrinho, gerenciar, perfil, home, chat} = useAppNavigation();
 
   return (
     <View style={styles.container}>
       {/* HEADER */}
       <View style={styles.headerView}>
-        <TouchableOpacity style={styles.voltarBotao}>
+        <TouchableOpacity onPress={home} style={styles.voltarBotao}>
           <Text style={styles.voltarSeta}>{'<'}</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitulo}>Finalizar compra</Text>
@@ -62,7 +53,7 @@ export default function Carrinho() {
         {itens.map((item, index) => (
           <View key={index} style={styles.itemRow}>
             <View style={styles.itemImagem}>
-              {/* IMAGEM: {item.nome} */}
+              <Image source={item.imagem} style={styles.imagem} resizeMode="contain" />
             </View>
             <View style={styles.itemInfo}>
               <Text style={styles.itemMarca}>{item.marca}</Text>
@@ -233,5 +224,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     margin: 16,
+  },
+  itemImagem: {
+  width: 56,
+  height: 56,
+  borderRadius: 8,
+  backgroundColor: '#F5F5F5',
+  },
+  imagem: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
   },
 });

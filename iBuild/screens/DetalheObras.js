@@ -3,6 +3,7 @@ import { useAppNavigation } from '../src/Functions';
 import { detalhesObraStyles as styles } from '../src/Styles';
 import Checkbox from 'expo-checkbox';
 import { useState } from 'react';
+import { fundacao, estrutura, acabamento, porcentagemTotal } from '../src/Functions';
 
 export default function DetalhesObra() {
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
@@ -20,16 +21,16 @@ export default function DetalhesObra() {
             <Text style={styles.resumoNome}>Residencial Aurora</Text>
             <Text style={styles.resumoSub}>São Paulo • Entrega 18/08/26</Text>
             <View style={styles.progressoBarraFundo}>
-              <View style={[styles.progressoBarraPreenchida, { width: '78%' }]} />
+              <View style={[styles.progressoBarraPreenchida, { width: `${porcentagemTotal}%` }]} />
             </View>
-            <Text style={styles.progressoTexto}>78% Concluída • Em andamento</Text>
+            <Text style={styles.progressoTexto}>{Math.floor(porcentagemTotal)}% Concluída • Em andamento</Text>
           </View>
         </View>
 
         <Text style={styles.tituloSecao}>Informações gerais</Text>
         <View style={styles.infoCard}>
           <View style={{ flexDirection: 'row'}}>
-            <View style={{ flexDirection: 'column' }}>
+            <View style={{ flexDirection: 'column', width: '100%' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: .5}}>
                 <View style={{borderWidth: 1, borderRadius: 8, margin: 8}}>
                   <Image style={styles.foto1} source={require('../assets/Home.png')}/>
@@ -40,7 +41,7 @@ export default function DetalhesObra() {
 
               <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: .5}}>
                 <View style={{borderWidth: 1, borderRadius: 8, margin: 8}}>
-                  <Image style={styles.foto1} source={require('../assets/Home.png')}/>
+                  <Image style={styles.foto1} source={require('../assets/icones/localizacao.png')}/>
                 </View>
                 <Text style={styles.infoLinha}>Endereço: </Text>
                 <Text style={styles.infoLinha}>Rua das Acacias, 245</Text>
@@ -48,7 +49,7 @@ export default function DetalhesObra() {
 
               <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: .5}}>
                 <View style={{borderWidth: 1, borderRadius: 8, margin: 8}}>
-                  <Image style={styles.foto1} source={require('../assets/Home.png')}/>
+                  <Image style={styles.foto1} source={require('../assets/Perfil.png')}/>
                 </View>
                 <Text style={styles.infoLinha}>Responsável técnico: </Text>
                 <Text style={styles.infoLinha}>Eng. Carlos Mendes</Text>
@@ -56,7 +57,7 @@ export default function DetalhesObra() {
 
               <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: .5}}>
                 <View style={{borderWidth: 1, borderRadius: 8, margin: 8}}>
-                  <Image style={styles.foto1} source={require('../assets/Home.png')}/>
+                  <Image style={styles.foto1} source={require('../assets/icones/orçamento.png')}/>
                 </View>
                 <Text style={styles.infoLinha}>Orçamento: </Text>
                 <Text style={styles.infoLinha}>R$ 2.400.000</Text>
@@ -71,7 +72,7 @@ export default function DetalhesObra() {
             <View style={{flexDirection: 'row', width: '100%', alignItems: 'center'}}>
               <Text style={styles.infoLinha}>Fundação </Text>
               <View style={[styles.progressoBarraFundo, {width: '70%', margin: 8, marginTop: -1}]}>
-                <View style={[styles.progressoBarraPreenchida, { width: '100%',}]} />
+                <View style={[styles.progressoBarraPreenchida, { width: `${fundacao}%`,}]} />
               </View>
               <Text style={styles.infoLinha}>100%</Text>
             </View>
@@ -79,15 +80,15 @@ export default function DetalhesObra() {
             <View style={{flexDirection: 'row', width: '100%', alignItems: 'center'}}>
               <Text style={styles.infoLinha}>Estrutura </Text>
               <View style={[styles.progressoBarraFundo, {width: '70%', margin: 8, marginTop: -1}]}>
-                <View style={[styles.progressoBarraPreenchida, { width: '70%',}]} />
+                <View style={[styles.progressoBarraPreenchida, { width: `${estrutura}%`}]} />
               </View>
               <Text style={styles.infoLinha}>70%</Text>
             </View>
 
             <View style={{flexDirection: 'row', width: '100%', alignItems: 'center'}}>
               <Text style={styles.infoLinha}>Acabamento </Text>
-              <View style={[styles.progressoBarraFundo, {width: '70%', margin: 8, marginTop: -1}]}>
-                <View style={[styles.progressoBarraPreenchida, { width: '45%',}]} />
+              <View style={[styles.progressoBarraFundo, {width: '65%', margin: 8, marginTop: -1}]}>
+                <View style={[styles.progressoBarraPreenchida, { width: `${acabamento}%`}]} />
               </View>
               <Text style={styles.infoLinha}>45%</Text>
             </View>
@@ -97,25 +98,25 @@ export default function DetalhesObra() {
         <Text style={styles.tituloSecao}>Equipe</Text>
         <View style={[styles.infoCard, {flexDirection: 'row'}]}>
           <View style={styles.divisao}>
-            <Image style={styles.foto1} source={require('../assets/Home.png')}/>
+            <Image style={styles.foto1} source={require('../assets/icones/engenheiro.png')}/>
             <Text style={[styles.infoLinha,{fontSize: 8}]}>Mestre de Obras</Text>
             <Text style={[styles.infoLinha,{fontSize: 14}]}>João Neves</Text>
           </View>
 
           <View style={styles.divisao}>
-            <Image style={styles.foto1} source={require('../assets/Home.png')}/>
+            <Image style={styles.foto1} source={require('../assets/icones/equipe.png')}/>
             <Text style={[styles.infoLinha,{fontSize: 8}]}>Funcionários Ativos</Text>
             <Text style={[styles.infoLinha,{fontSize: 14, color: '#F57C00'}]}>34</Text>
           </View>
 
           <View style={styles.divisao}>
-            <Image style={styles.foto1} source={require('../assets/Home.png')}/>
+            <Image style={styles.foto1} source={require('../assets/icones/relogio.png')}/>
             <Text style={[styles.infoLinha,{fontSize: 8}]}>Horas Trabalhadas</Text>
             <Text style={[styles.infoLinha,{fontSize: 14, color: '#F57C00'}]}>192h</Text>
           </View>
 
           <View style={styles.divisao}>
-            <Image style={styles.foto1} source={require('../assets/Home.png')}/>
+            <Image style={styles.foto1} source={require('../assets/icones/checklist.png')}/>
             <Text style={[styles.infoLinha,{fontSize: 8}]}>Próxima Ação</Text>
             <Text style={[styles.infoLinha,{fontSize: 14, color: '#F57C00'}]}>14h00</Text>
           </View>

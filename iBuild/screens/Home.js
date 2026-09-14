@@ -3,25 +3,47 @@ import { useAppNavigation } from '../src/Functions';
 import { homeStyles as styles } from '../src/Styles';
 
 export default function Home() {
-  const categorias = ['Tijolo', 'Cimento', 'Areia', 'Madeira', 'Telha', 'Ferro'];
-  const produtos = ['Cimento Caue', 'Tijolo Cerâmico', 'Areia Fina', 'Vergalhão'];
+  const categorias = [
+  { nome: 'Tijolo', imagem: require('../assets/produtos/tijolo.jpg') },
+  { nome: 'Cimento', imagem: require('../assets/produtos/cimento.jpg') },
+  { nome: 'Areia', imagem: require('../assets/produtos/areia.jpg') },
+  { nome: 'Madeira', imagem: require('../assets/produtos/madeira.jpg') },
+  { nome: 'Telha', imagem: require('../assets/produtos/telha.jpg') },
+  { nome: 'Ferro', imagem: require('../assets/produtos/vergalhao.jpg') },
+];
+const produtos = [
+  { nome: 'Cimento Caue', imagem: require('../assets/produtos/cimento.jpg') },
+  { nome: 'Tijolo Cerâmico', imagem: require('../assets/produtos/tijolo.jpg') },
+  { nome: 'Areia Fina', imagem: require('../assets/produtos/areia.jpg') },
+  { nome: 'Vergalhão', imagem: require('../assets/produtos/vergalhao.jpg') },
+];
   const { mapa, contratar, carrinho, gerenciar, perfil, chat } = useAppNavigation();
 
   return (
     <View style={styles.container}>
-
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        <TextInput style={styles.busca} placeholder="Buscar" placeholderTextColor="#828282" />
+        <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}}>
+          <TextInput style={styles.busca} placeholder="Buscar" placeholderTextColor="#828282" />
+          <TouchableOpacity onPress={carrinho}>
+            <Image source={require('../assets/icones/carrinho.png')} style={styles.botaoHeader} resizeMode='stretch'/>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => alert('Tela em Produção, Aguardando Orçamento!')}>
+            <Image source={require('../assets/icones/notificacao-1.png')} style={styles.botaoHeader}/>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.acoesRapidasRow}>
           <TouchableOpacity style={styles.acaoRapida}>
+            <Image source={require('../assets/icones/favorito.png')} style={styles.botaoAcaoRapida}/>
             <Text style={styles.acaoRapidaTexto}>Favoritos</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.acaoRapida}>
+            <Image source={require('../assets/icones/historico.png')} style={styles.botaoAcaoRapida}/>
             <Text style={styles.acaoRapidaTexto}>Histórico</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.acaoRapida}>
+            <Image source={require('../assets/icones/verificados.png')} style={styles.botaoAcaoRapida}/>
             <Text style={styles.acaoRapidaTexto}>Verificados</Text>
           </TouchableOpacity>
         </View>
@@ -37,12 +59,10 @@ export default function Home() {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {categorias.map((cat, index) => (
+          {categorias.map((categoria, index) => (
             <TouchableOpacity key={index} style={styles.categoriaItem}>
-              <View style={styles.categoriaIcone}>
-                {/* ICONE: {cat} */}
-              </View>
-              <Text style={styles.categoriaTexto}>{cat}</Text>
+              <Image source={categoria.imagem} style={styles.categoriaImagem} resizeMode="contain" />
+              <Text style={styles.categoriaTexto}>{categoria.nome}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -53,45 +73,38 @@ export default function Home() {
           <Text style={styles.secaoSeta}>{'>'}</Text>
         </View>
 
-        <ScrollView horizontal>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {produtos.map((produto, index) => (
             <TouchableOpacity key={index} style={styles.produtoCard} onPress={carrinho}>
-              <View style={styles.produtoImagem}>
-                {/* IMAGEM: {produto} */}
-              </View>
+              <Image source={produto.imagem} style={styles.produtoImagem} resizeMode="contain" />
               <Text style={styles.produtoMarca}>Marca</Text>
-              <Text style={styles.produtoNome}>{produto}</Text>
+              <Text style={styles.produtoNome}>{produto.nome}</Text>
               <Text style={styles.produtoPreco}>$10,99</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        <ScrollView horizontal>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {produtos.map((produto, index) => (
             <TouchableOpacity key={index} style={styles.produtoCard} onPress={carrinho}>
-              <View style={styles.produtoImagem}>
-                {/* IMAGEM: {produto} */}
-              </View>
+              <Image source={produto.imagem} style={styles.produtoImagem} resizeMode="contain" />
               <Text style={styles.produtoMarca}>Marca</Text>
-              <Text style={styles.produtoNome}>{produto}</Text>
+              <Text style={styles.produtoNome}>{produto.nome}</Text>
               <Text style={styles.produtoPreco}>$10,99</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        <ScrollView horizontal>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {produtos.map((produto, index) => (
             <TouchableOpacity key={index} style={styles.produtoCard} onPress={carrinho}>
-              <View style={styles.produtoImagem}>
-                {/* IMAGEM: {produto} */}
-              </View>
+              <Image source={produto.imagem} style={styles.produtoImagem} resizeMode="contain" />
               <Text style={styles.produtoMarca}>Marca</Text>
-              <Text style={styles.produtoNome}>{produto}</Text>
+              <Text style={styles.produtoNome}>{produto.nome}</Text>
               <Text style={styles.produtoPreco}>$10,99</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
-
       </ScrollView>
 
       {/* BOTTOM TAB BAR */}
