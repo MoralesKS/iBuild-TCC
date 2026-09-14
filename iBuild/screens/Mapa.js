@@ -2,27 +2,22 @@ import { useEffect, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, Image, Linking, ActivityIndicator } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { useAppNavigation } from '../src/Functions';
+import { useAppNavigation, lojas, abrirNoGoogleMaps } from '../src/Functions';
 import { mapaStyles as styles } from '../src/Styles';
 
-
 export default function Mapa() {
-  const lojas = [
-    { id: 1, nome: 'Loja 1', latitude: -23.549, longitude: -46.629 },
-    { id: 2, nome: 'Loja 2', latitude: -23.552, longitude: -46.637 },
-    { id: 3, nome: 'Loja 3', latitude: -23.5545, longitude: -46.633 },
-    { id: 4, nome: 'Loja 4', latitude: -23.5495, longitude: -46.638 },
-    { id: 5, nome: 'Loja 5', latitude: -23.548, longitude: -46.6315 },
-    { id: 67, nome: 'Loja 67', latitude: -23.551, longitude: -46.6295 },
-  ];
-
   const { home, contratar, gerenciar, carrinho, perfil, chat } = useAppNavigation();
   const [carregando, setCarregando] = useState(true);
   const [permissaoNegada, setPermissaoNegada] = useState(false);
+  const [erroLocalizacao, setErroLocalizacao] = useState(false);
   const [minhaLocalizacao, setMinhaLocalizacao] = useState({
     latitude: -23.5505,
     longitude: -46.6333,
   });
+
+  // Guarda qual loja está selecionada no momento — começa já com uma
+  // pra o card não aparecer vazio na primeira vez que a tela abre.
+  const [lojaSelecionada, setLojaSelecionada] = useState(lojas[5]);
 
   useEffect(() => {
     async function pedirLocalizacao() {
@@ -34,12 +29,24 @@ export default function Mapa() {
         return;
       }
 
-      const posicao = await Location.getCurrentPositionAsync({});
-      setMinhaLocalizacao({
-        latitude: posicao.coords.latitude,
-        longitude: posicao.coords.longitude,
-      });
-      setCarregando(false);
+      try {
+        const posicao = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        setMinhaLocalizacao({
+          latitude: posicao.coords.latitude,
+          longitude: posicao.coords.longitude,
+        });
+      } catch (erro) {
+        // Isso acontece principalmente em emuladores sem GPS simulado
+        // configurado. Nesse caso, mantemos o fallback e avisamos o usuário
+        // em vez de deixar a tela travada ou quebrar silenciosamente.
+        console.log('Erro ao obter localização:', erro);
+        setErroLocalizacao(true);
+      } finally {
+        setCarregando(false);
+      }
     }
 
     pedirLocalizacao();
@@ -70,8 +77,14 @@ export default function Mapa() {
     <View style={styles.container}>
       <View style={styles.buscaWrapper}>
         <TextInput style={styles.busca} placeholder="Pesquisar" placeholderTextColor="#828282" />
-        {/* ICONE: editar/pesquisar */}
       </View>
+
+      {/* Aviso discreto se não conseguimos pegar o GPS real */}
+      {erroLocalizacao && (
+        <Text style={styles.avisoLocalizacao}>
+          Não conseguimos obter sua localização exata. Mostrando um ponto de referência.
+        </Text>
+      )}
 
       {/* FILTRAR / CLASSIFICAR */}
       <View style={styles.filtrosRow}>
@@ -103,34 +116,45 @@ export default function Mapa() {
             </View>
           </Marker>
 
-          {/* Marcadores das lojas */}
+          {/* Marcadores das lojas — ao tocar, atualiza lojaSelecionada.
+              IMPORTANTE: pinColor nunca recebe "undefined" — sempre uma
+              cor de verdade, senão o Android quebra ao tentar ler a cor. */}
           {lojas.map((loja) => (
             <Marker
               key={loja.id}
               coordinate={{ latitude: loja.latitude, longitude: loja.longitude }}
               title={loja.nome}
+              pinColor={lojaSelecionada?.id === loja.id ? '#277D2C' : 'red'}
+              onPress={() => setLojaSelecionada(loja)}
             />
           ))}
         </MapView>
       </View>
 
       {/* CARD DA LOJA SELECIONADA */}
-      <View style={styles.lojaCard}>
-        <View style={styles.lojaImagem}>
-          {/* IMAGEM: Foto da loja */}
-        </View>
-        <View style={styles.lojaInfoRow}>
-          <View style={styles.lojaInfo}>
-            <Text style={styles.lojaNome}>Loja 67</Text>
-            <Text style={styles.lojaAvaliacao}>4,8 (500 avaliações)</Text>
-            <Text style={styles.lojaEndereco}>Rua D. Pedro, 67, Osas...</Text>
-            <Text style={styles.lojaDistancia}>6,7 /km de distância</Text>
+      {lojaSelecionada && (
+        <View style={styles.lojaCard}>
+          <View style={styles.lojaImagem}>
+            {/* IMAGEM: Foto da loja */}
           </View>
-          <TouchableOpacity style={styles.selecionarBotao}>
-            <Text style={styles.selecionarTexto}>Selecionar</Text>
-          </TouchableOpacity>
+          <View style={styles.lojaInfoRow}>
+            <View style={styles.lojaInfo}>
+              <Text style={styles.lojaNome}>{lojaSelecionada.nome}</Text>
+              <Text style={styles.lojaAvaliacao}>
+                {lojaSelecionada.avaliacao} ({lojaSelecionada.numAvaliacoes} avaliações)
+              </Text>
+              <Text style={styles.lojaEndereco}>{lojaSelecionada.endereco}</Text>
+              <Text style={styles.lojaDistancia}>{lojaSelecionada.distancia} km de distância</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.selecionarBotao}
+              onPress={() => abrirNoGoogleMaps(lojaSelecionada)}
+            >
+              <Text style={styles.selecionarTexto}>Selecionar</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      )}
 
       {/* BOTTOM TAB BAR */}
       <View style={styles.footer}>

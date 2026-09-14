@@ -1,6 +1,6 @@
 import { Text, View, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useAppNavigation, produtos } from '../src/Functions';
+import { useAppNavigation, produtos, abrirNoGoogleMaps } from '../src/Functions';
 import { detalhesProdutoStyles as styles } from '../src/Styles';
 import { useCarrinho } from '../src/CarrinhoItens';
 
@@ -28,18 +28,10 @@ export default function Produto() {
         <Text style={styles.seta}>{'<'}</Text>
       </TouchableOpacity>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1, paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
 
         {/* Imagem do produto */}
-        <View style={styles.imagemWrapper}>
-          <Image style={styles.imagemProduto} source={produto.imagem} />
-          <View style={styles.dotsRow}>
-            <View style={[styles.dot, styles.dotAtivo]} />
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-          </View>
-        </View>
+        <Image style={styles.imagemProduto} source={produto.imagem} />
 
         {/* Nome e tipo */}
         <View style={styles.tituloRow}>
@@ -54,12 +46,14 @@ export default function Produto() {
           <Text style={styles.unidade}> / un</Text>
         </View>
         <Text style={styles.avaliacaoTexto}>
-          ★★★★★ {produto.avaliacao} ({produto.numAvaliacoes} avaliações)
+          ★ {produto.avaliacao} ({produto.numAvaliacoes} avaliações)
         </Text>
 
         {/* Vendedor */}
         <TouchableOpacity style={styles.vendedorCard}>
-          <View style={styles.vendedorIcone} />
+          <View style={[styles.vendedorIcone, {justifyContent: 'center', alignItems: 'center'}]}>
+            <Image style={{height: 25, width: 25, tintColor: '#000000'}} source={require('../assets/empresas.png')}/>
+          </View>
           <View style={styles.vendedorInfo}>
             <Text style={styles.vendedorNome}>Vendedor: {produto.vendedor}</Text>
             <Text style={styles.vendedorLocal}>{produto.local}</Text>

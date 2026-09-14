@@ -168,6 +168,13 @@ export const mapaStyles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
   },
+  avisoLocalizacao: {
+    fontSize: 11,
+    color: '#F57C00',
+    textAlign: 'center',
+    marginTop: 8,
+    paddingHorizontal: 16,
+  },
   buscaWrapper: {
     paddingHorizontal: 16,
   },
@@ -876,7 +883,6 @@ export const detalhesProdutoStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    padding: 16,
     marginBottom: '10%',
     paddingTop: '10%',
   },
@@ -884,29 +890,13 @@ export const detalhesProdutoStyles = StyleSheet.create({
     fontSize: 20,
     color: '#000000',
     marginBottom: 12,
-  },
-  imagemWrapper: {
-    alignItems: 'center',
-  },
+    marginLeft: '5%',
+  }, 
   imagemProduto: {
     width: '100%',
-    height: 180,
+    height: '45%',
     borderRadius: 12,
     backgroundColor: '#F5F5F5',
-  },
-  dotsRow: {
-    flexDirection: 'row',
-    marginTop: 8,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#E0E0E0',
-    marginHorizontal: 3,
-  },
-  dotAtivo: {
-    backgroundColor: '#828282',
   },
   tituloRow: {
     flexDirection: 'row',

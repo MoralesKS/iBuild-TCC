@@ -127,6 +127,23 @@ export const produtos = [
   },
 ];
 
+{/*Mapa*/}
+export const lojas = [
+  { id: 1, nome: 'Loja 1', latitude: -23.549, longitude: -46.629, avaliacao: '4,6', numAvaliacoes: '210', endereco: 'Rua A, 100 - São Paulo, SP', distancia: '3,2' },
+  { id: 2, nome: 'Loja 2', latitude: -23.552, longitude: -46.637, avaliacao: '4,7', numAvaliacoes: '150', endereco: 'Rua B, 250 - São Paulo, SP', distancia: '4,8' },
+  { id: 3, nome: 'Loja 3', latitude: -23.5545, longitude: -46.633, avaliacao: '4,5', numAvaliacoes: '92', endereco: 'Av. C, 500 - São Paulo, SP', distancia: '5,1' },
+  { id: 4, nome: 'Loja 4', latitude: -23.5495, longitude: -46.638, avaliacao: '4,4', numAvaliacoes: '61', endereco: 'Rua D, 80 - São Paulo, SP', distancia: '5,9' },
+  { id: 5, nome: 'Loja 5', latitude: -23.548, longitude: -46.6315, avaliacao: '4,9', numAvaliacoes: '304', endereco: 'Rua E, 320 - São Paulo, SP', distancia: '2,4' },
+  { id: 67, nome: 'Loja 67', latitude: -23.551, longitude: -46.6295, avaliacao: '4,8', numAvaliacoes: '500', endereco: 'Rua D. Pedro, 67 - Osasco, SP', distancia: '6,7' },
+];
+
+// Abre o Google Maps (app se estiver instalado, senão o navegador)
+// já com a rota traçada até a loja escolhida.
+export function abrirNoGoogleMaps(loja) {
+  const url = `https://www.google.com/maps/dir/?api=1&destination=${loja.latitude},${loja.longitude}`;
+  Linking.openURL(url);
+}
+
 {/*Gerenciamento e DetelhesObra*/}
 export let totalObras = 2;
 export let obrasAndamento = 0;
