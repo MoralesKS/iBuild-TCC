@@ -8,48 +8,47 @@ export default function Gerenciar() {
 
   return (
     <View style={styles.container}>
+      <ScrollView style={{paddingHorizontal: 16}}>
+        <TextInput style={styles.searchInput} placeholder="Pesquisar" />
 
-      <TextInput style={styles.searchInput} placeholder="Pesquisar" />
+        <TouchableOpacity>
+          <Text style={styles.filtro}>Todas as obras ⌄</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity>
-        <Text style={styles.filtro}>Todas as obras ⌄</Text>
-      </TouchableOpacity>
-
-      <View style={styles.statsGrid}>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Total de Obras</Text>
-          <Text style={styles.statValor}>{totalObras}</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Em andamento</Text>
-          <Text style={styles.statValor}>{obrasAndamento}</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Concluídas</Text>
-          <Text style={styles.statValor}>{obrasconcluidas}</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Funcionários</Text>
-          <Text style={styles.statValor}>{funcionarios}</Text>
-        </View>
-      </View>
-
-      <Text style={styles.tituloSecao}>Obras Recentes</Text>
-      <ScrollView>
-        <View style={styles.obraCard}>
-          <Image style={styles.foto} source={require('../assets/Home.png')}/>
-          <View style={{ marginLeft: '10%', width: '60%' }}>
-            <Text style={styles.obraNome}>Residencial Aurora</Text>
-            <Text style={styles.obraSub}>Construtora Horizonte Ltda.</Text>
-            <View style={styles.progressoBarraFundo}>
-              <View style={[styles.progressoBarraPreenchida, { width: '78%' }]} />
-            </View>
-            <Text style={styles.progressoTexto}>78% Concluída</Text>
-            <TouchableOpacity style={styles.verDetalhesBotao} onPress={detalhesObra}>
-              <Text style={styles.verDetalhesTexto}>Ver detalhes</Text>
-            </TouchableOpacity>
+        <View style={styles.statsGrid}>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Total de Obras</Text>
+            <Text style={styles.statValor}>{totalObras}</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Em andamento</Text>
+            <Text style={styles.statValor}>{obrasAndamento}</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Concluídas</Text>
+            <Text style={styles.statValor}>{obrasconcluidas}</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Funcionários</Text>
+            <Text style={styles.statValor}>{funcionarios}</Text>
           </View>
         </View>
+
+        <Text style={styles.tituloSecao}>Obras Recentes</Text>
+          <View style={styles.obraCard}>
+            <Image style={styles.foto} source={require('../assets/Home.png')}/>
+            <View style={{ marginLeft: '10%', width: '60%' }}>
+              <Text style={styles.obraNome}>Residencial Aurora</Text>
+              <Text style={styles.obraSub}>Construtora Horizonte Ltda.</Text>
+              <View style={styles.progressoBarraFundo}>
+                <View style={[styles.progressoBarraPreenchida, { width: '78%' }]} />
+              </View>
+              <Text style={styles.progressoTexto}>78% Concluída</Text>
+              <TouchableOpacity style={styles.verDetalhesBotao} onPress={detalhesObra}>
+                <Text style={styles.verDetalhesTexto}>Ver detalhes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
         <View style={styles.obraCard}>
           <Image style={styles.foto} source={require('../assets/empresas.png')}/>

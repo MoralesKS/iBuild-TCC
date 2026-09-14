@@ -1,49 +1,46 @@
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
-import { useAppNavigation } from '../src/Functions';
+import { useNavigation } from '@react-navigation/native';
+import { useAppNavigation, categorias, produtos } from '../src/Functions';
 import { homeStyles as styles } from '../src/Styles';
+import Carrinho from './Carrinho';
 
 export default function Home() {
-  const categorias = [
-  { nome: 'Tijolo', imagem: require('../assets/produtos/tijolo.jpg') },
-  { nome: 'Cimento', imagem: require('../assets/produtos/cimento.jpg') },
-  { nome: 'Areia', imagem: require('../assets/produtos/areia.jpg') },
-  { nome: 'Madeira', imagem: require('../assets/produtos/madeira.jpg') },
-  { nome: 'Telha', imagem: require('../assets/produtos/telha.jpg') },
-  { nome: 'Ferro', imagem: require('../assets/produtos/vergalhao.jpg') },
-];
-const produtos = [
-  { nome: 'Cimento Caue', imagem: require('../assets/produtos/cimento.jpg') },
-  { nome: 'Tijolo Cerâmico', imagem: require('../assets/produtos/tijolo.jpg') },
-  { nome: 'Areia Fina', imagem: require('../assets/produtos/areia.jpg') },
-  { nome: 'Vergalhão', imagem: require('../assets/produtos/vergalhao.jpg') },
-];
-  const { mapa, contratar, carrinho, gerenciar, perfil, chat } = useAppNavigation();
+  // useNavigation "puro" aqui porque precisamos passar PARÂMETROS
+  // (qual produto foi clicado) — o hook useAppNavigation só sabe
+  // navegar pra rotas fixas, sem dados extras.
+  const navigation = useNavigation();
+  const { mapa, contratar, gerenciar, perfil, chat, carrinho } = useAppNavigation();
+
+  function abrirProduto(produto) {
+    navigation.navigate('Produto', { produto });
+  }
 
   return (
     <View style={styles.container}>
+
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}}>
+        <View style={{flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center'}}>
           <TextInput style={styles.busca} placeholder="Buscar" placeholderTextColor="#828282" />
           <TouchableOpacity onPress={carrinho}>
-            <Image source={require('../assets/icones/carrinho.png')} style={styles.botaoHeader} resizeMode='stretch'/>
+            <Image style={styles.botaoHeader} source={require('../assets/icones/carrinho.png')}/>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => alert('Tela em Produção, Aguardando Orçamento!')}>
-            <Image source={require('../assets/icones/notificacao-1.png')} style={styles.botaoHeader}/>
+          <TouchableOpacity onPress={() => alert('Tela em construção, aguardando orçamento!')}>
+            <Image style={styles.botaoHeader} source={require('../assets/icones/notificacao-1.png')}/>
           </TouchableOpacity>
         </View>
 
         <View style={styles.acoesRapidasRow}>
           <TouchableOpacity style={styles.acaoRapida}>
-            <Image source={require('../assets/icones/favorito.png')} style={styles.botaoAcaoRapida}/>
+            <Image style={styles.botaoAcaoRapida} source={require('../assets/icones/favorito.png')}/>
             <Text style={styles.acaoRapidaTexto}>Favoritos</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.acaoRapida}>
-            <Image source={require('../assets/icones/historico.png')} style={styles.botaoAcaoRapida}/>
+            <Image style={styles.botaoAcaoRapida} source={require('../assets/icones/historico.png')}/>
             <Text style={styles.acaoRapidaTexto}>Histórico</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.acaoRapida}>
-            <Image source={require('../assets/icones/verificados.png')} style={styles.botaoAcaoRapida}/>
+            <Image style={styles.botaoAcaoRapida} source={require('../assets/icones/verificados.png')}/>
             <Text style={styles.acaoRapidaTexto}>Verificados</Text>
           </TouchableOpacity>
         </View>
@@ -59,10 +56,10 @@ const produtos = [
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {categorias.map((categoria, index) => (
-            <TouchableOpacity key={index} style={styles.categoriaItem}>
-              <Image source={categoria.imagem} style={styles.categoriaImagem} resizeMode="contain" />
-              <Text style={styles.categoriaTexto}>{categoria.nome}</Text>
+          {categorias.map((cat) => (
+            <TouchableOpacity key={cat.id} style={styles.categoriaItem}>
+              <Image style={styles.categoriaIcone} source={cat.imagem} />
+              <Text style={styles.categoriaTexto}>{cat.nome}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -74,37 +71,20 @@ const produtos = [
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {produtos.map((produto, index) => (
-            <TouchableOpacity key={index} style={styles.produtoCard} onPress={carrinho}>
-              <Image source={produto.imagem} style={styles.produtoImagem} resizeMode="contain" />
-              <Text style={styles.produtoMarca}>Marca</Text>
+          {produtos.map((produto) => (
+            <TouchableOpacity
+              key={produto.id}
+              style={styles.produtoCard}
+              onPress={() => abrirProduto(produto)}
+            >
+              <Image style={styles.produtoImagem} source={produto.imagem} />
+              <Text style={styles.produtoMarca}>{produto.vendedor}</Text>
               <Text style={styles.produtoNome}>{produto.nome}</Text>
-              <Text style={styles.produtoPreco}>$10,99</Text>
+              <Text style={styles.produtoPreco}>{produto.preco}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {produtos.map((produto, index) => (
-            <TouchableOpacity key={index} style={styles.produtoCard} onPress={carrinho}>
-              <Image source={produto.imagem} style={styles.produtoImagem} resizeMode="contain" />
-              <Text style={styles.produtoMarca}>Marca</Text>
-              <Text style={styles.produtoNome}>{produto.nome}</Text>
-              <Text style={styles.produtoPreco}>$10,99</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {produtos.map((produto, index) => (
-            <TouchableOpacity key={index} style={styles.produtoCard} onPress={carrinho}>
-              <Image source={produto.imagem} style={styles.produtoImagem} resizeMode="contain" />
-              <Text style={styles.produtoMarca}>Marca</Text>
-              <Text style={styles.produtoNome}>{produto.nome}</Text>
-              <Text style={styles.produtoPreco}>$10,99</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
       </ScrollView>
 
       {/* BOTTOM TAB BAR */}

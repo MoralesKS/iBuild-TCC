@@ -1,239 +1,101 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Image} from 'react-native';
-import { useAppNavigation, itens} from '../src/Functions';
+import { Text, View, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { useAppNavigation } from '../src/Functions';
+import { carrinhoStyles as styles } from '../src/Styles';
+import { useCarrinho } from '../src/CarrinhoItens';
+
+// Transforma "R$ 1,20" (string) em 1.2 (número), pra dar pra somar
+function precoParaNumero(precoTexto) {
+  return Number(precoTexto.replace('R$', '').replace(',', '.').trim());
+}
 
 export default function Carrinho() {
-  const { mapa, contratar, carrinho, gerenciar, perfil, home, chat} = useAppNavigation();
+  const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
+  const { itens, removerDoCarrinho } = useCarrinho();
+
+  const subtotal = itens.reduce(
+    (total, item) => total + precoParaNumero(item.preco) * item.quantidade, 0
+  );
 
   return (
     <View style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.headerView}>
-        <TouchableOpacity onPress={home} style={styles.voltarBotao}>
-          <Text style={styles.voltarSeta}>{'<'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitulo}>Finalizar compra</Text>
-        <View style={styles.voltarBotao} />
+      <TouchableOpacity onPress={home}>
+        <Text>{'<'}</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.titulo}>Finalizar compra</Text>
+
+      <View style={styles.linha}>
+        <Text style={styles.label}>Entrega</Text>
+        <Text style={styles.valor}>Adicionar endereço {'>'}</Text>
       </View>
 
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* ENTREGA */}
-        <Text style={styles.rotulo}>ENTREGA</Text>
-        <TextInput style={styles.linhaInfo}
-          placeholder="Adicionar endereço de entrega"
-          placeholderTextColor="#828282"
-        />
+      <View style={styles.linha}>
+        <Text style={styles.label}>Frete</Text>
+        <Text style={styles.valor}>Gratuito {'>'}</Text>
+      </View>
 
-        {/* FRETE */}
-        <Text style={styles.rotulo}>FRETE</Text>
-        <View style={styles.linhaInfo}>
-          <Text style={styles.linhaInfoValor}>Gratuito</Text>
-          <Text style={styles.linhaInfoSub}>Padrão | 3 a 4 dias</Text>
-        </View>
+      <View style={styles.linha}>
+        <Text style={styles.label}>Pagamento</Text>
+        <Text style={styles.valor}>Visa *1234 {'>'}</Text>
+      </View>
 
-        {/* PAGAMENTO */}
-        <Text style={styles.rotulo}>PAGAMENTO</Text>
-        <TouchableOpacity style={styles.linhaInfo}>
-          <Text style={styles.linhaInfoValor}>Visa *1234</Text>
+      <Text style={styles.tituloSecao}>Itens</Text>
+
+      {itens.length === 0 ? (
+        <Text style={styles.carrinhoVazio}>Seu carrinho está vazio.</Text>
+      ) : (
+        <ScrollView>
+          {itens.map((item) => (
+            <View key={item.id} style={styles.itemRow}>
+              <Image style={styles.itemImagem} source={item.imagem} />
+              <View style={styles.itemInfo}>
+                <Text style={styles.itemNome}>{item.nome}</Text>
+                <Text style={styles.itemQuantidade}>Quantidade: {item.quantidade}</Text>
+              </View>
+              <Text style={styles.itemPreco}>{item.preco}</Text>
+              <TouchableOpacity onPress={() => removerDoCarrinho(item.id)}>
+                <Text style={styles.itemRemover}>Remover</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </ScrollView>
+      )}
+
+      <View style={styles.linha}>
+        <Text style={styles.totalLabel}>Total</Text>
+        <Text style={styles.totalValor}>R$ {subtotal.toFixed(2).replace('.', ',')}</Text>
+      </View>
+
+      <TouchableOpacity style={styles.botaoPedido}>
+        <Text style={styles.botaoTexto}>Fazer pedido</Text>
+      </TouchableOpacity>
+
+      {/* BOTTOM TAB BAR */}
+      <View style={styles.footer}>
+        <TouchableOpacity style={styles.footerItem} onPress={home}>
+          <Image style={styles.footerIcone1} source={require('../assets/Home.png')}/>
         </TouchableOpacity>
 
-        {/* PROMOÇÕES */}
-        <Text style={styles.rotulo}>PROMOÇÕES</Text>
-        <TextInput
-          style={styles.linhaInfo}
-          placeholder="Aplicar código promocional"
-          placeholderTextColor="#828282"
-        />
+        <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
+          <Image style={styles.footerIcone} source={require('../assets/gerenciar.png')}/>
+        </TouchableOpacity>
 
-        {/* ITENS */}
-        <View style={styles.itensHeaderRow}>
-          <Text style={styles.rotulo}>DESCRIÇÃO</Text>
-          <Text style={styles.rotulo}>PREÇO</Text>
-        </View>
+        <TouchableOpacity style={styles.footerItem} onPress={mapa}>
+          <Image style={styles.footerIcone} source={require('../assets/Bussola.png')}/>
+        </TouchableOpacity>
 
-        {itens.map((item, index) => (
-          <View key={index} style={styles.itemRow}>
-            <View style={styles.itemImagem}>
-              <Image source={item.imagem} style={styles.imagem} resizeMode="contain" />
-            </View>
-            <View style={styles.itemInfo}>
-              <Text style={styles.itemMarca}>{item.marca}</Text>
-              <Text style={styles.itemNome}>{item.nome}</Text>
-              <Text style={styles.itemDescricao}>Descrição</Text>
-              <View style={styles.itemQuantidadeRow}>
-                <Text style={styles.itemQuantidade}>Quantidade: {item.quantidade}</Text>
-                <Text style={styles.itemQuantidadeBotoes}> + / - </Text>
-              </View>
-            </View>
-            <Text style={styles.itemPreco}>{item.preco}</Text>
-          </View>
-        ))}
+        <TouchableOpacity style={styles.footerItem} onPress={contratar}>
+          <Image style={styles.footerIcone} source={require('../assets/Trabalho.png')}/>
+        </TouchableOpacity>
 
-        {/* RESUMO */}
-        <View style={styles.resumoLinha}>
-          <Text style={styles.resumoTexto}>Subtotal (3)</Text>
-          <Text style={styles.resumoTexto}>R$19,98</Text>
-        </View>
-        <View style={styles.resumoLinha}>
-          <Text style={styles.resumoTexto}>Total do frete</Text>
-          <Text style={styles.resumoTexto}>Gratuito</Text>
-        </View>
-        <View style={styles.resumoLinha}>
-          <Text style={styles.resumoTexto}>Impostos</Text>
-          <Text style={styles.resumoTexto}>R$2.00</Text>
-        </View>
-        <View style={styles.resumoLinha}>
-          <Text style={styles.resumoTotalTexto}>Total</Text>
-          <Text style={styles.resumoTotalTexto}>R$21,98</Text>
-        </View>
-      </ScrollView>
+        <TouchableOpacity style={styles.footerItem} onPress={chat}>
+          <Image style={styles.footerIcone} source={require('../assets/Chat.png')}/>
+        </TouchableOpacity>
 
-      {/* BOTÃO FAZER PEDIDO */}
-      <TouchableOpacity style={styles.fazerPedido}>
-        <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Fazer pedido</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.footerItem} onPress={perfil}>
+          <Image style={styles.footerIcone} source={require('../assets/Perfil.png')}/>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    marginBottom: '10%',
-  },
-  headerView: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 50,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-  voltarBotao: {
-    width: 24,
-  },
-  voltarSeta: {
-    fontSize: 18,
-    color: '#000000',
-  },
-  headerTitulo: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    color: '#000000',
-  },
-  scroll: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  rotulo: {
-    fontSize: 11,
-    color: '#828282',
-    fontWeight: 'bold',
-    marginTop: 16,
-    marginBottom: 6,
-  },
-  linhaInfo: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    padding: 12,
-  },
-  linhaInfoValor: {
-    color: '#000000',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  linhaInfoSub: {
-    color: '#828282',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  itensHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  itemRow: {
-    flexDirection: 'row',
-    marginTop: 8,
-    marginBottom: 8,
-    alignItems: 'flex-start',
-  },
-  itemImagem: {
-    width: 56,
-    height: 56,
-    borderRadius: 8,
-    backgroundColor: '#F5F5F5',
-  },
-  itemInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  itemMarca: {
-    fontSize: 10,
-    color: '#828282',
-  },
-  itemNome: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: '#000000',
-  },
-  itemDescricao: {
-    fontSize: 11,
-    color: '#828282',
-  },
-  itemQuantidadeRow: {
-    flexDirection: 'row',
-    marginTop: 4,
-  },
-  itemQuantidade: {
-    fontSize: 11,
-    color: '#828282',
-  },
-  itemQuantidadeBotoes: {
-    fontSize: 11,
-    color: '#F57C00',
-    marginLeft: 8,
-  },
-  itemPreco: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: '#000000',
-  },
-  resumoLinha: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-    paddingTop: 12,
-  },
-  resumoTexto: {
-    fontSize: 13,
-    color: '#000000',
-  },
-  resumoTotalTexto: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#000000',
-  },
-  fazerPedido: {
-    backgroundColor: '#F57C00',
-    height: 48,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    margin: 16,
-  },
-  itemImagem: {
-  width: 56,
-  height: 56,
-  borderRadius: 8,
-  backgroundColor: '#F5F5F5',
-  },
-  imagem: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 8,
-  },
-});

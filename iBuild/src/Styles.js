@@ -5,12 +5,15 @@ export const homeStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     marginBottom: '10%',
-    marginTop: '10%',
+  },
+  scroll: {
+    flex: 1,
     paddingHorizontal: 16,
+    marginTop: '10%',
   },
   busca: {
     backgroundColor: '#F5F5F5',
-    height: 40,
+    height: 44,
     width: '75%',
     borderRadius: 8,
     paddingHorizontal: 16,
@@ -18,8 +21,8 @@ export const homeStyles = StyleSheet.create({
     color: '#000000',
   },
   botaoHeader: {
-    height: 30,
-    width: 30,
+    width: 34,
+    height: 34,
     marginTop: 10,
   },
   acoesRapidasRow: {
@@ -38,8 +41,8 @@ export const homeStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   botaoAcaoRapida: {
-    height: 18,
     width: 18,
+    height: 18,
   },
   acaoRapidaTexto: {
     fontSize: 13,
@@ -84,13 +87,11 @@ export const homeStyles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 20,
   },
-  categoriaImagem: {
+  categoriaIcone: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    borderWidth: 1,
-    backgroundColor: '#ffffff',
-    borderColor: '#828282',
+    backgroundColor: '#F5F5F5',
   },
   categoriaTexto: {
     fontSize: 12,
@@ -101,14 +102,12 @@ export const homeStyles = StyleSheet.create({
     width: 110,
     marginRight: 12,
     marginBottom: 16,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 8,
-    borderColor: '#828282',
   },
   produtoImagem: {
-    width: 80,
-    height: 80,
+    width: 110,
+    height: 90,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
   },
   produtoMarca: {
     fontSize: 10,
@@ -158,9 +157,19 @@ export const mapaStyles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     marginTop: '10%',
     marginBottom: '10%',
-    paddingHorizontal: 16,
+  },
+  centralizado: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  permissaoTexto: {
+    fontSize: 14,
+    color: '#000000',
+    textAlign: 'center',
+    marginBottom: 16,
   },
   buscaWrapper: {
+    paddingHorizontal: 16,
   },
   busca: {
     backgroundColor: '#F5F5F5',
@@ -172,6 +181,7 @@ export const mapaStyles = StyleSheet.create({
   },
   filtrosRow: {
     flexDirection: 'row',
+    paddingHorizontal: 16,
     marginTop: 12,
   },
   filtroBotao: {
@@ -181,6 +191,7 @@ export const mapaStyles = StyleSheet.create({
     borderColor: '#E0E0E0',
     borderRadius: 8,
     paddingVertical: 6,
+    paddingHorizontal: 12,
     marginRight: 8,
   },
   filtroTexto: {
@@ -194,6 +205,7 @@ export const mapaStyles = StyleSheet.create({
   mapaWrapper: {
     flex: 1,
     marginTop: 12,
+    marginHorizontal: 16,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -292,9 +304,8 @@ export const contratarStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    marginTop: '10%',
     marginBottom: '10%',
-    paddingHorizontal: 16,
+    paddingTop: '10%',
   },
   titulo: {
     fontSize: 16,
@@ -394,16 +405,14 @@ export const gerenciarStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    marginTop: '10%',
     marginBottom: '10%',
-    paddingHorizontal: 16,
+    paddingTop: '10%',
   },
   searchInput: {
     backgroundColor: '#F5F5F5',
     height: 40,
     borderRadius: 8,
     paddingHorizontal: 12,
-    marginTop: 8,
   },
   filtro: {
     marginTop: 12,
@@ -527,9 +536,8 @@ export const detalhesObraStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    marginTop: '10%',
     marginBottom: '10%',
-    paddingHorizontal: 16,
+    paddingTop: '10%',
   },
   titulo: {
     fontSize: 16,
@@ -555,7 +563,6 @@ export const detalhesObraStyles = StyleSheet.create({
     width: 21,
     height: 21,
     tintColor: '#000000',
-    margin: 5,
   },
   resumoNome: {
     fontWeight: 'bold',
@@ -570,6 +577,7 @@ export const detalhesObraStyles = StyleSheet.create({
     height: 6,
     backgroundColor: '#E0E0E0',
     borderRadius: 3,
+    overflow: 'hidden',
   },
   progressoBarraPreenchida: {
     height: 6,
@@ -636,12 +644,11 @@ export const detalhesObraStyles = StyleSheet.create({
     tintColor: '#277D2C',
   },
   divisao: {
-    width: '25%',
     borderLeftWidth: .5,
     borderRightWidth: .5,
-    padding: 4,
+    padding: 12,
     alignItems: 'center',
-  }
+  },
 });
 
 export const funcionariosStyles = StyleSheet.create({
@@ -717,6 +724,326 @@ export const funcionariosStyles = StyleSheet.create({
     fontSize: 12,
     color: '#F57C00',
     fontWeight: 'bold',
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    height: 60,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+  },
+  footerItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 42,
+    width: 72,
+  },
+  footerIcone: {
+    height: 23,
+    width: 23,
+    tintColor: '#9C9C9C',
+  },
+  footerIcone1: {
+    height: 23,
+    width: 23,
+    tintColor: '#277D2C',
+  },
+});
+
+export const carrinhoStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    marginBottom: '10%',
+    paddingTop: '10%',
+  },
+  titulo: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  linha: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  label: {
+    color: '#828282',
+    fontSize: 13,
+  },
+  valor: {
+    fontSize: 13,
+    color: '#000000',
+  },
+  tituloSecao: {
+    fontWeight: 'bold',
+    fontSize: 15,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  carrinhoVazio: {
+    fontSize: 13,
+    color: '#828282',
+    marginTop: 8,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  itemImagem: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: '#F0F0F0',
+    marginRight: 12,
+  },
+  itemInfo: {
+    flex: 1,
+  },
+  itemNome: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  itemQuantidade: {
+    fontSize: 12,
+    color: '#828282',
+    marginTop: 2,
+  },
+  itemPreco: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginRight: 12,
+  },
+  itemRemover: {
+    fontSize: 12,
+    color: '#D32F2F',
+  },
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  totalValor: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  botaoPedido: {
+    backgroundColor: '#F57C00',
+    height: 48,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  botaoTexto: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    height: 60,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+  },
+  footerItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 42,
+    width: 72,
+  },
+  footerIcone: {
+    height: 23,
+    width: 23,
+    tintColor: '#9C9C9C',
+  },
+  footerIcone1: {
+    height: 23,
+    width: 23,
+    tintColor: '#277D2C',
+  },
+});
+
+export const detalhesProdutoStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    marginBottom: '10%',
+    paddingTop: '10%',
+  },
+  seta: {
+    fontSize: 20,
+    color: '#000000',
+    marginBottom: 12,
+  },
+  imagemWrapper: {
+    alignItems: 'center',
+  },
+  imagemProduto: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    marginTop: 8,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#E0E0E0',
+    marginHorizontal: 3,
+  },
+  dotAtivo: {
+    backgroundColor: '#828282',
+  },
+  tituloRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  nomeProduto: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  emEstoque: {
+    fontSize: 12,
+    color: '#277D2C',
+    fontWeight: '500',
+  },
+  tipoTexto: {
+    fontSize: 13,
+    color: '#828282',
+    marginTop: 2,
+  },
+  precoRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginTop: 16,
+  },
+  preco: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#F57C00',
+  },
+  unidade: {
+    fontSize: 13,
+    color: '#828282',
+  },
+  avaliacaoTexto: {
+    fontSize: 13,
+    color: '#F5A623',
+    marginTop: 4,
+  },
+  vendedorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 16,
+  },
+  vendedorIcone: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    marginRight: 12,
+  },
+  vendedorInfo: {
+    flex: 1,
+  },
+  vendedorNome: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  vendedorLocal: {
+    fontSize: 12,
+    color: '#828282',
+    marginTop: 2,
+  },
+  setaDireita: {
+    fontSize: 16,
+    color: '#828282',
+  },
+  descricaoTexto: {
+    fontSize: 12,
+    color: '#828282',
+    fontStyle: 'italic',
+    marginTop: 16,
+  },
+  tituloSecao: {
+    fontWeight: 'bold',
+    fontSize: 15,
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  especCard: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 16,
+  },
+  especLinha: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  especLabel: {
+    fontSize: 13,
+    color: '#828282',
+  },
+  especValor: {
+    fontSize: 13,
+    color: '#000000',
+    fontWeight: '500',
+  },
+  botoesRow: {
+    flexDirection: 'row',
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  chatBotao: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#277D2C',
+    borderRadius: 8,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  chatTexto: {
+    color: '#277D2C',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  comprarBotao: {
+    flex: 1,
+    backgroundColor: '#F57C00',
+    borderRadius: 8,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  comprarTexto: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 13,
   },
   footer: {
     flexDirection: 'row',

@@ -11,15 +11,16 @@ export default function Contratar() {
       <Text style={styles.titulo}>Contratar Ajudantes</Text>
 
       <TextInput style={styles.searchInput} placeholder="Buscar por profissão ou nome..." />
+      
+      <ScrollView style={{paddingHorizontal: 16}}>
+        <View style={styles.linhaFiltros}>
+          <Text style={styles.filtroAtivo}>Todos</Text>
+          <Text style={styles.filtro}>Eletricistas</Text>
+          <Text style={styles.filtro}>Pedreiros</Text>
+          <Text style={styles.filtro}>Pintor</Text>
+        </View>
 
-      <View style={styles.linhaFiltros}>
-        <Text style={styles.filtroAtivo}>Todos</Text>
-        <Text style={styles.filtro}>Eletricistas</Text>
-        <Text style={styles.filtro}>Pedreiros</Text>
-        <Text style={styles.filtro}>Pintor</Text>
-      </View>
-
-      <ScrollView>
+      
         <View style={styles.card}>
           <View style={styles.avatar} />
           <View style={styles.cardInfo}>

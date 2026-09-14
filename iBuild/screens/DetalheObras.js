@@ -11,10 +11,9 @@ export default function DetalhesObra() {
 
   return (
     <View style={styles.container}>
-
       <Text style={styles.titulo}>Detalhes da obra</Text>
 
-      <ScrollView>
+      <ScrollView style={{paddingHorizontal: 16}}>
         <View style={styles.resumoCard}>
           <Image style={styles.foto} source={require('../assets/Home.png')}/>
           <View style={{ marginLeft: '10%', width: '60%' }}>
@@ -32,7 +31,7 @@ export default function DetalhesObra() {
           <View style={{ flexDirection: 'row'}}>
             <View style={{ flexDirection: 'column', width: '100%' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: .5}}>
-                <View style={{borderWidth: 1, borderRadius: 8, margin: 8}}>
+                <View style={{borderWidth: 1, borderRadius: 8, margin: 8, padding: 8,}}>
                   <Image style={styles.foto1} source={require('../assets/Home.png')}/>
                 </View>
                 <Text style={styles.infoLinha}>Tipo: </Text>
@@ -40,7 +39,7 @@ export default function DetalhesObra() {
               </View>
 
               <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: .5}}>
-                <View style={{borderWidth: 1, borderRadius: 8, margin: 8}}>
+                <View style={{borderWidth: 1, borderRadius: 8, margin: 8, padding: 8,}}>
                   <Image style={styles.foto1} source={require('../assets/icones/localizacao.png')}/>
                 </View>
                 <Text style={styles.infoLinha}>Endereço: </Text>
@@ -48,7 +47,7 @@ export default function DetalhesObra() {
               </View>
 
               <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: .5}}>
-                <View style={{borderWidth: 1, borderRadius: 8, margin: 8}}>
+                <View style={{borderWidth: 1, borderRadius: 8, margin: 8, padding: 8,}}>
                   <Image style={styles.foto1} source={require('../assets/Perfil.png')}/>
                 </View>
                 <Text style={styles.infoLinha}>Responsável técnico: </Text>
@@ -56,7 +55,7 @@ export default function DetalhesObra() {
               </View>
 
               <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: .5}}>
-                <View style={{borderWidth: 1, borderRadius: 8, margin: 8}}>
+                <View style={{borderWidth: 1, borderRadius: 8, margin: 8, padding: 8,}}>
                   <Image style={styles.foto1} source={require('../assets/icones/orçamento.png')}/>
                 </View>
                 <Text style={styles.infoLinha}>Orçamento: </Text>
@@ -96,7 +95,7 @@ export default function DetalhesObra() {
         </View>
 
         <Text style={styles.tituloSecao}>Equipe</Text>
-        <View style={[styles.infoCard, {flexDirection: 'row'}]}>
+        <View style={[styles.infoCard, {flexDirection: 'row', justifyContent: 'space-around'}]}>
           <View style={styles.divisao}>
             <Image style={styles.foto1} source={require('../assets/icones/engenheiro.png')}/>
             <Text style={[styles.infoLinha,{fontSize: 8}]}>Mestre de Obras</Text>
