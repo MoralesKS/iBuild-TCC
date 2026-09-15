@@ -601,6 +601,33 @@ export const detalhesObraStyles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 8,
   },
+  novaAcaoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  novaAcaoInput: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    height: 40,
+    paddingHorizontal: 12,
+    marginRight: 8,
+    color: '#000000',
+  },
+  novaAcaoBotao: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#F57C00',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  novaAcaoBotaoTexto: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
   infoCard: {
     backgroundColor: '#ffffff',
     borderRadius: 12,

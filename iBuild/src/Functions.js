@@ -1,4 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
+import { Linking } from 'react-native';
 
 export function useAppNavigation() {
   const navigation = useNavigation();
@@ -34,14 +35,6 @@ export function useAppNavigation() {
   return { home, detalheProdutos, mapa, contratar, carrinho, gerenciar, detalhesObra, perfil, chat };
 }
 
-{/*Info Cadastro*/}
-export let nome = '';
-export let cpf = '';
-export let dataNascimento = 0;
-export let telefone = 0;
-export let profissao = '';
-export let cnpj = 0;
-
 {/*Home % Carrinho*/}
 export const categorias = [
   { id: 'cat-tijolo', nome: 'Tijolo', imagem: require('../assets/produtos/tijolo.jpg') },
@@ -51,7 +44,6 @@ export const categorias = [
   { id: 'cat-telha', nome: 'Telha', imagem: require('../assets/produtos/telha.jpg') },
   { id: 'cat-ferro', nome: 'Ferro', imagem: require('../assets/produtos/vergalhao.jpg') },
 ];
- 
 export const produtos = [
   {
     id: 'prod-cimento-caue',
@@ -136,9 +128,6 @@ export const lojas = [
   { id: 5, nome: 'Loja 5', latitude: -23.548, longitude: -46.6315, avaliacao: '4,9', numAvaliacoes: '304', endereco: 'Rua E, 320 - São Paulo, SP', distancia: '2,4' },
   { id: 67, nome: 'Loja 67', latitude: -23.551, longitude: -46.6295, avaliacao: '4,8', numAvaliacoes: '500', endereco: 'Rua D. Pedro, 67 - Osasco, SP', distancia: '6,7' },
 ];
-
-// Abre o Google Maps (app se estiver instalado, senão o navegador)
-// já com a rota traçada até a loja escolhida.
 export function abrirNoGoogleMaps(loja) {
   const url = `https://www.google.com/maps/dir/?api=1&destination=${loja.latitude},${loja.longitude}`;
   Linking.openURL(url);
@@ -154,11 +143,69 @@ export let estrutura = 70;
 export let acabamento = 45;
 export let porcentagemTotal = (fundacao + estrutura + acabamento) / 3;
 
-export function gerenciamentoObras() {
-  if (porcentagemTotal < 100){
-    obrasAndamento++;
-  } else if (porcentagemTotal >= 100){
-    obrasAndamento--;
-    obrasconcluidas++;
-  }
+// Dados usados nas telas Gerenciar e DetalhesObra.
+// Cada obra tem um "id" único — é ele que usamos pra saber
+// QUAL obra foi clicada no "Ver detalhes".
+export const obras = [
+  {
+    id: 'obra-residencial-aurora',
+    nome: 'Residencial Aurora',
+    construtora: 'Construtora Horizonte Ltda.',
+    imagem: require('../assets/Home.png'),
+    status: 'andamento', // 'andamento' ou 'concluida'
+    endereco: 'Rua das Acacias, 245',
+    tipo: 'Residencial',
+    responsavel: 'Eng. Carlos Mendes',
+    orcamento: 'R$ 2.400.000',
+    entrega: '18/08/26',
+    etapas: {
+      fundacao: 100,
+      estrutura: 70,
+      acabamento: 45,
+    },
+    equipe: {
+      mestre: 'João Neves',
+      funcionariosAtivos: 34,
+      horasTrabalhadas: '192h',
+      proximaAcao: '14h00',
+    },
+    proximasAcoes: [
+      { id: 1, texto: 'Instalação elétrica do bloco A', feito: false },
+      { id: 2, texto: 'Instalação elétrica do bloco B', feito: false },
+      { id: 3, texto: 'Instalação elétrica do bloco C', feito: false },
+    ],
+  },
+  {
+    id: 'obra-centro-comercial',
+    nome: 'Centro Comercial',
+    construtora: 'Construtora Urbanis',
+    imagem: require('../assets/empresas.png'),
+    status: 'andamento',
+    endereco: 'Av. Industrial, 900',
+    tipo: 'Comercial',
+    responsavel: 'Eng. Marina Alves',
+    orcamento: 'R$ 5.100.000',
+    entrega: '12/11/26',
+    etapas: {
+      fundacao: 100,
+      estrutura: 55,
+      acabamento: 10,
+    },
+    equipe: {
+      mestre: 'Pedro Lima',
+      funcionariosAtivos: 47,
+      horasTrabalhadas: '210h',
+      proximaAcao: '09h30',
+    },
+    proximasAcoes: [
+      { id: 1, texto: 'Instalação de vidraças', feito: false },
+      { id: 2, texto: 'Pintura externa', feito: false },
+    ],
+  },
+];
+// Calcula a % geral de uma obra a partir das 3 etapas — assim o número
+// nunca fica "desencontrado" do que está de fato preenchido em etapas.
+export function calcularProgresso(obra) {
+  const { fundacao, estrutura, acabamento } = obra.etapas;
+  return Math.round((fundacao + estrutura + acabamento) / 3);
 }

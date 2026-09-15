@@ -84,6 +84,36 @@ export default function Home() {
             </TouchableOpacity>
           ))}
         </ScrollView>
+        
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {produtos.map((produto) => (
+            <TouchableOpacity
+              key={produto.id}
+              style={styles.produtoCard}
+              onPress={() => abrirProduto(produto)}
+            >
+              <Image style={styles.produtoImagem} source={produto.imagem} />
+              <Text style={styles.produtoMarca}>{produto.vendedor}</Text>
+              <Text style={styles.produtoNome}>{produto.nome}</Text>
+              <Text style={styles.produtoPreco}>{produto.preco}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {produtos.map((produto) => (
+            <TouchableOpacity
+              key={produto.id}
+              style={styles.produtoCard}
+              onPress={() => abrirProduto(produto)}
+            >
+              <Image style={styles.produtoImagem} source={produto.imagem} />
+              <Text style={styles.produtoMarca}>{produto.vendedor}</Text>
+              <Text style={styles.produtoNome}>{produto.nome}</Text>
+              <Text style={styles.produtoPreco}>{produto.preco}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
       </ScrollView>
 

@@ -1,14 +1,32 @@
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
-import { useAppNavigation } from '../src/Functions';
+import { useNavigation } from '@react-navigation/native';
+import { useAppNavigation, obras, calcularProgresso } from '../src/Functions';
 import { gerenciarStyles as styles } from '../src/Styles';
-import { funcionarios, totalObras, obrasAndamento, obrasconcluidas } from '../src/Functions';
 
 export default function Gerenciar() {
-  const { home, mapa, contratar, gerenciar, perfil, chat, detalhesObra } = useAppNavigation();
+  // useNavigation "puro" aqui porque precisamos passar a obra clicada
+  // como parâmetro — o useAppNavigation só sabe navegar pra rotas fixas.
+  const navigation = useNavigation();
+  const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
+
+  // Números calculados A PARTIR do array "obras" — se você adicionar,
+  // remover ou mudar o status de uma obra, esses números se atualizam
+  // sozinhos, sem precisar editar uma constante separada.
+  const totalObras = obras.length;
+  const obrasAndamento = obras.filter((obra) => obra.status === 'andamento').length;
+  const obrasConcluidas = obras.filter((obra) => obra.status === 'concluida').length;
+  const totalFuncionarios = obras.reduce(
+    (total, obra) => total + obra.equipe.funcionariosAtivos,
+    0
+  );
+
+  function abrirDetalhesObra(obra) {
+    navigation.navigate('DetalhesObra', { obra });
+  }
 
   return (
     <View style={styles.container}>
-      <ScrollView style={{paddingHorizontal: 16}}>
+      <ScrollView style={{ paddingHorizontal: 16 }}>
         <TextInput style={styles.searchInput} placeholder="Pesquisar" />
 
         <TouchableOpacity>
@@ -26,44 +44,40 @@ export default function Gerenciar() {
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Concluídas</Text>
-            <Text style={styles.statValor}>{obrasconcluidas}</Text>
+            <Text style={styles.statValor}>{obrasConcluidas}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Funcionários</Text>
-            <Text style={styles.statValor}>{funcionarios}</Text>
+            <Text style={styles.statValor}>{totalFuncionarios}</Text>
           </View>
         </View>
 
         <Text style={styles.tituloSecao}>Obras Recentes</Text>
-          <View style={styles.obraCard}>
-            <Image style={styles.foto} source={require('../assets/Home.png')}/>
+
+        {obras.map((obra) => (
+          <View key={obra.id} style={styles.obraCard}>
+            <Image style={styles.foto} source={obra.imagem} />
             <View style={{ marginLeft: '10%', width: '60%' }}>
-              <Text style={styles.obraNome}>Residencial Aurora</Text>
-              <Text style={styles.obraSub}>Construtora Horizonte Ltda.</Text>
+              <Text style={styles.obraNome}>{obra.nome}</Text>
+              <Text style={styles.obraSub}>{obra.construtora}</Text>
               <View style={styles.progressoBarraFundo}>
-                <View style={[styles.progressoBarraPreenchida, { width: '78%' }]} />
+                <View
+                  style={[
+                    styles.progressoBarraPreenchida,
+                    { width: `${calcularProgresso(obra)}%` },
+                  ]}
+                />
               </View>
-              <Text style={styles.progressoTexto}>78% Concluída</Text>
-              <TouchableOpacity style={styles.verDetalhesBotao} onPress={detalhesObra}>
+              <Text style={styles.progressoTexto}>{calcularProgresso(obra)}% Concluída</Text>
+              <TouchableOpacity
+                style={styles.verDetalhesBotao}
+                onPress={() => abrirDetalhesObra(obra)}
+              >
                 <Text style={styles.verDetalhesTexto}>Ver detalhes</Text>
               </TouchableOpacity>
             </View>
           </View>
-
-        <View style={styles.obraCard}>
-          <Image style={styles.foto} source={require('../assets/empresas.png')}/>
-          <View style={{ marginLeft: '10%', width: '60%' }}>
-            <Text style={styles.obraNome}>Centro Comercial</Text>
-            <Text style={styles.obraSub}>Construtora Urbanis</Text>
-            <View style={styles.progressoBarraFundo}>
-              <View style={[styles.progressoBarraPreenchida, { width: '45%', backgroundColor: '#F5A623' }]} />
-            </View>
-            <Text style={styles.progressoTexto}>45% Concluída</Text>
-            <TouchableOpacity style={styles.verDetalhesBotao} onPress={detalhesObra}>
-              <Text style={styles.verDetalhesTexto}>Ver detalhes</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        ))}
       </ScrollView>
 
       {/* BOTTOM TAB BAR */}
