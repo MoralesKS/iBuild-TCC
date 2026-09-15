@@ -211,7 +211,7 @@ export const mapaStyles = StyleSheet.create({
   },
   mapaWrapper: {
     flex: 1,
-    marginTop: 12,
+    marginTop: 16,
     marginHorizontal: 16,
     borderRadius: 12,
     overflow: 'hidden',

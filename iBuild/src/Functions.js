@@ -119,6 +119,7 @@ export const produtos = [
   },
 ];
 
+
 {/*Mapa*/}
 export const lojas = [
   { id: 1, nome: 'Loja 1', latitude: -23.549, longitude: -46.629, avaliacao: '4,6', numAvaliacoes: '210', endereco: 'Rua A, 100 - São Paulo, SP', distancia: '3,2' },
@@ -132,6 +133,7 @@ export function abrirNoGoogleMaps(loja) {
   const url = `https://www.google.com/maps/dir/?api=1&destination=${loja.latitude},${loja.longitude}`;
   Linking.openURL(url);
 }
+
 
 {/*Gerenciamento e DetelhesObra*/}
 export let totalObras = 2;
@@ -209,3 +211,55 @@ export function calcularProgresso(obra) {
   const { fundacao, estrutura, acabamento } = obra.etapas;
   return Math.round((fundacao + estrutura + acabamento) / 3);
 }
+
+
+{/*Contratar*/}
+// Dados usados na tela Contratar.
+// "categoria: null" no primeiro item representa o filtro "Todos" —
+// null significa "não filtrar por categoria nenhuma".
+export const categoriasProfissionais = [
+  { label: 'Todos', categoria: null },
+  { label: 'Eletricistas', categoria: 'Eletricista' },
+  { label: 'Pedreiros', categoria: 'Pedreiro' },
+  { label: 'Pintores', categoria: 'Pintor' },
+  { label: 'Carpinteiros', categoria: 'Carpinteiro' },
+];
+ 
+export const profissionais = [
+  {
+    id: 'prof-carlos-mendes',
+    nome: 'Carlos Mendes',
+    categoria: 'Pedreiro',
+    avaliacao: '4.7',
+    numAvaliacoes: '23',
+    cidade: 'São Paulo, SP',
+    experiencia: '8 anos de experiência',
+  },
+  {
+    id: 'prof-helena-hills',
+    nome: 'Helena Hills',
+    categoria: 'Pintor',
+    avaliacao: '4.7',
+    numAvaliacoes: '23',
+    cidade: 'São Paulo, SP',
+    experiencia: '8 anos de experiência',
+  },
+  {
+    id: 'prof-nebul-anomad',
+    nome: 'Nebul Anomad',
+    categoria: 'Carpinteiro',
+    avaliacao: '4.6',
+    numAvaliacoes: '18',
+    cidade: 'São Paulo, SP',
+    experiencia: '6 anos de experiência',
+  },
+  {
+    id: 'prof-luna-voyager',
+    nome: 'Luna Voyager',
+    categoria: 'Eletricista',
+    avaliacao: '4.9',
+    numAvaliacoes: '31',
+    cidade: 'São Paulo, SP',
+    experiencia: '10 anos de experiência',
+  },
+];

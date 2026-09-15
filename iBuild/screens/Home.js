@@ -1,27 +1,56 @@
+import { useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppNavigation, categorias, produtos } from '../src/Functions';
 import { homeStyles as styles } from '../src/Styles';
-import Carrinho from './Carrinho';
 
 export default function Home() {
-  // useNavigation "puro" aqui porque precisamos passar PARÂMETROS
-  // (qual produto foi clicado) — o hook useAppNavigation só sabe
-  // navegar pra rotas fixas, sem dados extras.
   const navigation = useNavigation();
   const { mapa, contratar, gerenciar, perfil, chat, carrinho } = useAppNavigation();
+
+  // null = nenhuma categoria selecionada (mostra todos os produtos)
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState(null);
+  const [textoBusca, setTextoBusca] = useState('');
 
   function abrirProduto(produto) {
     navigation.navigate('Produto', { produto });
   }
+
+  // Tocar de novo na categoria já ativa desmarca ela (volta a mostrar tudo)
+  function alternarCategoria(categoria) {
+    setCategoriaSelecionada((atual) => (atual?.id === categoria.id ? null : categoria));
+  }
+
+  // Combina os dois filtros: categoria selecionada E texto digitado na busca.
+  // Um produto só aparece se passar nos dois ao mesmo tempo.
+  const produtosFiltrados = produtos.filter((produto) => {
+    const passaCategoria =
+      !categoriaSelecionada ||
+      produto.tipo.toLowerCase().includes(categoriaSelecionada.nome.toLowerCase());
+
+    const texto = textoBusca.trim().toLowerCase();
+    const passaBusca =
+      texto === '' ||
+      produto.nome.toLowerCase().includes(texto) ||
+      produto.tipo.toLowerCase().includes(texto) ||
+      produto.vendedor.toLowerCase().includes(texto);
+
+    return passaCategoria && passaBusca;
+  });
 
   return (
     <View style={styles.container}>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        <View style={{flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center'}}>
-          <TextInput style={styles.busca} placeholder="Buscar" placeholderTextColor="#828282" />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
+          <TextInput
+            style={styles.busca}
+            placeholder="Buscar"
+            placeholderTextColor="#828282"
+            value={textoBusca}
+            onChangeText={setTextoBusca}
+          />
           <TouchableOpacity onPress={carrinho}>
             <Image style={styles.botaoHeader} source={require('../assets/icones/carrinho.png')}/>
           </TouchableOpacity>
@@ -52,68 +81,93 @@ export default function Home() {
 
         <View style={styles.secaoHeader}>
           <Text style={styles.secaoTitulo}>Categorias</Text>
-          <Text style={styles.secaoSeta}>{'>'}</Text>
+          {categoriaSelecionada && (
+            <TouchableOpacity onPress={() => setCategoriaSelecionada(null)}>
+              <Text style={styles.secaoSeta}>Limpar filtro</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {categorias.map((cat) => (
-            <TouchableOpacity key={cat.id} style={styles.categoriaItem}>
+            <TouchableOpacity
+              key={cat.id}
+              style={[
+                styles.categoriaItem,
+                categoriaSelecionada?.id === cat.id && styles.categoriaItemAtiva,
+              ]}
+              onPress={() => alternarCategoria(cat)}
+            >
               <Image style={styles.categoriaIcone} source={cat.imagem} />
               <Text style={styles.categoriaTexto}>{cat.nome}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        {/* Produtos */}
+        {/* Produtos — agora usando produtosFiltrados, que respeita a categoria escolhida */}
         <View style={styles.secaoHeader}>
-          <Text style={styles.secaoTitulo}>Geral</Text>
+          <Text style={styles.secaoTitulo}>
+            {categoriaSelecionada ? categoriaSelecionada.nome : 'Geral'}
+          </Text>
           <Text style={styles.secaoSeta}>{'>'}</Text>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {produtos.map((produto) => (
-            <TouchableOpacity
-              key={produto.id}
-              style={styles.produtoCard}
-              onPress={() => abrirProduto(produto)}
-            >
-              <Image style={styles.produtoImagem} source={produto.imagem} />
-              <Text style={styles.produtoMarca}>{produto.vendedor}</Text>
-              <Text style={styles.produtoNome}>{produto.nome}</Text>
-              <Text style={styles.produtoPreco}>{produto.preco}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        {produtosFiltrados.length === 0 ? (
+          <Text style={styles.semResultados}>Nenhum produto encontrado nessa categoria.</Text>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {produtosFiltrados.map((produto) => (
+              <TouchableOpacity
+                key={produto.id}
+                style={styles.produtoCard}
+                onPress={() => abrirProduto(produto)}
+              >
+                <Image style={styles.produtoImagem} source={produto.imagem} />
+                <Text style={styles.produtoMarca}>{produto.vendedor}</Text>
+                <Text style={styles.produtoNome}>{produto.nome}</Text>
+                <Text style={styles.produtoPreco}>{produto.preco}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
         
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {produtos.map((produto) => (
-            <TouchableOpacity
-              key={produto.id}
-              style={styles.produtoCard}
-              onPress={() => abrirProduto(produto)}
-            >
-              <Image style={styles.produtoImagem} source={produto.imagem} />
-              <Text style={styles.produtoMarca}>{produto.vendedor}</Text>
-              <Text style={styles.produtoNome}>{produto.nome}</Text>
-              <Text style={styles.produtoPreco}>{produto.preco}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        {produtosFiltrados.length === 0 ? (
+          <Text style={styles.semResultados}>Nenhum produto encontrado nessa categoria.</Text>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {produtosFiltrados.map((produto) => (
+              <TouchableOpacity
+                key={produto.id}
+                style={styles.produtoCard}
+                onPress={() => abrirProduto(produto)}
+              >
+                <Image style={styles.produtoImagem} source={produto.imagem} />
+                <Text style={styles.produtoMarca}>{produto.vendedor}</Text>
+                <Text style={styles.produtoNome}>{produto.nome}</Text>
+                <Text style={styles.produtoPreco}>{produto.preco}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {produtos.map((produto) => (
-            <TouchableOpacity
-              key={produto.id}
-              style={styles.produtoCard}
-              onPress={() => abrirProduto(produto)}
-            >
-              <Image style={styles.produtoImagem} source={produto.imagem} />
-              <Text style={styles.produtoMarca}>{produto.vendedor}</Text>
-              <Text style={styles.produtoNome}>{produto.nome}</Text>
-              <Text style={styles.produtoPreco}>{produto.preco}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        {produtosFiltrados.length === 0 ? (
+          <Text style={styles.semResultados}>Nenhum produto encontrado nessa categoria.</Text>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {produtosFiltrados.map((produto) => (
+              <TouchableOpacity
+                key={produto.id}
+                style={styles.produtoCard}
+                onPress={() => abrirProduto(produto)}
+              >
+                <Image style={styles.produtoImagem} source={produto.imagem} />
+                <Text style={styles.produtoMarca}>{produto.vendedor}</Text>
+                <Text style={styles.produtoNome}>{produto.nome}</Text>
+                <Text style={styles.produtoPreco}>{produto.preco}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
       </ScrollView>
 

@@ -15,9 +15,22 @@ export default function Mapa() {
     longitude: -46.6333,
   });
 
-  // Guarda qual loja está selecionada no momento — começa já com uma
-  // pra o card não aparecer vazio na primeira vez que a tela abre.
+  const [textoBusca, setTextoBusca] = useState('');
+
   const [lojaSelecionada, setLojaSelecionada] = useState(lojas[5]);
+
+  // Só as lojas que batem com a busca aparecem como marcador no mapa.
+  // A busca continua funcionando mesmo se a loja selecionada for filtrada
+  // pra fora da lista — o card dela continua aparecendo embaixo até o
+  // usuário escolher outra ou limpar a busca.
+  const lojasFiltradas = lojas.filter((loja) => {
+    const texto = textoBusca.trim().toLowerCase();
+    return (
+      texto === '' ||
+      loja.nome.toLowerCase().includes(texto) ||
+      loja.endereco.toLowerCase().includes(texto)
+    );
+  });
 
   useEffect(() => {
     async function pedirLocalizacao() {
@@ -39,9 +52,6 @@ export default function Mapa() {
           longitude: posicao.coords.longitude,
         });
       } catch (erro) {
-        // Isso acontece principalmente em emuladores sem GPS simulado
-        // configurado. Nesse caso, mantemos o fallback e avisamos o usuário
-        // em vez de deixar a tela travada ou quebrar silenciosamente.
         console.log('Erro ao obter localização:', erro);
         setErroLocalizacao(true);
       } finally {
@@ -75,28 +85,6 @@ export default function Mapa() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.buscaWrapper}>
-        <TextInput style={styles.busca} placeholder="Pesquisar" placeholderTextColor="#828282" />
-      </View>
-
-      {/* Aviso discreto se não conseguimos pegar o GPS real */}
-      {erroLocalizacao && (
-        <Text style={styles.avisoLocalizacao}>
-          Não conseguimos obter sua localização exata. Mostrando um ponto de referência.
-        </Text>
-      )}
-
-      {/* FILTRAR / CLASSIFICAR */}
-      <View style={styles.filtrosRow}>
-        <TouchableOpacity style={styles.filtroBotao}>
-          <Text style={styles.filtroTexto}>Filtrar</Text>
-          <Text style={styles.filtroSeta}> v</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.filtroBotao}>
-          <Text style={styles.filtroTexto}>Classificar</Text>
-          <Text style={styles.filtroSeta}> v</Text>
-        </TouchableOpacity>
-      </View>
 
       {/* MAPA FUNCIONAL, já centralizado na posição real do usuário */}
       <View style={styles.mapaWrapper}>
@@ -116,10 +104,8 @@ export default function Mapa() {
             </View>
           </Marker>
 
-          {/* Marcadores das lojas — ao tocar, atualiza lojaSelecionada.
-              IMPORTANTE: pinColor nunca recebe "undefined" — sempre uma
-              cor de verdade, senão o Android quebra ao tentar ler a cor. */}
-          {lojas.map((loja) => (
+          {/* Só renderiza os marcadores das lojas que passaram no filtro de busca */}
+          {lojasFiltradas.map((loja) => (
             <Marker
               key={loja.id}
               coordinate={{ latitude: loja.latitude, longitude: loja.longitude }}
