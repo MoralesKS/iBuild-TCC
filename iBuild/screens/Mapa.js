@@ -85,6 +85,33 @@ export default function Mapa() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.buscaWrapper}>
+        <TextInput
+          style={styles.busca}
+          placeholder="Pesquisar"
+          placeholderTextColor="#828282"
+          value={textoBusca}
+          onChangeText={setTextoBusca}
+        />
+      </View>
+
+      {erroLocalizacao && (
+        <Text style={styles.avisoLocalizacao}>
+          Não conseguimos obter sua localização exata. Mostrando um ponto de referência.
+        </Text>
+      )}
+
+      {/* FILTRAR / CLASSIFICAR */}
+      <View style={styles.filtrosRow}>
+        <TouchableOpacity style={styles.filtroBotao}>
+          <Text style={styles.filtroTexto}>Filtrar</Text>
+          <Text style={styles.filtroSeta}> v</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.filtroBotao}>
+          <Text style={styles.filtroTexto}>Classificar</Text>
+          <Text style={styles.filtroSeta}> v</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* MAPA FUNCIONAL, já centralizado na posição real do usuário */}
       <View style={styles.mapaWrapper}>
@@ -120,9 +147,7 @@ export default function Mapa() {
       {/* CARD DA LOJA SELECIONADA */}
       {lojaSelecionada && (
         <View style={styles.lojaCard}>
-          <View style={styles.lojaImagem}>
-            {/* IMAGEM: Foto da loja */}
-          </View>
+          <Image style={styles.lojaImagem} source={lojaSelecionada.imagem} />
           <View style={styles.lojaInfoRow}>
             <View style={styles.lojaInfo}>
               <Text style={styles.lojaNome}>{lojaSelecionada.nome}</Text>
