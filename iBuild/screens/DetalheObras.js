@@ -1,4 +1,4 @@
-import { Text, View, TouchableOpacity, ScrollView, Image, TextInput } from 'react-native';
+import { Text, View, TouchableOpacity, ScrollView, Image, TextInput, KeyboardAvoidingView, Platform  } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
 import Checkbox from 'expo-checkbox';
@@ -53,6 +53,10 @@ export default function DetalhesObra() {
   const porcentagemTotal = calcularProgresso(obra);
  
   return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
     <View style={styles.container}>
       <Text style={styles.titulo}>Detalhes da obra</Text>
  
@@ -229,5 +233,6 @@ export default function DetalhesObra() {
         </TouchableOpacity>
       </View>
     </View>
+    </KeyboardAvoidingView>
   );
 }

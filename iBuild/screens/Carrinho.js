@@ -68,7 +68,7 @@ export default function Carrinho() {
         <Text style={styles.totalValor}>R$ {subtotal.toFixed(2).replace('.', ',')}</Text>
       </View>
 
-      <TouchableOpacity style={styles.botaoPedido}>
+      <TouchableOpacity style={styles.botaoPedido} onPress={() => alert("Comprou!!")}>
         <Text style={styles.botaoTexto}>Fazer pedido</Text>
       </TouchableOpacity>
 

@@ -149,6 +149,9 @@ export const homeStyles = StyleSheet.create({
     width: 23,
     tintColor: '#277D2C',
   },
+  semResultados: {
+    margin: 8,
+  },
 });
 
 export const mapaStyles = StyleSheet.create({

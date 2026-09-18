@@ -14,7 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase.config';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Ionicons } from '@expo/vector-icons'; // Importação dos ícones
+import { Ionicons } from '@expo/vector-icons';
 
 export default function CadastroPessoaFisica() {
   const [userMail, setUserMail] = useState('');
