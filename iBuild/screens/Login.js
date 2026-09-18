@@ -1,13 +1,15 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image} from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image } from 'react-native';
 import { useState } from 'react';
-import {auth} from '../firebase.config.js';
-import {signInWithEmailAndPassword} from 'firebase/auth';
-import {useNavigation} from '@react-navigation/native';
-import RedefinicaoSenha from './RedefinicaoSenha.js';
+import { auth } from '../firebase.config.js';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons'; // Importação do ícone (use o pacote correspondente ao seu projeto)
 
 export default function Login() {
   const [userMail, setUserMail] = useState('');
   const [userPass, setUserPass] = useState('');
+
+  const [showPassword, setShowPassword] = useState(false);
   const navigation = useNavigation();
 
   function userLogin() {
@@ -17,83 +19,100 @@ export default function Login() {
         navigation.navigate('Home');
       })
       .catch((error) => {
-        const errorCode = error.code;
         const errorMessage = error.message;
         alert(errorMessage);
-      })
+      });
   }
 
-  function cadastrar(){
-    navigation.navigate('Cadastro')
+  function cadastrar() {
+    navigation.navigate('Cadastro');
   }
 
-  function replacePass(){
-    navigation.navigate('RedefinicaoSenha')
+  function replacePass() {
+    navigation.navigate('RedefinicaoSenha');
   }
 
   return (
     <View style={styles.container}>
-     <View style={styles.logoView}>
-      <Image style={styles.logo} source={require('../assets/IBuild.jpg')}/> 
-     </View>
-
-     <View style={styles.textView}> 
-      <Text style={styles.titulo}> Entre na sua conta </Text>
-      <Text style={styles.subTitulo}> Insira seu e-mail para se cadastrar neste aplicativo </Text>
-
-      <TextInput style={styles.textInput}
-        placeholder='Informe o Email'
-        keybordType='email-address'
-        autoComplete='email'
-        autoCapitalize='none'
-        value={userMail}
-        onChangeText={setUserMail}
-      />
-
-      <TextInput style={styles.textInput}
-        placeholder='Informe a Senha'
-        autoCapitalize='none'
-        secureTextEntry
-        value={userPass}
-        onChangeText={setUserPass}
-      />
-
-      <TouchableOpacity onPress={replacePass}>      
-        <Text style={{fontSize: 13, color: '#828282', marginRight: '51%', marginBottom: 8}}>Esqueci minha senha</Text>
-      </TouchableOpacity>
-    
-      <View style={styles.alinhar}>
-        <TouchableOpacity style={styles.continuar} onPress={userLogin}>
-          <Text style={{color: '#ffffff',}}> Continuar </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.criarConta} onPress={cadastrar}>
-          <Text style={{color: '#F57C00',}}> Criar Conta </Text>
-        </TouchableOpacity>
+      <View style={styles.logoView}>
+        <Image style={styles.logo} source={require('../assets/IBuild.jpg')} />
       </View>
 
-      <View style={styles.espacamento}></View>
+      <View style={styles.textView}>
+        <Text style={styles.titulo}> Entre na sua conta </Text>
+        <Text style={styles.subTitulo}> Insira seu e-mail para se cadastrar neste aplicativo </Text>
 
-      <View style={styles.espacamento}></View>
-      <Text style={{color: '#E0E0E0'}}>-------------------------- Ou -------------------------- </Text>
-      <View style={styles.espacamento}></View>
+        <TextInput
+          style={styles.textInput}
+          placeholder="Informe o Email"
+          placeholderTextColor="#828282"
+          keyboardType="email-address" // Corrigido 'keybordType'
+          autoComplete="email"
+          autoCapitalize="none"
+          value={userMail}
+          onChangeText={setUserMail}
+        />
 
-      <TouchableOpacity style={styles.continuar2}>
-        <Image style={{width: 30, height: 30}} source={require('../assets/Google.png')} resizeMode="stretch"/>
-        <Text style={{fontWeight: 'medium', fontSize: 14}}> Continuar com o Google </Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.continuar2}>
-        <Image style={{width: 30, height: 30}} source={require('../assets/Apple.png')} resizeMode="stretch"/>
-        <Text style={{fontWeight: 'medium', fontSize: 14}}> Continuar com a Apple </Text>
-      </TouchableOpacity>
-      
-      <View style={styles.espacamento}></View>
-        <Text style={{color: '#828282', fontSize: 12}}> Ao clicar em continuar, você concorda com os nossos {'\n'} 
-          <Text style={{color: '#24BF1E',}}> Termos de Serviço </Text>
-          e com a 
-          <Text style={{color: '#24BF1E'}}> Política de Privacidade </Text> 
+        {/* Container para alinhar o Input da Senha e o Ícone */}
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="Informe a Senha"
+            placeholderTextColor="#828282"
+            autoCapitalize="none"
+            secureTextEntry={!showPassword} // Alterna entre oculto (true) e visível (false)
+            value={userPass}
+            onChangeText={setUserPass}
+          />
+          <TouchableOpacity
+            style={styles.iconArea}
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            <Ionicons
+              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color="#828282"
+            />
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity onPress={replacePass} style={{ alignSelf: 'flex-start', marginLeft: 24 }}>
+          <Text style={{ fontSize: 13, color: '#828282', marginBottom: 8 }}>
+            Esqueci minha senha
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.alinhar}>
+          <TouchableOpacity style={styles.continuar} onPress={userLogin}>
+            <Text style={{ color: '#ffffff' }}> Continuar </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.criarConta} onPress={cadastrar}>
+            <Text style={{ color: '#F57C00' }}> Criar Conta </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.espacamento}></View>
+        <Text style={{ color: '#E0E0E0' }}>-------------------------- Ou -------------------------- </Text>
+        <View style={styles.espacamento}></View>
+
+        <TouchableOpacity style={styles.continuar2}>
+          <Image style={{ width: 30, height: 30 }} source={require('../assets/Google.png')} resizeMode="stretch" />
+          <Text style={{ fontWeight: '500', fontSize: 14 }}> Continuar com o Google </Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.continuar2}>
+          <Image style={{ width: 30, height: 30 }} source={require('../assets/Apple.png')} resizeMode="stretch" />
+          <Text style={{ fontWeight: '500', fontSize: 14 }}> Continuar com a Apple </Text>
+        </TouchableOpacity>
+
+        <View style={styles.espacamento}></View>
+        <Text style={{ color: '#828282', fontSize: 12, textAlign: 'center' }}>
+          Ao clicar em continuar, você concorda com os nossos {'\n'}
+          <Text style={{ color: '#24BF1E' }}> Termos de Serviço </Text>
+          e com a
+          <Text style={{ color: '#24BF1E' }}> Política de Privacidade </Text>
         </Text>
-     </View>
+      </View>
     </View>
   );
 }
@@ -101,7 +120,7 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'space-evenly',
+    justify: 'space-evenly',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     padding: 8,
@@ -110,6 +129,8 @@ const styles = StyleSheet.create({
   logoView: {
     height: 130,
     width: 258,
+    marginTop: 100,
+    marginBottom: 50,
   },
   textView: {
     height: 439,
@@ -123,13 +144,24 @@ const styles = StyleSheet.create({
   },
   subTitulo: {
     color: '#000000',
-    fontWeight: 'regular',
     fontSize: 14,
     marginBottom: 18,
   },
   textInput: {
     backgroundColor: 'white',
-    color: '#E0E0E0',
+    color: '#000000',
+    height: 40,
+    width: 327,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    margin: 8,
+    paddingHorizontal: 10,
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
     height: 40,
     width: 327,
     borderWidth: 1,
@@ -137,8 +169,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     margin: 8,
   },
+  passwordInput: {
+    flex: 1,
+    height: '100%',
+    color: '#000000',
+    paddingHorizontal: 10,
+  },
+  iconArea: {
+    paddingHorizontal: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   alinhar: {
-    flexDirection: 'row'
+    flexDirection: 'row',
   },
   continuar: {
     backgroundColor: '#F57C00',

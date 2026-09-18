@@ -1,8 +1,19 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image, ScrollView} from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  Platform,
+  KeyboardAvoidingView
+} from 'react-native';
 import { useState } from 'react';
-import {useNavigation} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase.config';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function CadastroEmpresa() {
   const [userMail, setUserMail] = useState('');
@@ -12,34 +23,44 @@ export default function CadastroEmpresa() {
   const [userTelefone, setUserTelefone] = useState('');
   const [userCNPJ, setUserCNPJ] = useState('');
   const [userNome, setUserNome] = useState('');
+
+  // Estados para alternar a visibilidade das senhas
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const navigation = useNavigation();
-  
+
   function novoUser() {
-    if(userMail === '' || userPass === '' || confirmePass === '' || userNome === '' || userCNPJ === '' || userTelefone === '' || userRazaoSocial === ''){
+    if (
+      userMail === '' ||
+      userPass === '' ||
+      confirmePass === '' ||
+      userNome === '' ||
+      userCNPJ === '' ||
+      userTelefone === '' ||
+      userRazaoSocial === ''
+    ) {
       alert('Todos os campos devem ser preenchidos');
       return;
     }
-    if(userPass !== confirmePass){
-      alert('A senha e a confirmação não coencidem');
+    if (userPass !== confirmePass) {
+      alert('A senha e a confirmação não coincidem');
       return;
     }
-    else {
-      createUserWithEmailAndPassword(auth, userMail, userPass)
+
+    createUserWithEmailAndPassword(auth, userMail, userPass)
       .then((userCredential) => {
-        const user = userCredential.user;
         alert('O usuário ' + userMail + ' foi criado. Faça o Login');
         navigation.navigate('Login');
       })
       .catch((error) => {
-        const errorMessage = error.message;
-        alert(errorMessage);
+        alert(error.message);
         navigation.navigate('Login');
-      })
-    }
+      });
   }
 
-  function voltar(){
-    navigation.navigate('Cadastro')
+  function voltar() {
+    navigation.navigate('Cadastro');
   }
 
   function formatarCNPJ(texto) {
@@ -61,7 +82,7 @@ export default function CadastroEmpresa() {
 
   function formatarTelefone(texto) {
     let numeros = texto.replace(/\D/g, '');
-    numeros = numeros.slice(0, 11); // DDD + 9 dígitos
+    numeros = numeros.slice(0, 11);
 
     if (numeros.length <= 2) {
       return numeros;
@@ -73,58 +94,152 @@ export default function CadastroEmpresa() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.logoView}>
-        <Image source={require('../assets/IBuild.jpg')} style={styles.logo}/>
-      </View>
- 
-      <View style={styles.textView}>
-        <Text style={styles.titulo}>Crie sua nova conta</Text>
-        <Text style={styles.subTitulo}>Cadastre sua empresa para anunciar ou contratar</Text>
- 
-        <TextInput style={styles.textInput} value={userRazaoSocial} onChangeText={setUserRazaoSocial} placeholder="Razão social" placeholderTextColor="#828282" />
-        <TextInput style={styles.textInput} value={userCNPJ} onChangeText={(t) => setUserCNPJ(formatarCNPJ(t))} placeholder="CNPJ: XX.XXX.XXX/XXXX-XX" keyboardType="numeric" maxLength={18}/>
-        <TextInput style={styles.textInput} value={userNome} onChangeText={setUserNome} placeholder="Nome do responsável" placeholderTextColor="#828282" />
-        <TextInput style={styles.textInput} value={userTelefone} onChangeText={(t) => setUserTelefone(formatarTelefone(t))} placeholder="Telefone: (XX) XXXXX-XXXX" keyboardType="numeric" maxLength={15}/>
-        <TextInput style={styles.textInput} value={userMail} onChangeText={setUserMail} placeholder="Email corporativo" placeholderTextColor="#828282" />
-        <TextInput style={styles.textInput} value={userPass} onChangeText={setUserPass} placeholder="Senha" placeholderTextColor="#828282" secureTextEntry />
-        <TextInput style={styles.textInput} value={confirmePass} onChangeText={setConfirmePass} placeholder="Confirme sua senha" placeholderTextColor="#828282" secureTextEntry />
- 
-        <View style={styles.botoesRow}>
-          <TouchableOpacity style={styles.voltar} onPress={voltar}>
-            <Text style={{ color: '#F57C00', fontWeight: 'bold' }}>Voltar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.cadastrar} onPress={novoUser}>
-            <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Cadastrar</Text>
-          </TouchableOpacity>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.logoView}>
+          <Image source={require('../assets/IBuild.jpg')} style={styles.logo} />
         </View>
- 
-        <View style={styles.espacamento} />
- 
-        <Text style={{ color: '#828282', fontSize: 11, textAlign: 'center' }}>
-          Ao clicar em Cadastrar, você concorda com os nossos {'\n'}
-          <Text style={{ color: '#24BF1E' }}>Termos de Serviço</Text> e com a{' '}
-          <Text style={{ color: '#24BF1E' }}>Política de Privacidade</Text>
-        </Text>
-      </View>
-    </ScrollView>
+
+        <View style={styles.textView}>
+          <Text style={styles.titulo}>Crie sua nova conta</Text>
+          <Text style={styles.subTitulo}>Cadastre sua empresa para anunciar ou contratar</Text>
+
+          <TextInput
+            style={styles.textInput}
+            value={userRazaoSocial}
+            onChangeText={setUserRazaoSocial}
+            placeholder="Razão social"
+            placeholderTextColor="#828282"
+          />
+
+          <TextInput
+            style={styles.textInput}
+            value={userCNPJ}
+            onChangeText={(t) => setUserCNPJ(formatarCNPJ(t))}
+            placeholder="CNPJ: XX.XXX.XXX/XXXX-XX"
+            placeholderTextColor="#828282"
+            keyboardType="numeric"
+            maxLength={18}
+          />
+
+          <TextInput
+            style={styles.textInput}
+            value={userNome}
+            onChangeText={setUserNome}
+            placeholder="Nome do responsável"
+            placeholderTextColor="#828282"
+          />
+
+          <TextInput
+            style={styles.textInput}
+            value={userTelefone}
+            onChangeText={(t) => setUserTelefone(formatarTelefone(t))}
+            placeholder="Telefone: (XX) XXXXX-XXXX"
+            placeholderTextColor="#828282"
+            keyboardType="numeric"
+            maxLength={15}
+          />
+
+          <TextInput
+            style={styles.textInput}
+            value={userMail}
+            onChangeText={setUserMail}
+            placeholder="Email corporativo"
+            placeholderTextColor="#828282"
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+
+          {/* Campo de Senha com Ver/Ocultar */}
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              value={userPass}
+              onChangeText={setUserPass}
+              placeholder="Senha"
+              placeholderTextColor="#828282"
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity
+              style={styles.iconArea}
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              <Ionicons
+                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                size={20}
+                color="#828282"
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Campo de Confirmação de Senha com Ver/Ocultar */}
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              value={confirmePass}
+              onChangeText={setConfirmePass}
+              placeholder="Confirme sua senha"
+              placeholderTextColor="#828282"
+              secureTextEntry={!showConfirmPassword}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity
+              style={styles.iconArea}
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              <Ionicons
+                name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                size={20}
+                color="#828282"
+              />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.botoesRow}>
+            <TouchableOpacity style={styles.voltar} onPress={voltar}>
+              <Text style={{ color: '#F57C00', fontWeight: 'bold' }}>Voltar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cadastrar} onPress={novoUser}>
+              <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Cadastrar</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.espacamento} />
+
+          <Text style={{ color: '#828282', fontSize: 11, textAlign: 'center' }}>
+            Ao clicar em Cadastrar, você concorda com os nossos {'\n'}
+            <Text style={{ color: '#24BF1E' }}>Termos de Serviço</Text> e com a{' '}
+            <Text style={{ color: '#24BF1E' }}>Política de Privacidade</Text>
+          </Text>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
- 
+
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     padding: 8,
-    justifyContent: 'space-evenly',
+    paddingBottom: 40,
   },
   logoView: {
     height: 100,
     width: 258,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 100,
+    marginBottom: 50,
   },
   logo: {
     width: 200,
@@ -133,7 +248,7 @@ const styles = StyleSheet.create({
   textView: {
     width: 375,
     alignItems: 'center',
-    marginBottom: '10%',
+    marginBottom: 20,
   },
   titulo: {
     color: '#277D2C',
@@ -142,7 +257,6 @@ const styles = StyleSheet.create({
   },
   subTitulo: {
     color: '#000000',
-    fontWeight: 'regular',
     fontSize: 14,
     textAlign: 'center',
     marginTop: 4,
@@ -157,6 +271,30 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
     borderRadius: 8,
     margin: 8,
+    paddingHorizontal: 10,
+    justifyContent: 'center',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    height: 40,
+    width: 327,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    margin: 8,
+  },
+  passwordInput: {
+    flex: 1,
+    height: '100%',
+    color: '#000000',
+    paddingHorizontal: 10,
+  },
+  iconArea: {
+    paddingHorizontal: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   botoesRow: {
     flexDirection: 'row',
@@ -171,25 +309,18 @@ const styles = StyleSheet.create({
     height: 40,
     width: 155,
     borderRadius: 8,
-    justifyContent: 'center',
+    justify: 'center',
     alignItems: 'center',
+    justifyContent:'center',
   },
   cadastrar: {
     backgroundColor: '#F57C00',
     height: 40,
     width: 155,
     borderRadius: 8,
-    justifyContent: 'center',
+    justify: 'center',
     alignItems: 'center',
-  },
-  continuar2: {
-    backgroundColor: '#EEEEEE',
-    height: 40,
-    width: 327,
-    borderRadius: 8,
     justifyContent: 'center',
-    alignItems: 'center',
-    margin: 8,
   },
   espacamento: {
     height: 16,

@@ -883,7 +883,6 @@ export const carrinhoStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    height: 60,
     borderTopWidth: 1,
     borderTopColor: '#EEEEEE',
   },
@@ -921,7 +920,7 @@ export const detalhesProdutoStyles = StyleSheet.create({
   }, 
   imagemProduto: {
     width: '100%',
-    height: '45%',
+    height: '30%',
     borderRadius: 12,
     backgroundColor: '#F5F5F5',
   },

@@ -42,7 +42,9 @@ export default function Carrinho() {
       <Text style={styles.tituloSecao}>Itens</Text>
 
       {itens.length === 0 ? (
-        <Text style={styles.carrinhoVazio}>Seu carrinho está vazio.</Text>
+        <View style={styles.itemInfo}> 
+          <Text style={styles.carrinhoVazio}>Seu carrinho está vazio.</Text>
+        </View>
       ) : (
         <ScrollView>
           {itens.map((item) => (

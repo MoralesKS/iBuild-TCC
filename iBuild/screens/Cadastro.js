@@ -60,10 +60,14 @@ export default function Cadastro() {
         </TouchableOpacity>
  
         <View style={styles.espacamento} />
- 
-        <Text style={{ color: '#828282', fontSize: 13 }}>
-          Já possui uma conta? <TouchableOpacity onPress={login}><Text style={{ color: '#24BF1E' }}>Entrar</Text></TouchableOpacity>
-        </Text>
+
+        <View style={{flexDirection: 'row',}}>
+          <Text style={{ color: '#828282', fontSize: 13 }}>
+            Já possui uma conta?
+          </Text>
+          <TouchableOpacity onPress={login}><Text style={{ color: '#24BF1E' }}> Entrar</Text></TouchableOpacity>
+        </View>
+        
       </View>
     </View>
   );
@@ -82,7 +86,8 @@ const styles = StyleSheet.create({
     width: 258,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 100,
+    marginBottom: 50,
   },
   logo: {
     width: 220,
