@@ -186,8 +186,7 @@ export default function CadastroAutonomos() {
 
     createUserWithEmailAndPassword(auth, userMail.trim(), userPass)
       .then(() => {
-        alert('O usuário ' + userMail + ' foi criado. Faça o Login');
-        navigation.navigate('Login');
+        alert('Conta criada com sucesso!');
       })
       .catch((error) => {
         if (error.code === 'auth/email-already-in-use') {
@@ -592,3 +591,5 @@ const styles = StyleSheet.create({
     color: '#24BF1E',
   },
 });
+
+

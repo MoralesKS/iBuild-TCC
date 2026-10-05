@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebase.config';
 import { useAppNavigation, categorias, produtos } from '../src/Functions';
 import { homeStyles as styles } from '../src/Styles';
 
@@ -11,6 +13,13 @@ export default function Home() {
   // null = nenhuma categoria selecionada (mostra todos os produtos)
   const [categoriaSelecionada, setCategoriaSelecionada] = useState(null);
   const [textoBusca, setTextoBusca] = useState('');
+
+  // BOTÃO TEMPORÁRIO DE LOGOUT - remover quando a tela final estiver pronta
+  function sairDaConta() {
+    signOut(auth).catch((error) => {
+      alert(error.message);
+    });
+  }
 
   function abrirProduto(produto) {
     navigation.navigate('Produto', { produto });
@@ -51,36 +60,77 @@ export default function Home() {
             value={textoBusca}
             onChangeText={setTextoBusca}
           />
+
           <TouchableOpacity onPress={carrinho}>
-            <Image style={styles.botaoHeader} source={require('../assets/icones/carrinho.png')}/>
+            <Image
+              style={styles.botaoHeader}
+              source={require('../assets/icones/carrinho.png')}
+            />
           </TouchableOpacity>
+
           <TouchableOpacity onPress={() => alert('Tela em construção, aguardando orçamento!')}>
-            <Image style={styles.botaoHeader} source={require('../assets/icones/notificacao-1.png')}/>
+            <Image
+              style={styles.botaoHeader}
+              source={require('../assets/icones/notificacao-1.png')}
+            />
+          </TouchableOpacity>
+
+          {/* BOTÃO TEMPORÁRIO DE LOGOUT - remover quando a tela final estiver pronta */}
+          <TouchableOpacity
+            onPress={sairDaConta}
+            style={{
+              backgroundColor: '#F57C00',
+              paddingHorizontal: 10,
+              paddingVertical: 8,
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 12 }}>
+              Sair
+            </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.acoesRapidasRow}>
           <TouchableOpacity style={styles.acaoRapida}>
-            <Image style={styles.botaoAcaoRapida} source={require('../assets/icones/favorito.png')}/>
+            <Image
+              style={styles.botaoAcaoRapida}
+              source={require('../assets/icones/favorito.png')}
+            />
             <Text style={styles.acaoRapidaTexto}>Favoritos</Text>
           </TouchableOpacity>
+
           <TouchableOpacity style={styles.acaoRapida}>
-            <Image style={styles.botaoAcaoRapida} source={require('../assets/icones/historico.png')}/>
+            <Image
+              style={styles.botaoAcaoRapida}
+              source={require('../assets/icones/historico.png')}
+            />
             <Text style={styles.acaoRapidaTexto}>Histórico</Text>
           </TouchableOpacity>
+
           <TouchableOpacity style={styles.acaoRapida}>
-            <Image style={styles.botaoAcaoRapida} source={require('../assets/icones/verificados.png')}/>
+            <Image
+              style={styles.botaoAcaoRapida}
+              source={require('../assets/icones/verificados.png')}
+            />
             <Text style={styles.acaoRapidaTexto}>Verificados</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.banner}>
           <Text style={styles.bannerAnuncio}>Anúncio</Text>
-          <Text style={styles.bannerTitulo}>O MIX DE{'\n'}PRODUTOS{'\n'}IDEAL PARA SEU{'\n'}MATERIAL DE{'\n'}CONSTRUÇÃO</Text>
+          <Text style={styles.bannerTitulo}>
+            O MIX DE{'\\n'}
+            PRODUTOS{'\\n'}
+            IDEAL PARA SEU{'\\n'}
+            MATERIAL DE{'\\n'}
+            CONSTRUÇÃO
+          </Text>
         </View>
 
         <View style={styles.secaoHeader}>
           <Text style={styles.secaoTitulo}>Categorias</Text>
+
           {categoriaSelecionada && (
             <TouchableOpacity onPress={() => setCategoriaSelecionada(null)}>
               <Text style={styles.secaoSeta}>Limpar filtro</Text>
@@ -109,11 +159,14 @@ export default function Home() {
           <Text style={styles.secaoTitulo}>
             {categoriaSelecionada ? categoriaSelecionada.nome : 'Geral'}
           </Text>
+
           <Text style={styles.secaoSeta}>{'>'}</Text>
         </View>
 
         {produtosFiltrados.length === 0 ? (
-          <Text style={styles.semResultados}>Nenhum produto encontrado nessa categoria.</Text>
+          <Text style={styles.semResultados}>
+            Nenhum produto encontrado nessa categoria.
+          </Text>
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {produtosFiltrados.map((produto) => (
@@ -122,36 +175,31 @@ export default function Home() {
                 style={styles.produtoCard}
                 onPress={() => abrirProduto(produto)}
               >
-                <Image style={styles.produtoImagem} source={produto.imagem} />
-                <Text style={styles.produtoMarca}>{produto.vendedor}</Text>
-                <Text style={styles.produtoNome}>{produto.nome}</Text>
-                <Text style={styles.produtoPreco}>{produto.preco}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
-        
-        {produtosFiltrados.length === 0 ? (
-          <Text style={styles.semResultados}>Nenhum produto encontrado nessa categoria.</Text>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {produtosFiltrados.map((produto) => (
-              <TouchableOpacity
-                key={produto.id}
-                style={styles.produtoCard}
-                onPress={() => abrirProduto(produto)}
-              >
-                <Image style={styles.produtoImagem} source={produto.imagem} />
-                <Text style={styles.produtoMarca}>{produto.vendedor}</Text>
-                <Text style={styles.produtoNome}>{produto.nome}</Text>
-                <Text style={styles.produtoPreco}>{produto.preco}</Text>
+                <Image
+                  style={styles.produtoImagem}
+                  source={produto.imagem}
+                />
+
+                <Text style={styles.produtoMarca}>
+                  {produto.vendedor}
+                </Text>
+
+                <Text style={styles.produtoNome}>
+                  {produto.nome}
+                </Text>
+
+                <Text style={styles.produtoPreco}>
+                  {produto.preco}
+                </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
         )}
 
         {produtosFiltrados.length === 0 ? (
-          <Text style={styles.semResultados}>Nenhum produto encontrado nessa categoria.</Text>
+          <Text style={styles.semResultados}>
+            Nenhum produto encontrado nessa categoria.
+          </Text>
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {produtosFiltrados.map((produto) => (
@@ -160,10 +208,55 @@ export default function Home() {
                 style={styles.produtoCard}
                 onPress={() => abrirProduto(produto)}
               >
-                <Image style={styles.produtoImagem} source={produto.imagem} />
-                <Text style={styles.produtoMarca}>{produto.vendedor}</Text>
-                <Text style={styles.produtoNome}>{produto.nome}</Text>
-                <Text style={styles.produtoPreco}>{produto.preco}</Text>
+                <Image
+                  style={styles.produtoImagem}
+                  source={produto.imagem}
+                />
+
+                <Text style={styles.produtoMarca}>
+                  {produto.vendedor}
+                </Text>
+
+                <Text style={styles.produtoNome}>
+                  {produto.nome}
+                </Text>
+
+                <Text style={styles.produtoPreco}>
+                  {produto.preco}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+
+        {produtosFiltrados.length === 0 ? (
+          <Text style={styles.semResultados}>
+            Nenhum produto encontrado nessa categoria.
+          </Text>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {produtosFiltrados.map((produto) => (
+              <TouchableOpacity
+                key={produto.id}
+                style={styles.produtoCard}
+                onPress={() => abrirProduto(produto)}
+              >
+                <Image
+                  style={styles.produtoImagem}
+                  source={produto.imagem}
+                />
+
+                <Text style={styles.produtoMarca}>
+                  {produto.vendedor}
+                </Text>
+
+                <Text style={styles.produtoNome}>
+                  {produto.nome}
+                </Text>
+
+                <Text style={styles.produtoPreco}>
+                  {produto.preco}
+                </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -174,27 +267,60 @@ export default function Home() {
       {/* BOTTOM TAB BAR */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.footerItem}>
-          <Image style={styles.footerIcone1} source={require('../assets/Home.png')}/>
+          <Image
+            style={styles.footerIcone1}
+            source={require('../assets/Home.png')}
+          />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
-          <Image style={styles.footerIcone} source={require('../assets/gerenciar.png')}/>
+        <TouchableOpacity
+          style={styles.footerItem}
+          onPress={gerenciar}
+        >
+          <Image
+            style={styles.footerIcone}
+            source={require('../assets/gerenciar.png')}
+          />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem} onPress={mapa}>
-          <Image style={styles.footerIcone} source={require('../assets/Bussola.png')}/>
+        <TouchableOpacity
+          style={styles.footerItem}
+          onPress={mapa}
+        >
+          <Image
+            style={styles.footerIcone}
+            source={require('../assets/Bussola.png')}
+          />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem} onPress={contratar}>
-          <Image style={styles.footerIcone} source={require('../assets/Trabalho.png')}/>
+        <TouchableOpacity
+          style={styles.footerItem}
+          onPress={contratar}
+        >
+          <Image
+            style={styles.footerIcone}
+            source={require('../assets/Trabalho.png')}
+          />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem} onPress={chat}>
-          <Image style={styles.footerIcone} source={require('../assets/Chat.png')}/>
+        <TouchableOpacity
+          style={styles.footerItem}
+          onPress={chat}
+        >
+          <Image
+            style={styles.footerIcone}
+            source={require('../assets/Chat.png')}
+          />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem} onPress={perfil}>
-          <Image style={styles.footerIcone} source={require('../assets/Perfil.png')}/>
+        <TouchableOpacity
+          style={styles.footerItem}
+          onPress={perfil}
+        >
+          <Image
+            style={styles.footerIcone}
+            source={require('../assets/Perfil.png')}
+          />
         </TouchableOpacity>
       </View>
 

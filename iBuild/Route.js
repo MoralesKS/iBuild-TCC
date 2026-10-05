@@ -28,6 +28,7 @@ export default function Route({ usuario }) {
       <Drawer.Navigator>
         {!usuario ? (
           <>
+
             <Drawer.Screen
               name="Login"
               component={LoginScreen}
@@ -66,6 +67,7 @@ export default function Route({ usuario }) {
           </>
         ) : (
           <>
+
             <Drawer.Screen
               name="Home"
               component={HomeScreen}
