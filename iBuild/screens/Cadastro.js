@@ -1,157 +1,275 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image} from 'react-native';
-import { useState } from 'react';
-import {useNavigation} from '@react-navigation/native';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase.config';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  useWindowDimensions,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 export default function Cadastro() {
   const navigation = useNavigation();
+  const { width, height } = useWindowDimensions();
+
+  const contentWidth = Math.min(width - 32, 375);
+  const cardWidth = Math.min(width - 48, 327);
+
+  const logoWidth = Math.min(width * 0.85, 340);
+  const logoHeight = logoWidth * 0.5;
 
   function cadastroAutonomo() {
-    navigation.navigate('CadastroAutonomo')
+    navigation.navigate('CadastroAutonomo');
   }
+
   function cadastroPessoaFisica() {
-    navigation.navigate('CadastroPessoaFisica')
+    navigation.navigate('CadastroPessoaFisica');
   }
+
   function cadastroEmpresa() {
-    navigation.navigate('CadastroEmpresa')
+    navigation.navigate('CadastroEmpresa');
   }
-  function login(){
-    navigation.navigate('Login')
+
+  function login() {
+    navigation.navigate('Login');
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.logoView}>
-        <Image source={require('../assets/IBuild.jpg')} style={styles.logo}/>
-      </View>
- 
-      <View style={styles.textView}>
-        <Text style={styles.titulo}>Como deseja se cadastrar?</Text>
-        <Text style={styles.subTitulo}>Escolha seu perfil ideal para continuar no aplicativo</Text>
- 
-        <View style={styles.espacamento} />
- 
-        <TouchableOpacity style={styles.opcaoCard} onPress={cadastroPessoaFisica}>
-          <Image source={require('../assets/pessoaFisica.png')} style={styles.opcaoIcone} />
-          <View style={styles.opcaoTextos}>
-            <Text style={styles.opcaoTitulo}>Pessoa física</Text>
-            <Text style={styles.opcaoDescricao}>Comprar materiais e contratar serviços</Text>
+    <View style={styles.background}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { minHeight: height }
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.container, { width: contentWidth + 32 }]}>
+          <View style={styles.logoView}>
+            <Image
+              source={require('../assets/IBuild.jpg')}
+              style={{
+                width: logoWidth,
+                height: logoHeight,
+                borderRadius: 8,
+              }}
+              resizeMode="contain"
+            />
           </View>
-          <Text style={styles.opcaoSeta}>{'>'}</Text>
-        </TouchableOpacity>
- 
-        <TouchableOpacity style={styles.opcaoCard} onPress={cadastroAutonomo}>
-          <Image source={require('../assets/autonomos.png')} style={styles.opcaoIcone} />
-          <View style={styles.opcaoTextos}>
-            <Text style={styles.opcaoTitulo}>Autônomo</Text>
-            <Text style={styles.opcaoDescricao}>Oferecer serviços e encontrar clientes</Text>
-          </View>
-          <Text style={styles.opcaoSeta}>{'>'}</Text>
-        </TouchableOpacity>
- 
-        <TouchableOpacity style={styles.opcaoCard} onPress={cadastroEmpresa}>
-          <Image source={require('../assets/empresas.png')} style={styles.opcaoIcone} />
-          <View style={styles.opcaoTextos}>
-            <Text style={styles.opcaoTitulo}>Empresa</Text>
-            <Text style={styles.opcaoDescricao}>Anunciar, vender ou contratar</Text>
-          </View>
-          <Text style={styles.opcaoSeta}>{'>'}</Text>
-        </TouchableOpacity>
- 
-        <View style={styles.espacamento} />
 
-        <View style={{flexDirection: 'row',}}>
-          <Text style={{ color: '#828282', fontSize: 13 }}>
-            Já possui uma conta?
-          </Text>
-          <TouchableOpacity onPress={login}><Text style={{ color: '#24BF1E' }}> Entrar</Text></TouchableOpacity>
+          <View style={[styles.textView, { width: contentWidth }]}>
+            <Text style={styles.titulo}>
+              Como deseja se cadastrar?
+            </Text>
+
+            <Text style={styles.subTitulo}>
+              Escolha seu perfil ideal para continuar no aplicativo
+            </Text>
+
+            <View style={styles.espacamento} />
+
+            <TouchableOpacity
+              style={[styles.opcaoCard, { width: cardWidth }]}
+              onPress={cadastroPessoaFisica}
+            >
+              <Image
+                source={require('../assets/pessoaFisica.png')}
+                style={styles.opcaoIcone}
+              />
+
+              <View style={styles.opcaoTextos}>
+                <Text style={styles.opcaoTitulo}>
+                  Pessoa física
+                </Text>
+
+                <Text style={styles.opcaoDescricao}>
+                  Comprar materiais e contratar serviços
+                </Text>
+              </View>
+
+              <Text style={styles.opcaoSeta}>
+                {'>'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.opcaoCard, { width: cardWidth }]}
+              onPress={cadastroAutonomo}
+            >
+              <Image
+                source={require('../assets/autonomos.png')}
+                style={styles.opcaoIcone}
+              />
+
+              <View style={styles.opcaoTextos}>
+                <Text style={styles.opcaoTitulo}>
+                  Autônomo
+                </Text>
+
+                <Text style={styles.opcaoDescricao}>
+                  Oferecer serviços e encontrar clientes
+                </Text>
+              </View>
+
+              <Text style={styles.opcaoSeta}>
+                {'>'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.opcaoCard, { width: cardWidth }]}
+              onPress={cadastroEmpresa}
+            >
+              <Image
+                source={require('../assets/empresas.png')}
+                style={styles.opcaoIcone}
+              />
+
+              <View style={styles.opcaoTextos}>
+                <Text style={styles.opcaoTitulo}>
+                  Empresa
+                </Text>
+
+                <Text style={styles.opcaoDescricao}>
+                  Anunciar, vender ou contratar
+                </Text>
+              </View>
+
+              <Text style={styles.opcaoSeta}>
+                {'>'}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.espacamento} />
+
+            <View style={styles.loginContainer}>
+              <Text style={styles.loginTexto}>
+                Já possui uma conta?
+              </Text>
+
+              <TouchableOpacity onPress={login}>
+                <Text style={styles.loginLink}>
+                  {' '}Entrar
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-        
-      </View>
+      </ScrollView>
     </View>
   );
 }
- 
+
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
-    justifyContent: 'space-evenly',
+    backgroundColor: '#FFFFFF',
+  },
+
+  scrollView: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 30,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+  },
+
+  container: {
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    padding: 8,
   },
+
   logoView: {
-    height: 130,
-    width: 258,
-    marginTop: 100,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
   },
-  logo: {
-    height: 130,
-    width: 258,
-    borderRadius: 8,
-  },
+
   textView: {
-    width: 375,
     alignItems: 'center',
   },
+
   titulo: {
     color: '#277D2C',
     fontWeight: 'bold',
     fontSize: 16,
+    textAlign: 'center',
   },
+
   subTitulo: {
     color: '#000000',
-    fontWeight: 'regular',
     fontSize: 14,
     textAlign: 'center',
     marginTop: 4,
+    paddingHorizontal: 5,
   },
+
   opcaoCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: 327,
-    height: 100,
+    minHeight: 100,
     borderWidth: 1,
     borderColor: '#F57C00',
     borderRadius: 8,
     padding: 16,
-    margin: 8,
+    marginVertical: 8,
+    backgroundColor: '#FFFFFF',
   },
+
   opcaoIcone: {
     width: 50,
     height: 50,
     marginRight: 12,
     tintColor: '#F57C00',
   },
+
   opcaoTextos: {
     flex: 1,
   },
+
   opcaoTitulo: {
     fontWeight: 'bold',
     fontSize: 18,
     color: '#000000',
   },
+
   opcaoDescricao: {
     fontSize: 11,
     color: '#828282',
     marginTop: 2,
   },
+
   opcaoSeta: {
     fontSize: 16,
     color: '#828282',
+    marginLeft: 8,
   },
-  continuar: {
-    backgroundColor: '#F57C00',
-    height: 40,
-    width: 327,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    margin: 8,
-  },
+
   espacamento: {
     height: 24,
   },
+
+  loginContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  loginTexto: {
+    color: '#828282',
+    fontSize: 13,
+  },
+
+  loginLink: {
+    color: '#24BF1E',
+    fontSize: 13,
+  },
 });
- 
