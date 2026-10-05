@@ -120,7 +120,7 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justify: 'space-evenly',
+    justifyContent: 'space-evenly',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     padding: 8,
@@ -130,7 +130,6 @@ const styles = StyleSheet.create({
     height: 130,
     width: 258,
     marginTop: 100,
-    marginBottom: 50,
   },
   textView: {
     height: 439,

@@ -76,7 +76,7 @@ export default function Cadastro() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'f',
+    justifyContent: 'space-evenly',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     padding: 8,
@@ -84,14 +84,12 @@ const styles = StyleSheet.create({
   logoView: {
     height: 130,
     width: 258,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginTop: 100,
-    marginBottom: 50,
   },
   logo: {
-    width: 220,
-    height: 100,
+    height: 130,
+    width: 258,
+    borderRadius: 8,
   },
   textView: {
     width: 375,
