@@ -19,6 +19,7 @@ import GerenciarScreen from './screens/Gerenciar'
 import AtribuirFuncionariosScreen from './screens/AtribuirFuncionarios'
 import NotificacaoScreen from './screens/Notificacao'
 import DetalhesObrasScreen from './screens/DetalheObras'
+import AnunciarScreen from './screens/Anunciar'
 
 const Drawer = createDrawerNavigator()
 
@@ -47,6 +48,7 @@ export default function Route(){
         <Drawer.Screen name='Chat 1' component={Chat1Screen} options={{headerShown: false}}/>
         <Drawer.Screen name='Chat 2' component={Chat2Screen} options={{headerShown: false}}/>
         <Drawer.Screen name='Perfil' component={PerfilScreen} options={{headerShown: false}}/>
+        <Drawer.Screen name='Anunciar' component={AnunciarScreen} options={{headerShown: false}}/>
       </Drawer.Navigator>
     </CarrinhoProvider>
   )

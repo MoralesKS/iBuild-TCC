@@ -1,258 +1,169 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Image} from 'react-native';
+import { Text, View, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useAppNavigation, produtos } from '../src/Functions';
+import { perfilStyles as styles } from '../src/Styles';
+import { usuario } from '../src/Usuario';
 
 export default function Perfil() {
-  const categorias = ['Tijolo', 'Cimento', 'Areia', 'Madeira', 'Telha', 'Ferro'];
-  const produtos = ['Cimento Caue', 'Tijolo Cerâmico', 'Areia Fina', 'Vergalhão'];
+  const navigation = useNavigation();
+  const { home, mapa, contratar, gerenciar, chat, anunciar } = useAppNavigation();
+
+  // Dados de exemplo: por enquanto todos os produtos aparecem como "itens à venda"
+  // e os favoritos são os mesmos em outra ordem. Quando tiver backend ou Context
+  // de anúncios/favoritos, é só trocar essas duas linhas.
+  const itensAVenda = produtos;
+  const favoritos = [...produtos].reverse();
+
+  function abrirProduto(produto) {
+    navigation.navigate('Produto', { produto });
+  }
+
+  // Função simples (não um componente) pra não repetir o mesmo JSX nas duas listas
+  function renderizarLista(lista) {
+    return (
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {lista.map((produto) => (
+          <TouchableOpacity
+            key={produto.id}
+            style={styles.produtoCard}
+            onPress={() => abrirProduto(produto)}
+          >
+            <Image style={styles.produtoImagem} source={produto.imagem} />
+            <Text style={styles.produtoNome} numberOfLines={1}>{produto.nome}</Text>
+            <Text style={styles.produtoPreco}>{produto.preco} / un.</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    );
+  }
 
   return (
     <View style={styles.container}>
 
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        
-        <TextInput style={styles.busca} placeholder="Buscar" placeholderTextColor="#828282" />
+      <View style={styles.headerRow}>
+        <Text style={styles.titulo}>Meu Perfil</Text>
+        <TouchableOpacity
+          style={styles.botaoConfig}
+          onPress={() => alert('Tela em construção, aguardando orçamento')}
+        >
+          <Image style={styles.iconeConfig} source={require('../assets/icones/configuracoes.png')}/>
+        </TouchableOpacity>
+      </View>
 
-        <View style={styles.acoesRapidasRow}>
-          <TouchableOpacity style={styles.acaoRapida}>
-            <Text style={styles.acaoRapidaTexto}>Favoritos</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.acaoRapida}>
-            <Text style={styles.acaoRapidaTexto}>Histórico</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.acaoRapida}>
-            <Text style={styles.acaoRapidaTexto}>Verificados</Text>
-          </TouchableOpacity>
+      <ScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
+
+        {/* Foto e dados principais */}
+        <View style={styles.perfilRow}>
+          <View style={styles.avatarWrapper}>
+            <Image style={styles.avatar} source={usuario.foto} />
+            <View style={styles.editarBadge}>
+              <Text style={styles.editarTexto}>✎</Text>
+            </View>
+          </View>
+          <View>
+            <Text style={styles.nome}>{usuario.nome}</Text>
+            <Text style={styles.profissao}>{usuario.profissao}</Text>
+            <View style={styles.localRow}>
+              <Image style={styles.iconePequeno} source={require('../assets/icones/localizacao.png')}/>
+              <Text style={styles.localTexto}>{usuario.cidade}</Text>
+            </View>
+          </View>
         </View>
 
-        <View style={styles.banner}>
-          <Text style={styles.bannerAnuncio}>Anúncio</Text>
-          <Text style={styles.bannerTitulo}>O MIX DE{'\n'}PRODUTOS{'\n'}IDEAL PARA SEU{'\n'}MATERIAL DE{'\n'}CONSTRUÇÃO</Text>
+        {/* Contato */}
+        <View style={styles.contatoRow}>
+          <View style={styles.contatoItem}>
+            <Image style={styles.contatoIcone} source={require('../assets/icones/telefone.png')}/>
+            <Text style={styles.contatoTexto}>{usuario.telefone}</Text>
+          </View>
+          <View style={styles.contatoItem}>
+            <Image style={styles.contatoIcone} source={require('../assets/icones/email.png')}/>
+            <Text style={styles.contatoTexto}>{usuario.email}</Text>
+          </View>
         </View>
 
+        <Text style={styles.bio}>{usuario.bio}</Text>
+
+        {/* Estatísticas — Produtos e Favoritos vêm das listas, não são números fixos */}
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValor}>{itensAVenda.length}</Text>
+            <Text style={styles.statLabel}>Produtos</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statValor}>{favoritos.length}</Text>
+            <Text style={styles.statLabel}>Favoritos</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statValor}>{usuario.avaliacoes}</Text>
+            <Text style={styles.statLabel}>Avaliações</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statValor}>
+              <Text style={styles.estrela}>★ </Text>{usuario.notaMedia}
+            </Text>
+            <Text style={styles.statLabel}>Nota média</Text>
+          </View>
+        </View>
+
+        {/* Botão pra anunciar */}
+        <TouchableOpacity style={styles.anunciarCard} onPress={anunciar}>
+          <Image style={styles.anunciarIcone} source={require('../assets/icones/anuncio.png')}/>
+          <View style={styles.anunciarInfo}>
+            <Text style={styles.anunciarTitulo}>Anunciar produtos ou materiais</Text>
+            <Text style={styles.anunciarSub}>Divulgue seus produtos e alcance mais clientes</Text>
+          </View>
+          <Text style={styles.setaDireita}>{'>'}</Text>
+        </TouchableOpacity>
+
+        <View style={styles.divisor} />
+
+        {/* Itens à venda */}
         <View style={styles.secaoHeader}>
-          <Text style={styles.secaoTitulo}>Categorias</Text>
-          <Text style={styles.secaoSeta}>{'>'}</Text>
+          <Text style={styles.secaoTitulo}>Itens a venda</Text>
+          <TouchableOpacity>
+            <Text style={styles.verTodos}>Ver todos {'>'}</Text>
+          </TouchableOpacity>
         </View>
+        {renderizarLista(itensAVenda)}
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {categorias.map((cat, index) => (
-            <TouchableOpacity key={index} style={styles.categoriaItem}>
-              <View style={styles.categoriaIcone}>
-                {/* ICONE: {cat} */}
-              </View>
-              <Text style={styles.categoriaTexto}>{cat}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Produtos */}
+        {/* Favoritos */}
         <View style={styles.secaoHeader}>
-          <Text style={styles.secaoTitulo}>Geral</Text>
-          <Text style={styles.secaoSeta}>{'>'}</Text>
+          <Text style={styles.secaoTitulo}>Favoritos</Text>
+          <TouchableOpacity>
+            <Text style={styles.verTodos}>Ver todos {'>'}</Text>
+          </TouchableOpacity>
         </View>
-
-        <ScrollView horizontal>
-          {produtos.map((produto, index) => (
-            <TouchableOpacity key={index} style={styles.produtoCard}>
-              <View style={styles.produtoImagem}>
-                {/* IMAGEM: {produto} */}
-              </View>
-              <Text style={styles.produtoMarca}>Marca</Text>
-              <Text style={styles.produtoNome}>{produto}</Text>
-              <Text style={styles.produtoPreco}>$10,99</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-        
-        <ScrollView horizontal>
-          {produtos.map((produto, index) => (
-            <TouchableOpacity key={index} style={styles.produtoCard}>
-              <View style={styles.produtoImagem}>
-                {/* IMAGEM: {produto} */}
-              </View>
-              <Text style={styles.produtoMarca}>Marca</Text>
-              <Text style={styles.produtoNome}>{produto}</Text>
-              <Text style={styles.produtoPreco}>$10,99</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-        
-        <ScrollView horizontal>
-          {produtos.map((produto, index) => (
-            <TouchableOpacity key={index} style={styles.produtoCard}>
-              <View style={styles.produtoImagem}>
-                {/* IMAGEM: {produto} */}
-              </View>
-              <Text style={styles.produtoMarca}>Marca</Text>
-              <Text style={styles.produtoNome}>{produto}</Text>
-              <Text style={styles.produtoPreco}>$10,99</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        {renderizarLista(favoritos)}
 
       </ScrollView>
 
       {/* BOTTOM TAB BAR */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerItem}>
-          <Image style={styles.footerIcone1} source={require('../assets/Home.png')}/>
+        <TouchableOpacity style={styles.footerItem} onPress={home}>
+          <Image style={styles.footerIcone} source={require('../assets/Home.png')}/>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem}>
+        <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
+          <Image style={styles.footerIcone} source={require('../assets/gerenciar.png')}/>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.footerItem} onPress={mapa}>
           <Image style={styles.footerIcone} source={require('../assets/Bussola.png')}/>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem}>
+        <TouchableOpacity style={styles.footerItem} onPress={contratar}>
           <Image style={styles.footerIcone} source={require('../assets/Trabalho.png')}/>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem}>
+        <TouchableOpacity style={styles.footerItem} onPress={chat}>
           <Image style={styles.footerIcone} source={require('../assets/Chat.png')}/>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem}>
-          <Image style={styles.footerIcone} source={require('../assets/Perfil.png')}/>
+          <Image style={styles.footerIcone1} source={require('../assets/Perfil.png')}/>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  scroll: {
-    flex: 1,
-    paddingHorizontal: 16,
-    marginTop: '10%',
-  },
-  busca: {
-    backgroundColor: '#F5F5F5',
-    height: 44,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    marginTop: 16,
-    color: '#000000',
-  },
-  acoesRapidasRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16,
-  },
-  acaoRapida: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    width: 104,
-    height: 32,
-    borderColor: 'gray',
-    borderRadius: 8,
-    justifyContent: 'center'
-  },
-  acaoRapidaTexto: {
-    fontSize: 13,
-    color: '#000000',
-    marginLeft: 4,
-  },
-  banner: {
-    backgroundColor: '#F57C00',
-    borderRadius: 12,
-    height: 120,
-    marginTop: 16,
-    padding: 16,
-    justifyContent: 'center',
-  },
-  bannerAnuncio: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    marginBottom: 4,
-  },
-  bannerTitulo: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  secaoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 20,
-    marginBottom: 8,
-  },
-  secaoTitulo: {
-    fontWeight: 'bold',
-    fontSize: 15,
-    color: '#000000',
-  },
-  secaoSeta: {
-    color: '#828282',
-    fontSize: 15,
-  },
-  categoriaItem: {
-    alignItems: 'center',
-    marginRight: 20,
-  },
-  categoriaIcone: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#F5F5F5',
-  },
-  categoriaTexto: {
-    fontSize: 12,
-    color: '#000000',
-    marginTop: 6,
-  },
-  produtoCard: {
-    width: 110,
-    marginRight: 12,
-    marginBottom: 16,
-  },
-  produtoImagem: {
-    width: 110,
-    height: 90,
-    borderRadius: 8,
-    backgroundColor: '#F5F5F5',
-  },
-  produtoMarca: {
-    fontSize: 10,
-    color: '#828282',
-    marginTop: 6,
-  },
-  produtoNome: {
-    fontSize: 12,
-    color: '#000000',
-    fontWeight: 'bold',
-  },
-  produtoPreco: {
-    fontSize: 13,
-    color: '#000000',
-    marginTop: 2,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 60,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-  },
-  footerItem: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'gray',
-    height: 42,
-    width: 72,
-  },
-  footerIcone: {
-    height: 23,
-    width: 23,
-  },
-  footerIcone1: {
-    height: 23,
-    width: 23,
-    tintColor: '#277D2C',
-  },
-});

@@ -25,14 +25,17 @@ export function useAppNavigation() {
   function detalhesObra() {
     navigation.navigate('DetalhesObra');
   }
-  function perfil() {
-    alert('Tela em construção, aguardando orçamento');
+  function perfil() { 
+    navigation.navigate('Perfil'); 
+  }
+  function anunciar() { 
+    navigation.navigate('Anunciar'); 
   }
   function chat() {
     alert('Tela em construção, aguardando orçamento');
   }
 
-  return { home, detalheProdutos, mapa, contratar, carrinho, gerenciar, detalhesObra, perfil, chat };
+  return { home, detalheProdutos, mapa, contratar, carrinho, gerenciar, detalhesObra, perfil, anunciar, chat };
 }
 
 {/*Home % Carrinho*/}
