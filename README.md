@@ -8,7 +8,7 @@ O IBuild é um aplicativo que promove o reaproveitamento de sobras da construç�
 
 1. Clone este repositório em um Codespace (ou pasta local):
 ```bash
-   git clone <url-do-repositorio>
+   git clone "https://github.com/MoralesKS/iBuild-TCC.git"
 ```
 2. Entre na pasta do projeto:
 ```bash

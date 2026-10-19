@@ -46,6 +46,7 @@ export default function RedefinicaoSenha() {
         <TextInput style={styles.textInput}
             placeholder='Informe seu email'
             keyboardType='email-address'
+            placeholderTextColor="#828282"
             autoCapitalize='none'
             autoComplete='email'
             value={userMail}
@@ -160,7 +161,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     backgroundColor: 'white',
-    color: '#E0E0E0',
+    color: '#000000',
     height: 40,
     width: 327,
     borderWidth: 1,

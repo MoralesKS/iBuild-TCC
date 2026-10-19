@@ -19,15 +19,11 @@ import GerenciarScreen from './screens/Gerenciar'
 import AtribuirFuncionariosScreen from './screens/AtribuirFuncionarios'
 import NotificacaoScreen from './screens/Notificacao'
 import DetalhesObrasScreen from './screens/DetalheObras'
-import AnunciarScreen from './screens/Anunciar'
 
-const Drawer = createDrawerNavigator()
+const Drawer = createDrawerNavigator();
 
-export default function Route(){
-  return(
-    // Tudo que fica DENTRO do CarrinhoProvider consegue chamar useCarrinho()
-    // e enxergar o MESMO carrinho — não importa se a pessoa está na Home,
-    // no Produto, ou em qualquer outra tela do Drawer.
+export default function Route({ usuario }) {
+  return (
     <CarrinhoProvider>
       <Drawer.Navigator>
         <Drawer.Screen name='Login' component={LoginScreen} options={{headerShown: false}}/>
@@ -48,8 +44,7 @@ export default function Route(){
         <Drawer.Screen name='Chat 1' component={Chat1Screen} options={{headerShown: false}}/>
         <Drawer.Screen name='Chat 2' component={Chat2Screen} options={{headerShown: false}}/>
         <Drawer.Screen name='Perfil' component={PerfilScreen} options={{headerShown: false}}/>
-        <Drawer.Screen name='Anunciar' component={AnunciarScreen} options={{headerShown: false}}/>
       </Drawer.Navigator>
     </CarrinhoProvider>
-  )
+  );
 }
