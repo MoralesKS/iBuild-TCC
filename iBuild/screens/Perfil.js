@@ -1,7 +1,6 @@
-import { Text, View, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { Text, View, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppNavigation, produtos } from '../src/Functions';
-import { perfilStyles as styles } from '../src/Styles';
 import { usuario } from '../src/Usuario';
 
 export default function Perfil() {
@@ -167,3 +166,234 @@ export default function Perfil() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    marginBottom: '10%',
+    paddingTop: '10%',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  titulo: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  botaoConfig: {
+    position: 'absolute',
+    right: 16,
+  },
+  iconeConfig: {
+    width: 24,
+    height: 24,
+    tintColor: '#000000',
+  },
+  perfilRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarWrapper: {
+    marginRight: 16,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F0F0F0',
+  },
+  editarBadge: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editarTexto: {
+    fontSize: 12,
+    color: '#000000',
+  },
+  nome: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  profissao: {
+    fontSize: 13,
+    color: '#828282',
+    marginTop: 2,
+  },
+  localRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  iconePequeno: {
+    width: 14,
+    height: 14,
+    tintColor: '#828282',
+    marginRight: 4,
+  },
+  localTexto: {
+    fontSize: 12,
+    color: '#000000',
+  },
+  contatoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+  },
+  contatoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  contatoIcone: {
+    width: 18,
+    height: 18,
+    tintColor: '#000000',
+    marginRight: 6,
+  },
+  contatoTexto: {
+    fontSize: 13,
+    color: '#000000',
+  },
+  bio: {
+    fontSize: 13,
+    color: '#000000',
+    marginTop: 12,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 16,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValor: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  estrela: {
+    color: '#F5A623',
+  },
+  statLabel: {
+    fontSize: 11,
+    color: '#828282',
+  },
+  anunciarCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#F57C00',
+    backgroundColor: '#FFF4E5',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 16,
+  },
+  anunciarIcone: {
+    width: 32,
+    height: 32,
+    tintColor: '#F57C00',
+    marginRight: 12,
+  },
+  anunciarInfo: {
+    flex: 1,
+  },
+  anunciarTitulo: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  anunciarSub: {
+    fontSize: 11,
+    color: '#828282',
+    marginTop: 2,
+  },
+  setaDireita: {
+    fontSize: 16,
+    color: '#828282',
+  },
+  divisor: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginVertical: 16,
+  },
+  secaoHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  secaoTitulo: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  verTodos: {
+    fontSize: 12,
+    color: '#F57C00',
+  },
+  produtoCard: {
+    width: 90,
+    marginRight: 12,
+    marginBottom: 12,
+  },
+  produtoImagem: {
+    width: 90,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+    resizeMode: 'cover',
+  },
+  produtoNome: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#000000',
+    marginTop: 4,
+  },
+  produtoPreco: {
+    fontSize: 10,
+    color: '#828282',
+    marginTop: 2,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    height: 60,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+  },
+  footerItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 42,
+    width: 72,
+  },
+  footerIcone: {
+    height: 23,
+    width: 23,
+    tintColor: '#9C9C9C',
+  },
+  footerIcone1: {
+    height: 23,
+    width: 23,
+    tintColor: '#277D2C',
+  },
+});

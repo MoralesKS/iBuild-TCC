@@ -1,6 +1,5 @@
-import { Text, View, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { Text, View, TouchableOpacity, ScrollView, Image, StyleSheet} from 'react-native';
 import { useAppNavigation } from '../src/Functions';
-import { carrinhoStyles as styles } from '../src/Styles';
 import { useCarrinho } from '../src/CarrinhoItens';
 
 // Transforma "R$ 1,20" (string) em 1.2 (número), pra dar pra somar
@@ -101,3 +100,122 @@ export default function Carrinho() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    marginBottom: '10%',
+    paddingTop: '10%',
+  },
+  titulo: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  linha: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  label: {
+    color: '#828282',
+    fontSize: 13,
+  },
+  valor: {
+    fontSize: 13,
+    color: '#000000',
+  },
+  tituloSecao: {
+    fontWeight: 'bold',
+    fontSize: 15,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  carrinhoVazio: {
+    fontSize: 13,
+    color: '#828282',
+    marginTop: 8,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  itemImagem: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: '#F0F0F0',
+    marginRight: 12,
+  },
+  itemInfo: {
+    flex: 1,
+  },
+  itemNome: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  itemQuantidade: {
+    fontSize: 12,
+    color: '#828282',
+    marginTop: 2,
+  },
+  itemPreco: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginRight: 12,
+  },
+  itemRemover: {
+    fontSize: 12,
+    color: '#D32F2F',
+  },
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  totalValor: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  botaoPedido: {
+    backgroundColor: '#F57C00',
+    height: 48,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  botaoTexto: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+  },
+  footerItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 42,
+    width: 72,
+  },
+  footerIcone: {
+    height: 23,
+    width: 23,
+    tintColor: '#9C9C9C',
+  },
+  footerIcone1: {
+    height: 23,
+    width: 23,
+    tintColor: '#277D2C',
+  },
+});

@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Text, View, TextInput, TouchableOpacity, Image, Linking, ActivityIndicator } from 'react-native';
+import { Text, View, TextInput, TouchableOpacity, Image, Linking, ActivityIndicator, StyleSheet } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useAppNavigation, lojas, abrirNoGoogleMaps } from '../src/Functions';
-import { mapaStyles as styles } from '../src/Styles';
 
 export default function Mapa() {
   const { home, contratar, gerenciar, carrinho, perfil, chat } = useAppNavigation();
@@ -196,3 +195,159 @@ export default function Mapa() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    marginTop: '10%',
+    marginBottom: '10%',
+  },
+  centralizado: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  permissaoTexto: {
+    fontSize: 14,
+    color: '#000000',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  avisoLocalizacao: {
+    fontSize: 11,
+    color: '#F57C00',
+    textAlign: 'center',
+    marginTop: 8,
+    paddingHorizontal: 16,
+  },
+  buscaWrapper: {
+    paddingHorizontal: 16,
+  },
+  busca: {
+    backgroundColor: '#F5F5F5',
+    height: 44,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    marginTop: 16,
+    color: '#000000',
+  },
+  filtrosRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginTop: 12,
+  },
+  filtroBotao: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginRight: 8,
+  },
+  filtroTexto: {
+    fontSize: 12,
+    color: '#000000',
+  },
+  filtroSeta: {
+    fontSize: 12,
+    color: '#828282',
+  },
+  mapaWrapper: {
+    flex: 1,
+    marginTop: 16,
+    marginHorizontal: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  mapa: {
+    flex: 1,
+  },
+  marcadorVoce: {
+    backgroundColor: '#24BF1E',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  marcadorVoceTexto: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  lojaCard: {
+    margin: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+    overflow: 'hidden',
+  },
+  lojaImagem: {
+    height: 100,
+    backgroundColor: '#F5F5F5',
+  },
+  lojaInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+  },
+  lojaInfo: {
+    flex: 1,
+  },
+  lojaNome: {
+    fontWeight: 'bold',
+    fontSize: 14,
+    color: '#000000',
+  },
+  lojaAvaliacao: {
+    fontSize: 12,
+    color: '#828282',
+    marginTop: 2,
+  },
+  lojaEndereco: {
+    fontSize: 12,
+    color: '#828282',
+  },
+  lojaDistancia: {
+    fontSize: 12,
+    color: '#828282',
+    marginTop: 2,
+  },
+  selecionarBotao: {
+    backgroundColor: '#F57C00',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  selecionarTexto: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    height: 60,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+  },
+  footerItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 42,
+    width: 72,
+  },
+  footerIcone: {
+    height: 23,
+    width: 23,
+    tintColor: '#9C9C9C',
+  },
+  footerIcone1: {
+    height: 23,
+    width: 23,
+    tintColor: '#277D2C',
+  },
+});

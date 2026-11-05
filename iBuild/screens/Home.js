@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { Text, View, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase.config';
 import { useAppNavigation, categorias, produtos } from '../src/Functions';
-import { homeStyles as styles } from '../src/Styles';
 
 export default function Home() {
   const navigation = useNavigation();
@@ -327,3 +326,157 @@ export default function Home() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    marginBottom: '10%',
+  },
+  scroll: {
+    flex: 1,
+    paddingHorizontal: 16,
+    marginTop: '10%',
+  },
+  busca: {
+    backgroundColor: '#F5F5F5',
+    height: 44,
+    width: '75%',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    marginTop: 16,
+    color: '#000000',
+  },
+  botaoHeader: {
+    width: 34,
+    height: 34,
+    marginTop: 10,
+  },
+  acoesRapidasRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+  },
+  acaoRapida: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    width: 104,
+    height: 32,
+    borderColor: 'gray',
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  botaoAcaoRapida: {
+    width: 18,
+    height: 18,
+  },
+  acaoRapidaTexto: {
+    fontSize: 13,
+    color: '#000000',
+    marginLeft: 4,
+  },
+  banner: {
+    backgroundColor: '#F57C00',
+    borderRadius: 12,
+    height: 120,
+    marginTop: 16,
+    padding: 16,
+    justifyContent: 'center',
+  },
+  bannerAnuncio: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    marginBottom: 4,
+  },
+  bannerTitulo: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  secaoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  secaoTitulo: {
+    fontWeight: 'bold',
+    fontSize: 15,
+    color: '#000000',
+  },
+  secaoSeta: {
+    color: '#828282',
+    fontSize: 15,
+  },
+  categoriaItem: {
+    alignItems: 'center',
+    marginRight: 20,
+  },
+  categoriaIcone: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#F5F5F5',
+  },
+  categoriaTexto: {
+    fontSize: 12,
+    color: '#000000',
+    marginTop: 6,
+  },
+  produtoCard: {
+    width: 110,
+    marginRight: 12,
+    marginBottom: 16,
+  },
+  produtoImagem: {
+    width: 110,
+    height: 90,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+  },
+  produtoMarca: {
+    fontSize: 10,
+    color: '#828282',
+    marginTop: 6,
+  },
+  produtoNome: {
+    fontSize: 12,
+    color: '#000000',
+    fontWeight: 'bold',
+  },
+  produtoPreco: {
+    fontSize: 13,
+    color: '#000000',
+    marginTop: 2,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    height: 60,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+  },
+  footerItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 42,
+    width: 72,
+  },
+  footerIcone: {
+    height: 23,
+    width: 23,
+    tintColor: '#9C9C9C',
+  },
+  footerIcone1: {
+    height: 23,
+    width: 23,
+    tintColor: '#277D2C',
+  },
+  semResultados: {
+    margin: 8,
+  },
+});

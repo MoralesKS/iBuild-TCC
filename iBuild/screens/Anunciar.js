@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Text, View, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { useAppNavigation, categorias } from '../src/Functions';
-import { anunciarStyles as styles } from '../src/Styles';
 import { usuario } from '../src/Usuario';
 
 const unidades = ['un.', 'kg', 'm', 'm²', 'm³', 'saco', 'milheiro'];
@@ -256,7 +255,7 @@ export default function Anunciar() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
-          <Image style={styles.footerIcone1} source={require('../assets/gerenciar.png')}/>
+          <Image style={styles.footerIcone} source={require('../assets/gerenciar.png')}/>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem} onPress={mapa}>
@@ -272,9 +271,260 @@ export default function Anunciar() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem} onPress={perfil}>
-          <Image style={styles.footerIcone} source={require('../assets/Perfil.png')}/>
+          <Image style={styles.footerIcone1} source={require('../assets/Perfil.png')}/>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    marginBottom: '10%',
+    paddingTop: '10%',
+  },
+  titulo: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  fotosRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  fotoBox: {
+    width: '48%',
+    height: 130,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 8,
+  },
+  fotoIcone: {
+    width: 32,
+    height: 32,
+    tintColor: '#F57C00',
+  },
+  fotoCirculoTracejado: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#F57C00',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fotoIconeMenor: {
+    width: 18,
+    height: 18,
+    tintColor: '#F57C00',
+  },
+  fotoTitulo: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginTop: 8,
+  },
+  fotoSub: {
+    fontSize: 10,
+    color: '#828282',
+    textAlign: 'center',
+  },
+  formCard: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  formTitulo: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 4,
+  },
+  label: {
+    fontSize: 10,
+    color: '#000000',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 6,
+    height: 34,
+    paddingHorizontal: 8,
+    fontSize: 11,
+    color: '#000000',
+  },
+  selectInput: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 6,
+    height: 34,
+    paddingHorizontal: 8,
+  },
+  placeholderTexto: {
+    fontSize: 11,
+    color: '#828282',
+  },
+  valorTexto: {
+    fontSize: 11,
+    color: '#000000',
+  },
+  seta: {
+    fontSize: 12,
+    color: '#828282',
+  },
+  linhaCampos: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  campoPequeno: {
+    width: '31%',
+  },
+  menuOpcoes: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 6,
+  },
+  opcaoMenu: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  opcaoMenuAtiva: {
+    borderColor: '#F57C00',
+    backgroundColor: '#FFF4E5',
+  },
+  opcaoTexto: {
+    fontSize: 11,
+    color: '#000000',
+  },
+  descricaoInput: {
+    height: 70,
+    paddingTop: 8,
+    textAlignVertical: 'top',
+  },
+  contador: {
+    fontSize: 9,
+    color: '#828282',
+    textAlign: 'right',
+    marginTop: 2,
+  },
+  linhaSegmentados: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  segmentado: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  segmentoItem: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  segmentoItemBorda: {
+    borderLeftWidth: 1,
+    borderLeftColor: '#E0E0E0',
+  },
+  segmentoItemAtivo: {
+    backgroundColor: '#FFF4E5',
+  },
+  segmentoTexto: {
+    fontSize: 10,
+    color: '#828282',
+  },
+  segmentoTextoAtivo: {
+    color: '#F57C00',
+    fontWeight: 'bold',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 6,
+    padding: 8,
+    marginTop: 8,
+  },
+  infoIcone: {
+    width: 16,
+    height: 16,
+    marginRight: 8,
+  },
+  infoLabel: {
+    flex: 1,
+    fontSize: 11,
+    color: '#000000',
+  },
+  infoValor: {
+    fontSize: 10,
+    color: '#828282',
+    marginRight: 6,
+  },
+  publicarBotao: {
+    flexDirection: 'row',
+    backgroundColor: '#F57C00',
+    height: 40,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  publicarIcone: {
+    width: 14,
+    height: 14,
+    tintColor: '#FFFFFF',
+    marginRight: 6,
+  },
+  publicarTexto: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    height: 60,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+  },
+  footerItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 42,
+    width: 72,
+  },
+  footerIcone: {
+    height: 23,
+    width: 23,
+    tintColor: '#9C9C9C',
+  },
+  footerIcone1: {
+    height: 23,
+    width: 23,
+    tintColor: '#277D2C',
+  },
+});

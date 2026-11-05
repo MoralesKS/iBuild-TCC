@@ -1,9 +1,8 @@
-import { Text, View, TouchableOpacity, ScrollView, Image, TextInput, KeyboardAvoidingView, Platform  } from 'react-native';
+import { Text, View, TouchableOpacity, ScrollView, Image, TextInput, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
 import Checkbox from 'expo-checkbox';
 import { useAppNavigation, obras, calcularProgresso  } from '../src/Functions';
-import { detalhesObraStyles as styles } from '../src/Styles';
 
 export default function DetalhesObra() {
   const route = useRoute();
@@ -236,3 +235,149 @@ export default function DetalhesObra() {
     </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    marginBottom: '10%',
+    paddingTop: '10%',
+  },
+  titulo: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  resumoCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#828282',
+  },
+  foto: {
+    width: 61,
+    height: 61,
+    tintColor: '#000000',
+  },
+  foto1: {
+    width: 21,
+    height: 21,
+    tintColor: '#000000',
+  },
+  resumoNome: {
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  resumoSub: {
+    fontSize: 12,
+    color: '#828282',
+    marginBottom: 12,
+  },
+  progressoBarraFundo: {
+    height: 6,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressoBarraPreenchida: {
+    height: 6,
+    backgroundColor: '#277D2C',
+    borderRadius: 3,
+  },
+  progressoTexto: {
+    fontSize: 12,
+    marginTop: 8,
+  },
+  tituloSecao: {
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  novaAcaoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  novaAcaoInput: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    height: 40,
+    paddingHorizontal: 12,
+    marginRight: 8,
+    color: '#000000',
+  },
+  novaAcaoBotao: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#F57C00',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  novaAcaoBotaoTexto: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  infoCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#828282',
+    padding: 8,
+  },
+  infoLinha: {
+    fontSize: 13,
+    color: '#000000',
+    marginBottom: 8,
+  },
+  contratarBotao: {
+    backgroundColor: '#F57C00',
+    height: 44,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  contratarTexto: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    height: 60,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+  },
+  footerItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 42,
+    width: 72,
+  },
+  footerIcone: {
+    height: 23,
+    width: 23,
+    tintColor: '#9C9C9C',
+  },
+  footerIcone1: {
+    height: 23,
+    width: 23,
+    tintColor: '#277D2C',
+  },
+  divisao: {
+    borderLeftWidth: .5,
+    borderRightWidth: .5,
+    padding: 12,
+    alignItems: 'center',
+  },
+});

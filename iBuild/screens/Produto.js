@@ -1,7 +1,6 @@
-import { Text, View, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { Text, View, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAppNavigation, produtos, abrirNoGoogleMaps } from '../src/Functions';
-import { detalhesProdutoStyles as styles } from '../src/Styles';
 import { useCarrinho } from '../src/CarrinhoItens';
 
 export default function Produto() {
@@ -126,3 +125,186 @@ export default function Produto() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    marginBottom: '10%',
+    paddingTop: '10%',
+  },
+  seta: {
+    fontSize: 20,
+    color: '#000000',
+    marginBottom: 12,
+    marginLeft: '5%',
+  }, 
+  imagemProduto: {
+    width: '100%',
+    height: '30%',
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+  },
+  tituloRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  nomeProduto: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  emEstoque: {
+    fontSize: 12,
+    color: '#277D2C',
+    fontWeight: '500',
+  },
+  tipoTexto: {
+    fontSize: 13,
+    color: '#828282',
+    marginTop: 2,
+  },
+  precoRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginTop: 16,
+  },
+  preco: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#F57C00',
+  },
+  unidade: {
+    fontSize: 13,
+    color: '#828282',
+  },
+  avaliacaoTexto: {
+    fontSize: 13,
+    color: '#F5A623',
+    marginTop: 4,
+  },
+  vendedorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 16,
+  },
+  vendedorIcone: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    marginRight: 12,
+  },
+  vendedorInfo: {
+    flex: 1,
+  },
+  vendedorNome: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  vendedorLocal: {
+    fontSize: 12,
+    color: '#828282',
+    marginTop: 2,
+  },
+  setaDireita: {
+    fontSize: 16,
+    color: '#828282',
+  },
+  descricaoTexto: {
+    fontSize: 12,
+    color: '#828282',
+    fontStyle: 'italic',
+    marginTop: 16,
+  },
+  tituloSecao: {
+    fontWeight: 'bold',
+    fontSize: 15,
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  especCard: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 16,
+  },
+  especLinha: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  especLabel: {
+    fontSize: 13,
+    color: '#828282',
+  },
+  especValor: {
+    fontSize: 13,
+    color: '#000000',
+    fontWeight: '500',
+  },
+  botoesRow: {
+    flexDirection: 'row',
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  chatBotao: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#277D2C',
+    borderRadius: 8,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  chatTexto: {
+    color: '#277D2C',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  comprarBotao: {
+    flex: 1,
+    backgroundColor: '#F57C00',
+    borderRadius: 8,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  comprarTexto: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    height: 60,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+  },
+  footerItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 42,
+    width: 72,
+  },
+  footerIcone: {
+    height: 23,
+    width: 23,
+    tintColor: '#9C9C9C',
+  },
+  footerIcone1: {
+    height: 23,
+    width: 23,
+    tintColor: '#277D2C',
+  },
+});

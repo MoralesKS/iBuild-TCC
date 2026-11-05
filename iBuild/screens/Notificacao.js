@@ -1,6 +1,5 @@
-import { Text, View, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { useAppNavigation } from '../src/Functions';
-import { notificacoesStyles as styles } from '../src/Styles';
 
 export default function Notificacoes() {
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
@@ -65,3 +64,89 @@ export default function Notificacoes() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    marginBottom: '10%',
+    paddingTop: '10%',
+  },
+  titulo: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  subtitulo: {
+    fontSize: 12,
+    color: '#828282',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  searchInput: {
+    backgroundColor: '#F5F5F5',
+    height: 40,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+  },
+  linhaFiltros: {
+    flexDirection: 'row',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  filtroAtivo: {
+    color: '#F57C00',
+    fontWeight: 'bold',
+    marginRight: 16,
+  },
+  filtro: {
+    color: '#828282',
+    marginRight: 16,
+  },
+  grupoTitulo: {
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  notificacaoCard: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  notificacaoTitulo: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  notificacaoDescricao: {
+    fontSize: 12,
+    color: '#828282',
+    marginTop: 2,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    height: 60,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+  },
+  footerItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 42,
+    width: 72,
+  },
+  footerIcone: {
+    height: 23,
+    width: 23,
+    tintColor: '#9C9C9C',
+  },
+  footerIcone1: {
+    height: 23,
+    width: 23,
+    tintColor: '#277D2C',
+  },
+});

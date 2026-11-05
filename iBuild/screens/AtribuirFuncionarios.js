@@ -1,6 +1,5 @@
-import { Text, View, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { Text, View, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { useAppNavigation } from '../src/Functions';
-import { funcionariosStyles as styles } from '../src/Styles';
 
 export default function Funcionarios() {
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
@@ -81,3 +80,104 @@ export default function Funcionarios() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    marginBottom: '10%',
+    paddingTop: '10%',
+  },
+  titulo: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  subtitulo: {
+    fontSize: 12,
+    color: '#828282',
+    marginBottom: 16,
+  },
+  contratarBotao: {
+    backgroundColor: '#F57C00',
+    height: 44,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  contratarTexto: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  tituloSecao: {
+    fontWeight: 'bold',
+    fontSize: 15,
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+  },
+  cardDestaque: {
+    backgroundColor: '#FDECD2',
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F0F0F0',
+    marginRight: 12,
+  },
+  cardInfo: {
+    flex: 1,
+  },
+  nome: {
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  cargo: {
+    fontSize: 12,
+    color: '#F57C00',
+  },
+  conversarBotao: {
+    borderWidth: 1,
+    borderColor: '#F57C00',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  conversarTexto: {
+    fontSize: 12,
+    color: '#F57C00',
+    fontWeight: 'bold',
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    height: 60,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+  },
+  footerItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 42,
+    width: 72,
+  },
+  footerIcone: {
+    height: 23,
+    width: 23,
+    tintColor: '#9C9C9C',
+  },
+  footerIcone1: {
+    height: 23,
+    width: 23,
+    tintColor: '#277D2C',
+  },
+});
