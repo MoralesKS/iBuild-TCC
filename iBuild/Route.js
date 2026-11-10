@@ -23,29 +23,41 @@ import AnunciarScreen from './screens/Anunciar'
 
 const Drawer = createDrawerNavigator();
 
-export default function Route({ usuario }) {
+export default function Route({ autenticado }) {
   return (
     <CarrinhoProvider>
-      <Drawer.Navigator>
-        <Drawer.Screen name='Login' component={LoginScreen} options={{headerShown: false}}/>
-        <Drawer.Screen name='Cadastro' component={CadastroScreen} options={{headerShown: false}}/>
-        <Drawer.Screen name='CadastroPessoaFisica' component={CadastroPFScreen} options={{headerShown: false}}/>
-        <Drawer.Screen name='CadastroAutonomo' component={CadastroAScreen} options={{headerShown: false}}/>
-        <Drawer.Screen name='CadastroEmpresa' component={CadastroEScreen} options={{headerShown: false}}/>
-        <Drawer.Screen name='Home' component={HomeScreen} options={{headerShown: false}}/>
-        <Drawer.Screen name='Produto' component={ProdutoScreen} options={{headerShown: false}}/>
-        <Drawer.Screen name='DetalhesObra' component={DetalhesObrasScreen} options={{headerShown: false}}/>
-        <Drawer.Screen name='Gerenciar' component={GerenciarScreen} options={{headerShown: false}}/>
-        <Drawer.Screen name='Contratar' component={ContratarScreen} options={{headerShown: false}}/>
-        <Drawer.Screen name='Atribuir Funcionários' component={AtribuirFuncionariosScreen} options={{headerShown: false}}/>
-        <Drawer.Screen name='Notificação' component={NotificacaoScreen} options={{headerShown: false}}/>
-        <Drawer.Screen name='RedefinicaoSenha' component={RedefinicaoSenhaScreen} options={{headerShown: false}}/>
-        <Drawer.Screen name='Mapa' component={MapaScreen} options={{headerShown: false}}/>
-        <Drawer.Screen name='Carrinho' component={CarrinhoScreen} options={{headerShown: false}}/>
-        <Drawer.Screen name='Chat 1' component={Chat1Screen} options={{headerShown: false}}/>
-        <Drawer.Screen name='Chat 2' component={Chat2Screen} options={{headerShown: false}}/>
-        <Drawer.Screen name='Perfil' component={PerfilScreen} options={{headerShown: false}}/>
-        <Drawer.Screen name='Anunciar' component={AnunciarScreen} options={{headerShown: false}}/>
+      <Drawer.Navigator screenOptions={{ headerShown: false }}>
+        {autenticado ? (
+          <>
+            <Drawer.Screen name='Home' component={HomeScreen} />
+            <Drawer.Screen name='Produto' component={ProdutoScreen} />
+            <Drawer.Screen name='DetalhesObra' component={DetalhesObrasScreen} />
+            <Drawer.Screen name='Gerenciar' component={GerenciarScreen} />
+            <Drawer.Screen name='Contratar' component={ContratarScreen} />
+            <Drawer.Screen name='Atribuir Funcionários' component={AtribuirFuncionariosScreen} />
+            <Drawer.Screen name='Notificação' component={NotificacaoScreen} />
+            <Drawer.Screen name='Mapa' component={MapaScreen} />
+            <Drawer.Screen name='Carrinho' component={CarrinhoScreen} />
+            <Drawer.Screen name='Chat 1' component={Chat1Screen} />
+            <Drawer.Screen name='Chat 2' component={Chat2Screen} />
+            <Drawer.Screen name='Perfil' component={PerfilScreen} />
+            <Drawer.Screen
+              name='PerfilAutonomo'
+              component={PerfilScreen}
+              options={{ drawerItemStyle: { display: 'none' } }}
+            />
+            <Drawer.Screen name='Anunciar' component={AnunciarScreen} />
+          </>
+        ) : (
+          <>
+            <Drawer.Screen name='Login' component={LoginScreen} />
+            <Drawer.Screen name='Cadastro' component={CadastroScreen} />
+            <Drawer.Screen name='CadastroPessoaFisica' component={CadastroPFScreen} />
+            <Drawer.Screen name='CadastroAutonomo' component={CadastroAScreen} />
+            <Drawer.Screen name='CadastroEmpresa' component={CadastroEScreen} />
+            <Drawer.Screen name='RedefinicaoSenha' component={RedefinicaoSenhaScreen} />
+          </>
+        )}
       </Drawer.Navigator>
     </CarrinhoProvider>
   );
