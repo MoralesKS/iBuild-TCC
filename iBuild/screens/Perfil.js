@@ -1,49 +1,82 @@
 import { useCallback, useState } from 'react';
+import { Text, View, TouchableOpacity, ScrollView, Image, Alert, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
-import { api, useUsuario } from '../src/api';
-import { useAppNavigation, produtos } from '../src/Functions'; 
-import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
+import { useAppNavigation, produtos } from '../src/Functions';
+import { api, sair, useUsuario } from '../src/api';
+import BarraInferior from '../src/BarraInferior';
 
 export default function Perfil() {
   const navigation = useNavigation();
-  const { home, mapa, contratar, gerenciar, chat, anunciar } = useAppNavigation();
-
-  // Dados de exemplo: por enquanto todos os produtos aparecem como "itens à venda"
-  // e os favoritos são os mesmos em outra ordem. Quando tiver backend ou Context
-  // de anúncios/favoritos, é só trocar essas duas linhas.
-  const favoritos = [...produtos].reverse();
-
   const route = useRoute();
+  const { contratar, anunciar } = useAppNavigation();
   const { usuario: usuarioLogado } = useUsuario();
+
+  // Se vier um usuarioId na rota (tela "PerfilAutonomo"), mostra o perfil de outra pessoa
   const idParam = route.params?.usuarioId;
   const ehProprio = !idParam || idParam === usuarioLogado?.idUsuario;
+
   const [outro, setOutro] = useState(null);
   const [itensAVenda, setItensAVenda] = useState([]);
   const [minhasObras, setMinhasObras] = useState([]);
   const [escolhendoObra, setEscolhendoObra] = useState(false);
+
   const usuario = ehProprio ? usuarioLogado : outro;
 
-  useFocusEffect(useCallback(() => {
-    const id = ehProprio ? usuarioLogado?.idUsuario : idParam;
-    if (!ehProprio) api.usuario(idParam).then(setOutro).catch((e) => console.log(e.message));
-    if (id) api.produtos(id).then(setItensAVenda).catch(() => {});
-    if (!ehProprio && usuarioLogado) api.obras(usuarioLogado.idUsuario).then(setMinhasObras).catch(() => {});
-  }, [idParam, usuarioLogado]));
+  // Favoritos ainda são os dados de exemplo (não existe tabela de favoritos no banco)
+  const favoritos = [...(produtos || [])].reverse();
+
+  useFocusEffect(
+    useCallback(() => {
+      const id = ehProprio ? usuarioLogado?.idUsuario : idParam;
+      if (!ehProprio) {
+        api.usuario(idParam).then(setOutro).catch((e) => console.log(e.message));
+      }
+      if (id) {
+        api.produtos(id).then((l) => setItensAVenda(l || [])).catch(() => {});
+      }
+      if (!ehProprio && usuarioLogado) {
+        api.obras(usuarioLogado.idUsuario).then((l) => setMinhasObras(l || [])).catch(() => {});
+      }
+    }, [idParam, usuarioLogado, ehProprio])
+  );
+
+  function abrirProduto(produto) {
+    navigation.navigate('Produto', { produto });
+  }
 
   async function adicionarNaObra(obra) {
     try {
       await api.adicionarProfissional(obra.id, usuario.idProfissional, usuario.profissao);
       alert(`${usuario.nome} foi adicionado à obra ${obra.nome}`);
       setEscolhendoObra(false);
-    } catch (e) { alert(e.message); }
+    } catch (e) {
+      alert(e.message);
+    }
   }
 
-  function abrirProduto(produto) {
-    navigation.navigate('Produto', { produto });
+  function confirmarSaida() {
+    Alert.alert('Sair da conta', 'Deseja realmente sair?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Sair',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await sair();
+            navigation.navigate('Login');
+          } catch (e) {
+            alert(e.message);
+          }
+        },
+      },
+    ]);
   }
 
   // Função simples (não um componente) pra não repetir o mesmo JSX nas duas listas
   function renderizarLista(lista) {
+    if (lista.length === 0) {
+      return <Text style={styles.listaVazia}>Nada por aqui ainda.</Text>;
+    }
     return (
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         {lista.map((produto) => (
@@ -61,64 +94,92 @@ export default function Perfil() {
     );
   }
 
-  if (!usuario) return <View style={styles.container}><Text style={{ textAlign: 'center' }}>Carregando perfil...</Text></View>;
+  if (!usuario) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.titulo}>Perfil</Text>
+        <Text style={styles.listaVazia}>Carregando perfil...</Text>
+        <BarraInferior ativo="perfil" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
 
       <View style={styles.headerRow}>
-        <Text style={styles.titulo}>Meu Perfil</Text>
-        <TouchableOpacity
-          style={styles.botaoConfig}
-          onPress={() => alert('Tela em construção, aguardando orçamento')}
-        >
-          <Image style={styles.iconeConfig} source={require('../assets/icones/configuracoes.png')}/>
-        </TouchableOpacity>
+        {!ehProprio && (
+          <TouchableOpacity style={styles.botaoVoltar} onPress={contratar}>
+            <Text style={styles.setaVoltar}>{'<'}</Text>
+          </TouchableOpacity>
+        )}
+        <Text style={styles.titulo}>{ehProprio ? 'Meu Perfil' : 'Perfil'}</Text>
+        {ehProprio && (
+          <TouchableOpacity
+            style={styles.botaoConfig}
+            onPress={() => navigation.navigate('Configuracoes')}
+          >
+            <Image style={styles.iconeConfig} source={require('../assets/icones/configuracoes.png')}/>
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
 
         {/* Foto e dados principais */}
         <View style={styles.perfilRow}>
-          <View style={styles.avatarWrapper}>
+          <TouchableOpacity
+            style={styles.avatarWrapper}
+            disabled={!ehProprio}
+            onPress={() => navigation.navigate('Configuracoes')}
+          >
             <Image style={styles.avatar} source={usuario.foto} />
-            <View style={styles.editarBadge}>
-              <Text style={styles.editarTexto}>✎</Text>
-            </View>
-          </View>
-          <View>
+            {ehProprio && (
+              <View style={styles.editarBadge}>
+                <Text style={styles.editarTexto}>✎</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
             <Text style={styles.nome}>{usuario.nome}</Text>
             <Text style={styles.profissao}>{usuario.profissao}</Text>
-            <View style={styles.localRow}>
-              <Image style={styles.iconePequeno} source={require('../assets/icones/localizacao.png')}/>
-              <Text style={styles.localTexto}>{usuario.cidade}</Text>
-            </View>
+            {!!usuario.cidade && (
+              <View style={styles.localRow}>
+                <Image style={styles.iconePequeno} source={require('../assets/icones/localizacao.png')}/>
+                <Text style={styles.localTexto}>{usuario.cidade}</Text>
+              </View>
+            )}
           </View>
         </View>
 
         {/* Contato */}
         <View style={styles.contatoRow}>
-          <View style={styles.contatoItem}>
-            <Image style={styles.contatoIcone} source={require('../assets/icones/telefone.png')}/>
-            <Text style={styles.contatoTexto}>{usuario.telefone}</Text>
-          </View>
+          {!!usuario.telefone && (
+            <View style={styles.contatoItem}>
+              <Image style={styles.contatoIcone} source={require('../assets/icones/telefone.png')}/>
+              <Text style={styles.contatoTexto}>{usuario.telefone}</Text>
+            </View>
+          )}
           <View style={styles.contatoItem}>
             <Image style={styles.contatoIcone} source={require('../assets/icones/email.png')}/>
             <Text style={styles.contatoTexto}>{usuario.email}</Text>
           </View>
         </View>
 
-        <Text style={styles.bio}>{usuario.bio}</Text>
+        {!!usuario.bio && <Text style={styles.bio}>{usuario.bio}</Text>}
 
-        {/* Estatísticas — Produtos e Favoritos vêm das listas, não são números fixos */}
+        {/* Estatísticas */}
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statValor}>{itensAVenda.length}</Text>
             <Text style={styles.statLabel}>Produtos</Text>
           </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValor}>{favoritos.length}</Text>
-            <Text style={styles.statLabel}>Favoritos</Text>
-          </View>
+          {ehProprio && (
+            <View style={styles.statItem}>
+              <Text style={styles.statValor}>{favoritos.length}</Text>
+              <Text style={styles.statLabel}>Favoritos</Text>
+            </View>
+          )}
           <View style={styles.statItem}>
             <Text style={styles.statValor}>{usuario.avaliacoes}</Text>
             <Text style={styles.statLabel}>Avaliações</Text>
@@ -131,22 +192,45 @@ export default function Perfil() {
           </View>
         </View>
 
-        {/* Botão pra anunciar */}
-        {!ehProprio && usuario.idProfissional && (
+        {/* Meu perfil: botão pra anunciar */}
+        {ehProprio && (
+          <TouchableOpacity style={styles.anunciarCard} onPress={anunciar}>
+            <Image style={styles.anunciarIcone} source={require('../assets/icones/anuncio.png')}/>
+            <View style={styles.anunciarInfo}>
+              <Text style={styles.anunciarTitulo}>Anunciar produtos ou materiais</Text>
+              <Text style={styles.anunciarSub}>Divulgue seus produtos e alcance mais clientes</Text>
+            </View>
+            <Text style={styles.setaDireita}>{'>'}</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Perfil de um autônomo: adicionar a uma obra */}
+        {!ehProprio && !!usuario.idProfissional && (
           <View>
             <TouchableOpacity style={styles.anunciarCard} onPress={() => setEscolhendoObra((v) => !v)}>
               <View style={styles.anunciarInfo}>
                 <Text style={styles.anunciarTitulo}>Adicionar a uma obra</Text>
                 <Text style={styles.anunciarSub}>Escolha em qual das suas obras ele vai trabalhar</Text>
               </View>
+              <Text style={styles.setaDireita}>{escolhendoObra ? '⌃' : '⌄'}</Text>
             </TouchableOpacity>
-            {escolhendoObra && (minhasObras.length === 0
-              ? <Text style={styles.anunciarSub}>Você ainda não tem obras.</Text>
-              : minhasObras.map((o) => (
-                  <TouchableOpacity key={o.id} style={styles.anunciarCard} onPress={() => adicionarNaObra(o)}>
-                    <Text style={styles.anunciarTitulo}>{o.nome}</Text>
+
+            {escolhendoObra && (
+              minhasObras.length === 0 ? (
+                <Text style={styles.listaVazia}>Você ainda não tem obras. Crie uma na tela Gerenciar.</Text>
+              ) : (
+                minhasObras.map((obra) => (
+                  <TouchableOpacity
+                    key={obra.id}
+                    style={styles.obraOpcao}
+                    onPress={() => adicionarNaObra(obra)}
+                  >
+                    <Text style={styles.obraOpcaoNome}>{obra.nome}</Text>
+                    <Text style={styles.obraOpcaoSub}>{obra.tipo} • {obra.endereco}</Text>
                   </TouchableOpacity>
-                )))}
+                ))
+              )
+            )}
           </View>
         )}
 
@@ -155,49 +239,29 @@ export default function Perfil() {
         {/* Itens à venda */}
         <View style={styles.secaoHeader}>
           <Text style={styles.secaoTitulo}>Itens a venda</Text>
-          <TouchableOpacity>
-            <Text style={styles.verTodos}>Ver todos {'>'}</Text>
-          </TouchableOpacity>
         </View>
         {renderizarLista(itensAVenda)}
 
-        {/* Favoritos */}
-        <View style={styles.secaoHeader}>
-          <Text style={styles.secaoTitulo}>Favoritos</Text>
-          <TouchableOpacity>
-            <Text style={styles.verTodos}>Ver todos {'>'}</Text>
+        {/* Favoritos (só no meu perfil) */}
+        {ehProprio && (
+          <>
+            <View style={styles.secaoHeader}>
+              <Text style={styles.secaoTitulo}>Favoritos</Text>
+            </View>
+            {renderizarLista(favoritos)}
+          </>
+        )}
+
+        {/* Logout (só no meu perfil) */}
+        {ehProprio && (
+          <TouchableOpacity style={styles.sairBotao} onPress={confirmarSaida}>
+            <Text style={styles.sairTexto}>Sair da conta</Text>
           </TouchableOpacity>
-        </View>
-        {renderizarLista(favoritos)}
+        )}
 
       </ScrollView>
 
-      {/* BOTTOM TAB BAR */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerItem} onPress={home}>
-          <Image style={styles.footerIcone} source={require('../assets/Home.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
-          <Image style={styles.footerIcone} source={require('../assets/gerenciar.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={mapa}>
-          <Image style={styles.footerIcone} source={require('../assets/Bussola.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={contratar}>
-          <Image style={styles.footerIcone} source={require('../assets/Trabalho.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={chat}>
-          <Image style={styles.footerIcone} source={require('../assets/Chat.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem}>
-          <Image style={styles.footerIcone1} source={require('../assets/Perfil.png')}/>
-        </TouchableOpacity>
-      </View>
+      <BarraInferior ativo="perfil" />
     </View>
   );
 }
@@ -220,6 +284,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  botaoVoltar: {
+    position: 'absolute',
+    left: 16,
+  },
+  setaVoltar: {
+    fontSize: 20,
+    color: '#000000',
   },
   botaoConfig: {
     position: 'absolute',
@@ -287,12 +359,14 @@ const styles = StyleSheet.create({
   },
   contatoRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginTop: 16,
   },
   contatoItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 6,
   },
   contatoIcone: {
     width: 18,
@@ -362,6 +436,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#828282',
   },
+  obraOpcao: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+  },
+  obraOpcaoNome: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  obraOpcaoSub: {
+    fontSize: 11,
+    color: '#828282',
+    marginTop: 2,
+  },
   divisor: {
     height: 1,
     backgroundColor: '#E0E0E0',
@@ -379,9 +470,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000000',
   },
-  verTodos: {
+  listaVazia: {
     fontSize: 12,
-    color: '#F57C00',
+    color: '#828282',
+    textAlign: 'center',
+    marginVertical: 12,
   },
   produtoCard: {
     width: 90,
@@ -406,29 +499,18 @@ const styles = StyleSheet.create({
     color: '#828282',
     marginTop: 2,
   },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 60,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-  },
-  footerItem: {
-    flex: 1,
+  sairBotao: {
+    borderWidth: 1,
+    borderColor: '#D32F2F',
+    height: 44,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    height: 42,
-    width: 72,
+    marginTop: 16,
+    marginBottom: 24,
   },
-  footerIcone: {
-    height: 23,
-    width: 23,
-    tintColor: '#9C9C9C',
-  },
-  footerIcone1: {
-    height: 23,
-    width: 23,
-    tintColor: '#277D2C',
+  sairTexto: {
+    color: '#D32F2F',
+    fontWeight: 'bold',
   },
 });

@@ -1,12 +1,13 @@
 import { Text, View, TouchableOpacity, ScrollView, Image, TextInput, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { useFocusEffect, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/native';
 import { api } from '../src/api';
 import Checkbox from 'expo-checkbox';
 import { useAppNavigation, obras, calcularProgresso  } from '../src/Functions';
 
 export default function DetalhesObra() {
   const route = useRoute();
+  const navigation = useNavigation();
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
   const [obra, setObra] = useState(route.params?.obra || obras[0]);   // no lugar do "const obra = ..."
  
@@ -193,8 +194,8 @@ export default function DetalhesObra() {
           <Text style={styles.infoLinha}>Autônomos: {obra.profissionais.map((p) => p.nome).join(', ')}</Text>
         )}
  
-        <TouchableOpacity style={styles.contratarBotao} onPress={contratar}>
-          <Text style={styles.contratarTexto}>Contratar funcionários</Text>
+        <TouchableOpacity style={styles.contratarBotao} onPress={() => navigation.navigate('Atribuir Funcionários', { obra })}>
+          <Text style={styles.contratarTexto}>Atribuir funcionários</Text>
         </TouchableOpacity>
 
         <Text style={styles.tituloSecao}>Próximas Ações</Text>

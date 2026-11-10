@@ -3,15 +3,8 @@ import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet 
 import { useAppNavigation, categorias } from '../src/Functions';
 import { api, useUsuario } from '../src/api'; 
 
-export default function Anunciar() {
-  const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
 
-  const unidades = ['un.', 'kg', 'm', 'm²', 'm³', 'saco', 'milheiro'];
-  const { usuario } = useUsuario();
-
-  // Botões "emendados" onde só um fica ativo (ex: Novo | Seminovo | Usado).
-  // Fica aqui no topo pra não repetir o mesmo JSX pra Estado e Disponibilidade.
-  function Segmentado({ opcoes, valor, aoMudar }) {
+function Segmentado({ opcoes, valor, aoMudar }) {
     return (
       <View style={styles.segmentado}>
         {opcoes.map((opcao, indice) => (
@@ -32,6 +25,15 @@ export default function Anunciar() {
       </View>
     );
   }
+
+export default function Anunciar() {
+  const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
+
+  const unidades = ['un.', 'kg', 'm', 'm²', 'm³', 'saco', 'milheiro'];
+  const { usuario } = useUsuario();
+
+  // Botões "emendados" onde só um fica ativo (ex: Novo | Seminovo | Usado).
+  // Fica aqui no topo pra não repetir o mesmo JSX pra Estado e Disponibilidade.
 
   // Um useState pra cada campo do formulário
   const [nome, setNome] = useState('');
@@ -63,26 +65,6 @@ export default function Anunciar() {
   // Troque por expo-image-picker quando for implementar a escolha de fotos
   function escolherFoto() {
     alert('Tela em construção, aguardando orçamento');
-  }
-
-  function publicarAnuncio() {
-    if (nome.trim() === '' || categoria === '' || preco.trim() === '') {
-      alert('Preencha pelo menos o nome, a categoria e o preço do produto.');
-      return;
-    }
-
-    alert('Anúncio publicado!');
-
-    // Limpa o formulário depois de publicar
-    setNome('');
-    setCategoria('');
-    setPreco('');
-    setQuantidade('');
-    setUnidade('');
-    setDescricao('');
-    setEstado('Novo');
-    setDisponibilidade('Retirada');
-    setMenuAberto(null);
   }
 
   async function publicarAnuncio() {

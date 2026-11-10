@@ -21,6 +21,8 @@ import AtribuirFuncionariosScreen from './screens/AtribuirFuncionarios'
 import NotificacaoScreen from './screens/Notificacao'
 import DetalhesObrasScreen from './screens/DetalheObras'
 import AnunciarScreen from './screens/Anunciar'
+import NovaObraScreen from './screens/NovaObra'
+import ConfiguracoesScreen from './screens/Configuracoes'
 
 const Drawer = createDrawerNavigator();
 
@@ -29,6 +31,8 @@ export default function Route({ usuario }) {
     <UsuarioProvider>
       <CarrinhoProvider>
         <Drawer.Navigator>
+          <Drawer.Screen name='NovaObra' component={NovaObraScreen} options={{headerShown: false}}/>
+          <Drawer.Screen name='Configuracoes' component={ConfiguracoesScreen} options={{headerShown: false}}/>
           <Drawer.Screen name='Login' component={LoginScreen} options={{headerShown: false}}/>
           <Drawer.Screen name='Cadastro' component={CadastroScreen} options={{headerShown: false}}/>
           <Drawer.Screen name='CadastroPessoaFisica' component={CadastroPFScreen} options={{headerShown: false}}/>

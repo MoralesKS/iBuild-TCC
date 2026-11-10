@@ -86,6 +86,10 @@ export default function Gerenciar() {
           </View>
         </View>
 
+        <TouchableOpacity style={styles.verDetalhesBotao} onPress={() => navigation.navigate('NovaObra')}>
+          <Text style={styles.verDetalhesTexto}>+ Nova obra</Text>
+        </TouchableOpacity>
+
         {obras.length === 0 && usuario && (
           <TouchableOpacity style={styles.verDetalhesBotao} onPress={async () => {
             await api.criarObrasExemplo(usuario.idUsuario);

@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2/promise');
+const fs = require('fs');
+const path = require('path');
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -17,7 +19,13 @@ const pool = mysql.createPool({
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));   // fotos chegam em base64
+app.use((req, res, next) => { console.log(new Date().toLocaleTimeString(), req.method, req.url); next(); });
+
+// pasta onde ficam as fotos enviadas (servida em /uploads/arquivo.jpg)
+const PASTA_UPLOADS = path.join(__dirname, 'uploads');
+fs.mkdirSync(PASTA_UPLOADS, { recursive: true });
+app.use('/uploads', express.static(PASTA_UPLOADS));
 
 /* ---------- utilidades ---------- */
 const q = async (sql, params = [], conn = pool) => (await conn.query(sql, params))[0];
@@ -44,6 +52,15 @@ app.get('/', (req, res) => res.json({ ok: true, api: 'iBuild' }));
 /* ================================================================== */
 /* USUÁRIOS                                                            */
 /* ================================================================== */
+// acha a especialidade cujo nome aparece no texto digitado (ex.: "Pedreiro de obra" -> Pedreiro)
+async function acharEspecialidade(texto, conn = pool) {
+  let esp = await q(
+    "SELECT id_especialidade FROM especialidades WHERE ? LIKE CONCAT('%', nome, '%') AND nome <> 'Outros' ORDER BY LENGTH(nome) DESC LIMIT 1",
+    [texto || ''], conn
+  );
+  if (!esp.length) esp = await q("SELECT id_especialidade FROM especialidades WHERE nome = 'Outros'", [], conn);
+  return esp.length ? esp[0].id_especialidade : null;
+}
 async function carregarUsuario(campo, valor) {
   // "campo" só recebe 'id_usuario' ou 'firebase_uid' (valores fixos do código)
   const [u] = await q(
@@ -62,6 +79,9 @@ async function carregarUsuario(campo, valor) {
     idProfissional: u.id_profissional || null,
     tipoPerfil: u.tipo_perfil,
     nome: u.tipo_perfil === 'loja' && u.razao_social ? u.razao_social : u.nome,
+    nomePessoa: u.nome,
+    razaoSocial: u.razao_social || '',
+    foto: u.foto_perfil || null,
     profissao: u.profissao || null,
     email: u.email,
     telefone: u.telefone || '',
@@ -109,13 +129,8 @@ app.post('/usuarios', h(async (req, res) => {
 
     if (tipo === 'autonomo') {
       const [p] = await conn.query('INSERT INTO profissionais (id_usuario, profissao, descricao) VALUES (?,?,?)', [id, b.profissao || null, b.profissao || null]);
-      // acha a especialidade cujo nome aparece no texto digitado (ex.: "Pedreiro de obra" -> Pedreiro)
-      let esp = await q(
-        "SELECT id_especialidade FROM especialidades WHERE ? LIKE CONCAT('%', nome, '%') AND nome <> 'Outros' ORDER BY LENGTH(nome) DESC LIMIT 1",
-        [b.profissao || ''], conn
-      );
-      if (!esp.length) esp = await q("SELECT id_especialidade FROM especialidades WHERE nome = 'Outros'", [], conn);
-      if (esp.length) await conn.query('INSERT INTO profissional_especialidade (id_profissional, id_especialidade) VALUES (?,?)', [p.insertId, esp[0].id_especialidade]);
+      const idEsp = await acharEspecialidade(b.profissao, conn);
+      if (idEsp) await conn.query('INSERT INTO profissional_especialidade (id_profissional, id_especialidade) VALUES (?,?)', [p.insertId, idEsp]);
     }
 
     if (tipo === 'loja' && b.endereco) {
@@ -138,6 +153,54 @@ app.post('/usuarios', h(async (req, res) => {
     conn.release();
   }
   res.status(201).json(await carregarUsuario('id_usuario', id));
+}));
+
+// Editar perfil (tela Configurações)
+app.patch('/usuarios/:id', h(async (req, res) => {
+  const b = req.body;
+  const [atual] = await q('SELECT id_usuario, tipo_perfil FROM usuarios WHERE id_usuario = ?', [req.params.id]);
+  if (!atual) return res.status(404).json({ erro: 'Usuário não encontrado' });
+
+  const campos = [];
+  const valores = [];
+  const mudar = (coluna, valor) => { if (valor !== undefined) { campos.push(`${coluna} = ?`); valores.push(valor === '' ? null : valor); } };
+  if (b.nome !== undefined && String(b.nome).trim() === '') return res.status(400).json({ erro: 'O nome não pode ficar vazio' });
+  mudar('nome', b.nome !== undefined ? String(b.nome).trim() : undefined);
+  mudar('razao_social', b.razao_social);
+  mudar('telefone', b.telefone);
+  mudar('cidade', b.cidade);
+  mudar('bio', b.bio);
+  if (campos.length) await q(`UPDATE usuarios SET ${campos.join(', ')} WHERE id_usuario = ?`, [...valores, atual.id_usuario]);
+
+  if (atual.tipo_perfil === 'autonomo' && b.profissao !== undefined) {
+    const [p] = await q('SELECT id_profissional FROM profissionais WHERE id_usuario = ?', [atual.id_usuario]);
+    if (p) {
+      await q('UPDATE profissionais SET profissao = ?, descricao = ? WHERE id_profissional = ?', [b.profissao || null, b.profissao || null, p.id_profissional]);
+      await q('DELETE FROM profissional_especialidade WHERE id_profissional = ?', [p.id_profissional]);
+      const idEsp = await acharEspecialidade(b.profissao);
+      if (idEsp) await q('INSERT INTO profissional_especialidade (id_profissional, id_especialidade) VALUES (?,?)', [p.id_profissional, idEsp]);
+    }
+  }
+  res.json(await carregarUsuario('id_usuario', atual.id_usuario));
+}));
+
+// Foto de perfil: o app manda a imagem em base64
+app.put('/usuarios/:id/foto', h(async (req, res) => {
+  const { base64, ext } = req.body;
+  if (!base64) return res.status(400).json({ erro: 'Imagem não enviada' });
+  const [u] = await q('SELECT id_usuario, foto_perfil FROM usuarios WHERE id_usuario = ?', [req.params.id]);
+  if (!u) return res.status(404).json({ erro: 'Usuário não encontrado' });
+
+  const extensao = ['jpg', 'jpeg', 'png', 'webp'].includes(String(ext).toLowerCase()) ? String(ext).toLowerCase() : 'jpg';
+  const arquivo = `perfil-${u.id_usuario}-${Date.now()}.${extensao}`;
+  fs.writeFileSync(path.join(PASTA_UPLOADS, arquivo), Buffer.from(base64, 'base64'));
+
+  // apaga a foto antiga
+  if (u.foto_perfil && u.foto_perfil.startsWith('/uploads/')) {
+    fs.unlink(path.join(PASTA_UPLOADS, path.basename(u.foto_perfil)), () => {});
+  }
+  await q('UPDATE usuarios SET foto_perfil = ? WHERE id_usuario = ?', [`/uploads/${arquivo}`, u.id_usuario]);
+  res.json(await carregarUsuario('id_usuario', u.id_usuario));
 }));
 
 /* ================================================================== */
@@ -424,6 +487,14 @@ app.post('/obras/:id/profissionais', h(async (req, res) => {
   await notificar(pool, prof.id_usuario, 'obra', 'Você foi adicionado a uma obra', `Você agora faz parte da obra ${obra.nome}.`);
   await notificar(pool, obra.id_proprietario, 'obra', 'Profissional adicionado', `${prof.nome} foi adicionado à obra ${obra.nome}.`);
   res.json((await montarObras('o.id_obra = ?', [obra.id_obra]))[0]);
+}));
+
+// Remove um autônomo da obra
+app.delete('/obras/:id/profissionais/:idProf', h(async (req, res) => {
+  await q('DELETE FROM obra_profissionais WHERE id_obra = ? AND id_profissional = ?', [req.params.id, req.params.idProf]);
+  const [obra] = await montarObras('o.id_obra = ?', [req.params.id]);
+  if (!obra) return res.status(404).json({ erro: 'Obra não encontrada' });
+  res.json(obra);
 }));
 
 /* ================================================================== */

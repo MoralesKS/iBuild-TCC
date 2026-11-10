@@ -1,5 +1,5 @@
 import { createElement, createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+import { createUserWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
 import * as Location from 'expo-location';
 import { auth } from '../firebase.config';
 
@@ -8,6 +8,7 @@ import { auth } from '../firebase.config';
 /* Coloque o IP do seu PC no .env:  EXPO_PUBLIC_API_URL=http://192.168.X.X:3000 */
 /* ================================================================== */
 export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.15.85:3000';
+console.log('API_URL =', API_URL);
 
 // true  = mostra os dados de exemplo (Functions.js) junto com os do banco
 // false = mostra só o que está no banco
@@ -33,11 +34,10 @@ async function req(metodo, caminho, corpo) {
       throw erro;
     }
     return dados;
-  } catch (e) {
-    if (e.name === 'AbortError' || e.message === 'Network request failed') {
-      throw new Error('Não consegui falar com o servidor. Confira se a API está ligada no PC e se o celular está na mesma rede Wi-Fi.');
-    }
-    throw e;
+  }  catch (e) {
+    if (e.status) throw e; // erro vindo da própria API (400, 404, 409...)
+    // qualquer outra falha (timeout, cancelado, sem rede) = o celular não alcançou a API
+    throw new Error(`Não consegui falar com a API (${API_URL}). Confira se ela está ligada no PC, se o IP está certo e se o celular está no mesmo Wi-Fi.`);
   } finally {
     clearTimeout(timer);
   }
@@ -94,7 +94,8 @@ const ROTULO_PERFIL = { pessoa_fisica: 'Cliente', autonomo: 'Autônomo', loja: '
 const usuarioApp = (u) => ({
   ...u,
   profissao: u.profissao || ROTULO_PERFIL[u.tipoPerfil],
-  foto: IMG_PERFIL,
+  temFoto: !!u.foto,
+  foto: u.foto ? { uri: API_URL + u.foto } : IMG_PERFIL,
 });
 
 const notificacaoApp = (n) => ({
@@ -109,6 +110,8 @@ export const api = {
   usuarioPorUid: (uid) => req('GET', `/usuarios/firebase/${uid}`).then(usuarioApp),
   criarUsuario: (dados) => req('POST', '/usuarios', dados).then(usuarioApp),
   usuario: (id) => req('GET', `/usuarios/${id}`).then(usuarioApp),
+  atualizarUsuario: (id, dados) => req('PATCH', `/usuarios/${id}`, dados).then(usuarioApp),
+  enviarFoto: (id, base64, ext) => req('PUT', `/usuarios/${id}/foto`, { base64, ext }).then(usuarioApp),
 
   produtos: (vendedor) => req('GET', '/anuncios' + (vendedor ? `?vendedor=${vendedor}` : '')).then((l) => l.map(produtoApp)),
   anunciar: (dados) => req('POST', '/anuncios', dados),
@@ -119,11 +122,15 @@ export const api = {
 
   obras: (usuario) => req('GET', `/obras?usuario=${usuario}`).then((l) => l.map(obraApp)),
   obra: (id) => req('GET', `/obras/${id}`).then(obraApp),
+  criarObra: (dados) => req('POST', '/obras', dados),
   criarObrasExemplo: (usuario) => req('POST', `/obras/exemplo/${usuario}`),
   marcarTarefa: (id, feito) => req('PATCH', `/tarefas/${id}`, { feito }),
   novaTarefa: (idObra, texto) => req('POST', `/obras/${idObra}/tarefas`, { texto }),
   adicionarProfissional: (idObra, idProfissional, funcao) =>
     req('POST', `/obras/${idObra}/profissionais`, { id_profissional: idProfissional, funcao }).then(obraApp),
+
+  removerProfissional: (idObra, idProfissional) =>
+    req('DELETE', `/obras/${idObra}/profissionais/${idProfissional}`).then(obraApp),
 
   notificacoes: (usuario) => req('GET', `/notificacoes?usuario=${usuario}`).then((l) => l.map(notificacaoApp)),
   lerNotificacoes: (usuario) => req('POST', '/notificacoes/lidas', { usuario }),
@@ -148,6 +155,11 @@ export async function cadastrarUsuario(email, senha, dados, recarregarUsuario) {
     cadastroEmAndamento = false;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Logout                                                              */
+/* ------------------------------------------------------------------ */
+export const sair = () => signOut(auth);
 
 /* ------------------------------------------------------------------ */
 /* Usuário logado (perfil do banco) disponível em qualquer tela        */
