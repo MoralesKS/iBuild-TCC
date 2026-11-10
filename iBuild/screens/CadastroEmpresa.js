@@ -11,8 +11,7 @@ import {
 } from 'react-native';
 import { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase.config';
+import { cadastrarUsuario, coordenadasDoEndereco, useUsuario } from '../src/api';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function CadastroEmpresa() {
@@ -23,6 +22,12 @@ export default function CadastroEmpresa() {
   const [userTelefone, setUserTelefone] = useState('');
   const [userCNPJ, setUserCNPJ] = useState('');
   const [userNome, setUserNome] = useState('');
+  const [userEndereco, setUserEndereco] = useState('');
+  const [userBairro, setUserBairro] = useState('');
+  const [userCidade, setUserCidade] = useState('');
+  const [userUF, setUserUF] = useState('');
+
+  const { recarregarUsuario } = useUsuario();
 
   // Estados para alternar a visibilidade das senhas
   const [showPassword, setShowPassword] = useState(false);
@@ -30,7 +35,7 @@ export default function CadastroEmpresa() {
 
   const navigation = useNavigation();
 
-  function novoUser() {
+  async function novoUser() {
     if (
       userMail === '' ||
       userPass === '' ||
@@ -38,7 +43,10 @@ export default function CadastroEmpresa() {
       userNome === '' ||
       userCNPJ === '' ||
       userTelefone === '' ||
-      userRazaoSocial === ''
+      userRazaoSocial === '' ||
+      userEndereco.trim() === '' ||
+      userCidade.trim() === '' ||
+      userUF.length !== 2
     ) {
       alert('Todos os campos devem ser preenchidos');
       return;
@@ -48,15 +56,21 @@ export default function CadastroEmpresa() {
       return;
     }
 
-    createUserWithEmailAndPassword(auth, userMail, userPass)
-      .then((userCredential) => {
-        alert('O usuário ' + userMail + ' foi criado. Faça o Login');
-        navigation.navigate('Login');
-      })
-      .catch((error) => {
-        alert(error.message);
-        navigation.navigate('Login');
-      });
+    const coord = await coordenadasDoEndereco(`${userEndereco}, ${userBairro}, ${userCidade} - ${userUF}, Brasil`);
+    if (!coord) { 
+      alert('Não consegui localizar o endereço da loja.'); 
+      return; 
+    }
+    if (coord.aproximada) alert('Não achei o endereço exato; usei a sua localização atual como posição da loja.');
+
+    cadastrarUsuario(userMail.trim(), userPass, {
+    tipo_perfil: 'loja', razao_social: userRazaoSocial.trim(), cnpj: userCNPJ,
+    nome: userNome.trim(), telefone: userTelefone,
+    endereco: { logradouro: userEndereco, bairro: userBairro, cidade: userCidade,
+                estado: userUF.toUpperCase(), latitude: coord.latitude, longitude: coord.longitude },
+  }, recarregarUsuario)
+    .then(() => { alert('Loja criada! Faça o login.'); navigation.navigate('Login'); })
+    .catch((error) => alert(error.message));
   }
 
   function voltar() {
@@ -145,6 +159,40 @@ export default function CadastroEmpresa() {
             placeholderTextColor="#828282"
             keyboardType="numeric"
             maxLength={15}
+          />
+
+          <TextInput
+            style={styles.textInput}
+            value={userEndereco}
+            onChangeText={setUserEndereco}
+            placeholder="Endereço da loja (rua e número)"
+            placeholderTextColor="#828282"
+          />
+
+          <TextInput
+            style={styles.textInput}
+            value={userBairro}
+            onChangeText={setUserBairro}
+            placeholder="Bairro"
+            placeholderTextColor="#828282"
+          />
+
+          <TextInput
+            style={styles.textInput}
+            value={userCidade}
+            onChangeText={setUserCidade}
+            placeholder="Cidade"
+            placeholderTextColor="#828282"
+          />
+
+          <TextInput
+            style={styles.textInput}
+            value={userUF}
+            onChangeText={(t) => setUserUF(t.replace(/[^A-Za-z]/g, '').toUpperCase())}
+            placeholder="UF (ex: SP)"
+            placeholderTextColor="#828282"
+            maxLength={2}
+            autoCapitalize="characters"
           />
 
           <TextInput

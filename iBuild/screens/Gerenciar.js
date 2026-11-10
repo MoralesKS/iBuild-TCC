@@ -1,16 +1,28 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { useAppNavigation, obras, calcularProgresso } from '../src/Functions';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useAppNavigation, obras as obrasExemplo, calcularProgresso } from '../src/Functions';
+import { api, useUsuario, MOSTRAR_EXEMPLOS } from '../src/api';
 
 export default function Gerenciar() {
   const navigation = useNavigation();
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
+  const { usuario } = useUsuario();
 
   const [textoBusca, setTextoBusca] = useState('');
+  const [obrasDb, setObrasDb] = useState([]);
 
-  // Os números do statsGrid continuam vindo do array "obras" completo —
-  // eles representam o total geral, não devem mudar conforme a busca.
+  const carregarObras = useCallback(() => {
+    if (!usuario) return;
+    api.obras(usuario.idUsuario)
+      .then((l) => setObrasDb(l || []))
+      .catch((e) => console.log(e.message));
+  }, [usuario]);
+  useFocusEffect(carregarObras);
+
+  // obras do banco + as de exemplo que já existiam
+  const obras = [...obrasDb, ...(MOSTRAR_EXEMPLOS ? (obrasExemplo || []) : [])];
+
   const totalObras = obras.length;
   const obrasAndamento = obras.filter((obra) => obra.status === 'andamento').length;
   const obrasConcluidas = obras.filter((obra) => obra.status === 'concluida').length;
@@ -19,7 +31,6 @@ export default function Gerenciar() {
     0
   );
 
-  // Só a LISTA de cards abaixo é filtrada pela busca
   const obrasFiltradas = obras.filter((obra) => {
     const texto = textoBusca.trim().toLowerCase();
     return (
@@ -33,6 +44,15 @@ export default function Gerenciar() {
     navigation.navigate('DetalhesObra', { obra });
   }
 
+  async function criarObrasExemplo() {
+    try {
+      await api.criarObrasExemplo(usuario.idUsuario);
+      carregarObras();
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+  
   return (
     <View style={styles.container}>
       <ScrollView style={{ paddingHorizontal: 16 }}>
@@ -65,6 +85,15 @@ export default function Gerenciar() {
             <Text style={styles.statValor}>{totalFuncionarios}</Text>
           </View>
         </View>
+
+        {obras.length === 0 && usuario && (
+          <TouchableOpacity style={styles.verDetalhesBotao} onPress={async () => {
+            await api.criarObrasExemplo(usuario.idUsuario);
+            setObras(await api.obras(usuario.idUsuario));
+          }}>
+            <Text style={styles.verDetalhesTexto}>Criar obras de exemplo</Text>
+          </TouchableOpacity>
+        )}
 
         <Text style={styles.tituloSecao}>Obras Recentes</Text>
 

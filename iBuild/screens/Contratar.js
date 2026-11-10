@@ -1,26 +1,35 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
-import { useAppNavigation, profissionais, categoriasProfissionais } from '../src/Functions';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useAppNavigation, profissionais as profissionaisExemplo, categoriasProfissionais } from '../src/Functions';
+import { api, MOSTRAR_EXEMPLOS } from '../src/api';
 
 export default function Contratar() {
+  const navigation = useNavigation();
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
- 
-  // null representa o filtro "Todos" (nenhuma categoria específica selecionada)
+
   const [categoriaAtiva, setCategoriaAtiva] = useState(null);
   const [textoBusca, setTextoBusca] = useState('');
- 
-  // Filtra a lista por categoria E pelo texto digitado na busca ao mesmo tempo.
-  // Os dois filtros são independentes: um profissional só aparece se passar
-  // NAS DUAS condições (categoria certa E nome/profissão batendo com a busca).
+  const [profissionaisDb, setProfissionaisDb] = useState([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      api.profissionais()
+        .then((l) => setProfissionaisDb(l || []))
+        .catch((e) => console.log(e.message));
+    }, [])
+  );
+
+  // autônomos do banco + os de exemplo que já existiam
+  const profissionais = [...profissionaisDb, ...(MOSTRAR_EXEMPLOS ? (profissionaisExemplo || []) : [])];
+
   const profissionaisFiltrados = profissionais.filter((profissional) => {
     const passaCategoria = categoriaAtiva === null || profissional.categoria === categoriaAtiva;
- 
     const textoNormalizado = textoBusca.trim().toLowerCase();
     const passaBusca =
       textoNormalizado === '' ||
       profissional.nome.toLowerCase().includes(textoNormalizado) ||
       profissional.categoria.toLowerCase().includes(textoNormalizado);
- 
     return passaCategoria && passaBusca;
   });
  
@@ -63,7 +72,9 @@ export default function Contratar() {
                   {profissional.cidade} - {profissional.experiencia}
                 </Text>
               </View>
-              <TouchableOpacity style={styles.verPerfilBotao} onPress={chat}>
+              <TouchableOpacity style={styles.verPerfilBotao} onPress={() => profissional.idUsuario
+              ? navigation.navigate('PerfilAutonomo', { usuarioId: profissional.idUsuario })
+              : chat()}>
                 <Text style={styles.verPerfilTexto}>Ver perfil</Text>
               </TouchableOpacity>
             </View>

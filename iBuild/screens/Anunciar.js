@@ -1,36 +1,37 @@
 import { useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { useAppNavigation, categorias } from '../src/Functions';
-import { usuario } from '../src/Usuario';
-
-const unidades = ['un.', 'kg', 'm', 'm²', 'm³', 'saco', 'milheiro'];
-
-// Botões "emendados" onde só um fica ativo (ex: Novo | Seminovo | Usado).
-// Fica aqui no topo pra não repetir o mesmo JSX pra Estado e Disponibilidade.
-function Segmentado({ opcoes, valor, aoMudar }) {
-  return (
-    <View style={styles.segmentado}>
-      {opcoes.map((opcao, indice) => (
-        <TouchableOpacity
-          key={opcao}
-          style={[
-            styles.segmentoItem,
-            indice > 0 && styles.segmentoItemBorda,
-            valor === opcao && styles.segmentoItemAtivo,
-          ]}
-          onPress={() => aoMudar(opcao)}
-        >
-          <Text style={[styles.segmentoTexto, valor === opcao && styles.segmentoTextoAtivo]}>
-            {opcao}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-}
+import { api, useUsuario } from '../src/api'; 
 
 export default function Anunciar() {
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
+
+  const unidades = ['un.', 'kg', 'm', 'm²', 'm³', 'saco', 'milheiro'];
+  const { usuario } = useUsuario();
+
+  // Botões "emendados" onde só um fica ativo (ex: Novo | Seminovo | Usado).
+  // Fica aqui no topo pra não repetir o mesmo JSX pra Estado e Disponibilidade.
+  function Segmentado({ opcoes, valor, aoMudar }) {
+    return (
+      <View style={styles.segmentado}>
+        {opcoes.map((opcao, indice) => (
+          <TouchableOpacity
+            key={opcao}
+            style={[
+              styles.segmentoItem,
+              indice > 0 && styles.segmentoItemBorda,
+              valor === opcao && styles.segmentoItemAtivo,
+            ]}
+            onPress={() => aoMudar(opcao)}
+          >
+            <Text style={[styles.segmentoTexto, valor === opcao && styles.segmentoTextoAtivo]}>
+              {opcao}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  }
 
   // Um useState pra cada campo do formulário
   const [nome, setNome] = useState('');
@@ -82,6 +83,25 @@ export default function Anunciar() {
     setEstado('Novo');
     setDisponibilidade('Retirada');
     setMenuAberto(null);
+  }
+
+  async function publicarAnuncio() {
+    if (nome.trim() === '' || categoria === '' || preco.trim() === '') {
+      alert('Preencha pelo menos o nome, a categoria e o preço do produto.');
+      return;
+    }
+    if (!usuario) { alert('Entre na sua conta novamente.'); return; }
+    try {
+      await api.anunciar({
+        id_vendedor: usuario.idUsuario, titulo: nome.trim(), categoria,
+        preco: Number(preco.replace(',', '.')), quantidade: Number(quantidade.replace(',', '.')) || 1,
+        unidade, descricao, estado, disponibilidade,
+      });
+      alert('Anúncio publicado!');
+      setNome(''); setCategoria(''); setPreco(''); setQuantidade(''); setUnidade('');
+      setDescricao(''); setEstado('Novo'); setDisponibilidade('Retirada'); setMenuAberto(null);
+      home();
+    } catch (e) { alert('Erro ao publicar: ' + e.message); }
   }
 
   return (
@@ -229,14 +249,14 @@ export default function Anunciar() {
           <TouchableOpacity style={styles.infoRow}>
             <Image style={styles.infoIcone} source={require('../assets/icones/localizacao.png')}/>
             <Text style={styles.infoLabel}>Localização</Text>
-            <Text style={styles.infoValor}>{usuario.cidade}</Text>
+            <Text style={styles.infoValor}>{usuario?.cidade}</Text>
             <Text style={styles.seta}>{'>'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.infoRow}>
             <Image style={styles.infoIcone} source={require('../assets/icones/whatsapp.png')}/>
             <Text style={styles.infoLabel}>Contato</Text>
-            <Text style={styles.infoValor}>{usuario.telefone}</Text>
+            <Text style={styles.infoValor}>{usuario?.telefone}</Text>
             <Text style={styles.seta}>{'>'}</Text>
           </TouchableOpacity>
 

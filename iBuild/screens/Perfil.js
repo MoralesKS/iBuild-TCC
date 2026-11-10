@@ -1,7 +1,8 @@
-import { Text, View, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { useAppNavigation, produtos } from '../src/Functions';
-import { usuario } from '../src/Usuario';
+import { useCallback, useState } from 'react';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import { api, useUsuario } from '../src/api';
+import { useAppNavigation, produtos } from '../src/Functions'; 
+import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 
 export default function Perfil() {
   const navigation = useNavigation();
@@ -10,8 +11,32 @@ export default function Perfil() {
   // Dados de exemplo: por enquanto todos os produtos aparecem como "itens à venda"
   // e os favoritos são os mesmos em outra ordem. Quando tiver backend ou Context
   // de anúncios/favoritos, é só trocar essas duas linhas.
-  const itensAVenda = produtos;
   const favoritos = [...produtos].reverse();
+
+  const route = useRoute();
+  const { usuario: usuarioLogado } = useUsuario();
+  const idParam = route.params?.usuarioId;
+  const ehProprio = !idParam || idParam === usuarioLogado?.idUsuario;
+  const [outro, setOutro] = useState(null);
+  const [itensAVenda, setItensAVenda] = useState([]);
+  const [minhasObras, setMinhasObras] = useState([]);
+  const [escolhendoObra, setEscolhendoObra] = useState(false);
+  const usuario = ehProprio ? usuarioLogado : outro;
+
+  useFocusEffect(useCallback(() => {
+    const id = ehProprio ? usuarioLogado?.idUsuario : idParam;
+    if (!ehProprio) api.usuario(idParam).then(setOutro).catch((e) => console.log(e.message));
+    if (id) api.produtos(id).then(setItensAVenda).catch(() => {});
+    if (!ehProprio && usuarioLogado) api.obras(usuarioLogado.idUsuario).then(setMinhasObras).catch(() => {});
+  }, [idParam, usuarioLogado]));
+
+  async function adicionarNaObra(obra) {
+    try {
+      await api.adicionarProfissional(obra.id, usuario.idProfissional, usuario.profissao);
+      alert(`${usuario.nome} foi adicionado à obra ${obra.nome}`);
+      setEscolhendoObra(false);
+    } catch (e) { alert(e.message); }
+  }
 
   function abrirProduto(produto) {
     navigation.navigate('Produto', { produto });
@@ -36,6 +61,7 @@ export default function Perfil() {
     );
   }
 
+  if (!usuario) return <View style={styles.container}><Text style={{ textAlign: 'center' }}>Carregando perfil...</Text></View>;
   return (
     <View style={styles.container}>
 
@@ -106,14 +132,23 @@ export default function Perfil() {
         </View>
 
         {/* Botão pra anunciar */}
-        <TouchableOpacity style={styles.anunciarCard} onPress={anunciar}>
-          <Image style={styles.anunciarIcone} source={require('../assets/icones/anuncio.png')}/>
-          <View style={styles.anunciarInfo}>
-            <Text style={styles.anunciarTitulo}>Anunciar produtos ou materiais</Text>
-            <Text style={styles.anunciarSub}>Divulgue seus produtos e alcance mais clientes</Text>
+        {!ehProprio && usuario.idProfissional && (
+          <View>
+            <TouchableOpacity style={styles.anunciarCard} onPress={() => setEscolhendoObra((v) => !v)}>
+              <View style={styles.anunciarInfo}>
+                <Text style={styles.anunciarTitulo}>Adicionar a uma obra</Text>
+                <Text style={styles.anunciarSub}>Escolha em qual das suas obras ele vai trabalhar</Text>
+              </View>
+            </TouchableOpacity>
+            {escolhendoObra && (minhasObras.length === 0
+              ? <Text style={styles.anunciarSub}>Você ainda não tem obras.</Text>
+              : minhasObras.map((o) => (
+                  <TouchableOpacity key={o.id} style={styles.anunciarCard} onPress={() => adicionarNaObra(o)}>
+                    <Text style={styles.anunciarTitulo}>{o.nome}</Text>
+                  </TouchableOpacity>
+                )))}
           </View>
-          <Text style={styles.setaDireita}>{'>'}</Text>
-        </TouchableOpacity>
+        )}
 
         <View style={styles.divisor} />
 

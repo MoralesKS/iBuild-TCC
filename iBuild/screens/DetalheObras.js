@@ -1,17 +1,14 @@
 import { Text, View, TouchableOpacity, ScrollView, Image, TextInput, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
-import { useRoute } from '@react-navigation/native';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect, useRoute } from '@react-navigation/native';
+import { api } from '../src/api';
 import Checkbox from 'expo-checkbox';
 import { useAppNavigation, obras, calcularProgresso  } from '../src/Functions';
 
 export default function DetalhesObra() {
   const route = useRoute();
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
- 
-  // route.params.obra vem do navigation.navigate('DetalhesObra', { obra })
-  // lá do Gerenciar.js. O "|| obras[0]" é só um fallback pra tela não
-  // quebrar caso você abra ela direto, sem vir de um clique.
-  const obra = route.params?.obra || obras[0];
+  const [obra, setObra] = useState(route.params?.obra || obras[0]);   // no lugar do "const obra = ..."
  
   // Cada obra tem sua própria lista de tarefas — guardamos elas aqui
   // como um ARRAY de objetos, não uma variável só, porque cada
@@ -25,6 +22,29 @@ export default function DetalhesObra() {
     setProximasAcoes(obra.proximasAcoes);
   }, [obra.id]);
  
+  useEffect(() => { if (route.params?.obra) setObra(route.params.obra); }, [route.params?.obra]);
+  useFocusEffect(useCallback(() => {
+    if (obra.doBanco) api.obra(obra.id).then(setObra).catch((e) => console.log(e.message));
+  }, [obra.id]));
+  useEffect(() => { setProximasAcoes(obra.proximasAcoes); }, [obra]);   // era [obra.id]
+
+  function alternarAcao(id) {
+    const acao = proximasAcoes.find((a) => a.id === id);
+    setProximasAcoes((atuais) => atuais.map((a) => (a.id === id ? { ...a, feito: !a.feito } : a)));
+    if (obra.doBanco && acao) api.marcarTarefa(id, !acao.feito).catch((e) => alert(e.message));
+  }
+
+  async function adicionarAcao() {
+    const texto = novaAcaoTexto.trim();
+    if (texto === '') return;
+    let id = Date.now();
+    if (obra.doBanco) {
+      try { id = (await api.novaTarefa(obra.id, texto)).id; } catch (e) { alert(e.message); return; }
+    }
+    setProximasAcoes((atuais) => [...atuais, { id, texto, feito: false }]);
+    setNovaAcaoTexto('');
+  }
+
   function alternarAcao(id) {
     setProximasAcoes((acoesAtuais) =>
       acoesAtuais.map((acao) =>
@@ -149,7 +169,7 @@ export default function DetalhesObra() {
             <Text style={[styles.infoLinha, { fontSize: 8 }]}>Mestre de Obras</Text>
             <Text style={[styles.infoLinha, { fontSize: 14 }]}>{obra.equipe.mestre}</Text>
           </View>
- 
+
           <View style={styles.divisao}>
             <Image style={styles.foto1} source={require('../assets/icones/equipe.png')}/>
             <Text style={[styles.infoLinha, { fontSize: 8 }]}>Funcionários Ativos</Text>
@@ -168,6 +188,10 @@ export default function DetalhesObra() {
             <Text style={[styles.infoLinha, { fontSize: 14, color: '#F57C00' }]}>{obra.equipe.proximaAcao}</Text>
           </View>
         </View>
+
+        {obra.profissionais?.length > 0 && (
+          <Text style={styles.infoLinha}>Autônomos: {obra.profissionais.map((p) => p.nome).join(', ')}</Text>
+        )}
  
         <TouchableOpacity style={styles.contratarBotao} onPress={contratar}>
           <Text style={styles.contratarTexto}>Contratar funcionários</Text>

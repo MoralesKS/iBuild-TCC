@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { api, MOSTRAR_EXEMPLOS } from '../src/api';
+import { useAppNavigation, categorias, produtos as produtosExemplo } from '../src/Functions';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase.config';
-import { useAppNavigation, categorias, produtos } from '../src/Functions';
 
 export default function Home() {
   const navigation = useNavigation();
@@ -12,6 +13,12 @@ export default function Home() {
   // null = nenhuma categoria selecionada (mostra todos os produtos)
   const [categoriaSelecionada, setCategoriaSelecionada] = useState(null);
   const [textoBusca, setTextoBusca] = useState('');
+
+  const [produtosDb, setProdutosDb] = useState([]);
+  useFocusEffect(useCallback(() => {
+  api.produtos().then(setProdutosDb).catch((e) => console.log(e.message));
+  }, []));
+  const produtos = [...produtosDb, ...(MOSTRAR_EXEMPLOS ? produtosExemplo : [])];
 
   // BOTÃO TEMPORÁRIO DE LOGOUT - remover quando a tela final estiver pronta
   function sairDaConta() {
@@ -67,7 +74,7 @@ export default function Home() {
             />
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => alert('Tela em construção, aguardando orçamento!')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Notificação')}>
             <Image
               style={styles.botaoHeader}
               source={require('../assets/icones/notificacao-1.png')}
@@ -194,73 +201,6 @@ export default function Home() {
             ))}
           </ScrollView>
         )}
-
-        {produtosFiltrados.length === 0 ? (
-          <Text style={styles.semResultados}>
-            Nenhum produto encontrado nessa categoria.
-          </Text>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {produtosFiltrados.map((produto) => (
-              <TouchableOpacity
-                key={produto.id}
-                style={styles.produtoCard}
-                onPress={() => abrirProduto(produto)}
-              >
-                <Image
-                  style={styles.produtoImagem}
-                  source={produto.imagem}
-                />
-
-                <Text style={styles.produtoMarca}>
-                  {produto.vendedor}
-                </Text>
-
-                <Text style={styles.produtoNome}>
-                  {produto.nome}
-                </Text>
-
-                <Text style={styles.produtoPreco}>
-                  {produto.preco}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
-
-        {produtosFiltrados.length === 0 ? (
-          <Text style={styles.semResultados}>
-            Nenhum produto encontrado nessa categoria.
-          </Text>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {produtosFiltrados.map((produto) => (
-              <TouchableOpacity
-                key={produto.id}
-                style={styles.produtoCard}
-                onPress={() => abrirProduto(produto)}
-              >
-                <Image
-                  style={styles.produtoImagem}
-                  source={produto.imagem}
-                />
-
-                <Text style={styles.produtoMarca}>
-                  {produto.vendedor}
-                </Text>
-
-                <Text style={styles.produtoNome}>
-                  {produto.nome}
-                </Text>
-
-                <Text style={styles.produtoPreco}>
-                  {produto.preco}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
-
       </ScrollView>
 
       {/* BOTTOM TAB BAR */}

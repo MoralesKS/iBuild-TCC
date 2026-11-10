@@ -1,6 +1,7 @@
-import { Text, View, TouchableOpacity, ScrollView, Image, StyleSheet} from 'react-native';
+import { Text, View, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { useAppNavigation } from '../src/Functions';
 import { useCarrinho } from '../src/CarrinhoItens';
+import { api, useUsuario } from '../src/api';
 
 // Transforma "R$ 1,20" (string) em 1.2 (número), pra dar pra somar
 function precoParaNumero(precoTexto) {
@@ -10,10 +11,31 @@ function precoParaNumero(precoTexto) {
 export default function Carrinho() {
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
   const { itens, removerDoCarrinho } = useCarrinho();
+  const { usuario } = useUsuario();
 
   const subtotal = itens.reduce(
     (total, item) => total + precoParaNumero(item.preco) * item.quantidade, 0
   );
+
+  async function fazerPedido() {
+    const reais = itens.filter((i) => i.idAnuncio);   // produtos que vieram do banco
+    if (reais.length === 0) {
+      alert('Comprou!!');                              // produtos de exemplo: comportamento antigo
+      return;
+    }
+    if (!usuario) { alert('Entre na sua conta novamente.'); return; }
+    try {
+      await api.fazerPedido(
+        usuario.idUsuario,
+        reais.map((i) => ({ id_anuncio: i.idAnuncio, quantidade: i.quantidade }))
+      );
+      reais.forEach((i) => removerDoCarrinho(i.id));
+      alert('Pedido realizado!');
+      home();
+    } catch (e) {
+      alert(e.message);
+    }
+  }
 
   return (
     <View style={styles.container}>
@@ -67,7 +89,7 @@ export default function Carrinho() {
         <Text style={styles.totalValor}>R$ {subtotal.toFixed(2).replace('.', ',')}</Text>
       </View>
 
-      <TouchableOpacity style={styles.botaoPedido} onPress={() => alert("Comprou!!")}>
+      <TouchableOpacity style={styles.botaoPedido} onPress={fazerPedido}>
         <Text style={styles.botaoTexto}>Fazer pedido</Text>
       </TouchableOpacity>
 

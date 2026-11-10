@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, Image, Linking, ActivityIndicator, StyleSheet } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { useAppNavigation, lojas, abrirNoGoogleMaps } from '../src/Functions';
+import { useFocusEffect } from '@react-navigation/native';
+import { useAppNavigation, lojas as lojasExemplo, abrirNoGoogleMaps } from '../src/Functions';
+import { api, distanciaKm, MOSTRAR_EXEMPLOS } from '../src/api';
 
 export default function Mapa() {
   const { home, contratar, gerenciar, carrinho, perfil, chat } = useAppNavigation();
@@ -13,15 +15,26 @@ export default function Mapa() {
     latitude: -23.5505,
     longitude: -46.6333,
   });
-
   const [textoBusca, setTextoBusca] = useState('');
+  const [lojasDb, setLojasDb] = useState([]);
+  const [lojaSelecionada, setLojaSelecionada] = useState(
+    MOSTRAR_EXEMPLOS && lojasExemplo ? lojasExemplo[5] || null : null
+  );
 
-  const [lojaSelecionada, setLojaSelecionada] = useState(lojas[5]);
+  useFocusEffect(
+    useCallback(() => {
+      api.lojas()
+        .then((l) => setLojasDb(l || []))
+        .catch((e) => console.log(e.message));
+    }, [])
+  );
 
-  // Só as lojas que batem com a busca aparecem como marcador no mapa.
-  // A busca continua funcionando mesmo se a loja selecionada for filtrada
-  // pra fora da lista — o card dela continua aparecendo embaixo até o
-  // usuário escolher outra ou limpar a busca.
+  // lojas do banco (com distância calculada) + as de exemplo que já existiam
+  const lojas = [
+    ...lojasDb.map((l) => ({ ...l, distancia: distanciaKm(minhaLocalizacao, l).toFixed(1) })),
+    ...(MOSTRAR_EXEMPLOS ? (lojasExemplo || []) : []),
+  ];
+
   const lojasFiltradas = lojas.filter((loja) => {
     const texto = textoBusca.trim().toLowerCase();
     return (
@@ -45,7 +58,6 @@ export default function Mapa() {
         const posicao = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
-
         setMinhaLocalizacao({
           latitude: posicao.coords.latitude,
           longitude: posicao.coords.longitude,
