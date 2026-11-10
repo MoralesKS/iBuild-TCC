@@ -3,8 +3,6 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { api, MOSTRAR_EXEMPLOS } from '../src/api';
 import { useAppNavigation, categorias, produtos as produtosExemplo } from '../src/Functions';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
-import { signOut } from 'firebase/auth';
-import { auth } from '../firebase.config';
 
 export default function Home() {
   const navigation = useNavigation();
@@ -19,13 +17,6 @@ export default function Home() {
   api.produtos().then(setProdutosDb).catch((e) => console.log(e.message));
   }, []));
   const produtos = [...produtosDb, ...(MOSTRAR_EXEMPLOS ? produtosExemplo : [])];
-
-  // BOTÃO TEMPORÁRIO DE LOGOUT - remover quando a tela final estiver pronta
-  function sairDaConta() {
-    signOut(auth).catch((error) => {
-      alert(error.message);
-    });
-  }
 
   function abrirProduto(produto) {
     navigation.navigate('Produto', { produto });
@@ -79,21 +70,6 @@ export default function Home() {
               style={styles.botaoHeader}
               source={require('../assets/icones/notificacao-1.png')}
             />
-          </TouchableOpacity>
-
-          {/* BOTÃO TEMPORÁRIO DE LOGOUT - remover quando a tela final estiver pronta */}
-          <TouchableOpacity
-            onPress={sairDaConta}
-            style={{
-              backgroundColor: '#F57C00',
-              paddingHorizontal: 10,
-              paddingVertical: 8,
-              borderRadius: 8,
-            }}
-          >
-            <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 12 }}>
-              Sair
-            </Text>
           </TouchableOpacity>
         </View>
 

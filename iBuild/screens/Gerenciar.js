@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { useAppNavigation, obras as obrasExemplo, calcularProgresso } from '../src/Functions';
+import { obras as obrasExemplo, calcularProgresso } from '../src/Functions';
 import { api, useUsuario } from '../src/api';
+import BottomBar from '../componentes/BottomBar';
 
 const FILTROS = [
   { label: 'Todas as obras', value: 'todas' },
@@ -14,7 +15,6 @@ const limitarPercentual = (valor) => Math.min(100, Math.max(0, Number(valor) || 
 
 export default function Gerenciar() {
   const navigation = useNavigation();
-  const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
   const { usuario, carregando: carregandoPerfil, erroPerfil, recarregarUsuario } = useUsuario();
   const [textoBusca, setTextoBusca] = useState('');
   const [obrasDb, setObrasDb] = useState([]);
@@ -143,11 +143,7 @@ export default function Gerenciar() {
         })}
       </ScrollView>
 
-      <View style={styles.footer}>
-        {[[require('../assets/Home.png'), home], [require('../assets/gerenciar.png'), gerenciar], [require('../assets/Bussola.png'), mapa], [require('../assets/Trabalho.png'), contratar], [require('../assets/Chat.png'), chat], [require('../assets/Perfil.png'), perfil]].map(([icone, acao], indice) => (
-          <TouchableOpacity key={indice} style={styles.footerItem} onPress={acao}><Image style={[styles.footerIcone, indice === 1 && styles.footerIconeAtivo]} source={icone} /></TouchableOpacity>
-        ))}
-      </View>
+      <BottomBar ativa="gerenciar" />
 
       <Modal visible={Boolean(obraEditando)} transparent animationType="fade" onRequestClose={() => setObraEditando(null)}>
         <View style={styles.modalFundo}><ScrollView contentContainerStyle={styles.modalCard}>
@@ -179,6 +175,5 @@ const styles = StyleSheet.create({
   foto: { width: 48, height: 48, tintColor: '#000' }, cardInfo: { flex: 1, marginLeft: 12 }, obraNome: { fontWeight: 'bold', fontSize: 14 }, obraSub: { fontSize: 12, color: '#777', marginBottom: 8 },
   progressoBarraFundo: { height: 7, backgroundColor: '#E0E0E0', borderRadius: 4, overflow: 'hidden' }, progressoBarraPreenchida: { height: 7, backgroundColor: '#277D2C' }, progressoTexto: { fontSize: 11, marginTop: 5 },
   acoesLinha: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 8 }, acaoSecundaria: { paddingVertical: 6, paddingHorizontal: 8, backgroundColor: '#F2F2F2', borderRadius: 6 }, acaoIcone: { paddingHorizontal: 8, paddingVertical: 2 },
-  footer: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', height: 54, flexShrink: 0, borderTopWidth: 1, borderTopColor: '#EEE' }, footerItem: { flex: 1, alignItems: 'center' }, footerIcone: { height: 23, width: 23, tintColor: '#AAA' }, footerIconeAtivo: { tintColor: '#277D2C' },
   modalFundo: { flex: 1, backgroundColor: '#0008', justifyContent: 'center', padding: 20 }, modalCard: { backgroundColor: '#FFF', borderRadius: 12, padding: 18 }, campoEdicao: { borderWidth: 1, borderColor: '#DDD', borderRadius: 7, padding: 10, marginBottom: 8 }, rotuloCampo: { fontWeight: '600', marginVertical: 5 }, statusSelecionado: { backgroundColor: '#DFF0E0' }, botaoSalvar: { backgroundColor: '#F57C00', padding: 12, alignItems: 'center', borderRadius: 8, marginTop: 8 }, botaoSalvarTexto: { color: '#FFF', fontWeight: 'bold' }, cancelar: { color: '#277D2C', textAlign: 'center', padding: 12 },
 });

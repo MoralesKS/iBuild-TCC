@@ -1,8 +1,10 @@
 import { useCallback, useState } from 'react';
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebase.config';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { api, useUsuario } from '../src/api';
 import { useAppNavigation } from '../src/Functions';
-import { Text, View, TouchableOpacity, ScrollView, Image, Modal, TextInput, StyleSheet } from 'react-native';
+import { Alert, Text, View, TouchableOpacity, ScrollView, Image, Modal, TextInput, StyleSheet } from 'react-native';
 
 const ICONE_PERFIL = require('../assets/Perfil.png');
 
@@ -31,6 +33,7 @@ function TelaPerfil({ ehProprio, idPublico, vendedor }) {
   const [minhasObras, setMinhasObras] = useState([]);
   const [escolhendoObra, setEscolhendoObra] = useState(false);
   const [edicao, setEdicao] = useState(null);
+  const [saindo, setSaindo] = useState(false);
   const [rascunho, setRascunho] = useState(null);
   const [erroEdicao, setErroEdicao] = useState('');
   const usuario = ehProprio ? usuarioLogado : outro;
@@ -88,6 +91,16 @@ function TelaPerfil({ ehProprio, idPublico, vendedor }) {
   const falhaPerfil = ehProprio ? Boolean(erroPerfil) : !idPublico || erroPublico;
   const podeAdicionarNaObra = !ehProprio && usuario?.idProfissional && idUsuarioLogado && idUsuarioLogado !== idPublico;
 
+  async function sairDaConta() {
+    setSaindo(true);
+    try {
+      await signOut(auth);
+    } catch {
+      setSaindo(false);
+      Alert.alert('Não foi possível sair da conta', 'Tente novamente.');
+    }
+  }
+
   function abrirEdicao() {
     setErroEdicao('');
     setRascunho({
@@ -116,13 +129,24 @@ function TelaPerfil({ ehProprio, idPublico, vendedor }) {
   return (
     <View style={styles.container}>
 
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, ehProprio && styles.cabecalhoProprio]}>
         {!ehProprio && (
           <TouchableOpacity accessibilityRole="button" onPress={() => navigation.canGoBack() ? navigation.goBack() : home()}>
             <Text style={styles.voltar}>‹ Voltar</Text>
           </TouchableOpacity>
         )}
         <Text style={styles.titulo}>{ehProprio ? 'Meu Perfil' : vendedor ? 'Perfil do vendedor' : 'Perfil profissional'}</Text>
+        {ehProprio && usuarioFirebase && (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Sair da conta"
+            disabled={saindo}
+            onPress={sairDaConta}
+            style={styles.botaoSair}
+          >
+            <Text style={styles.textoSair}>{saindo ? 'Saindo…' : 'Sair'}</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
@@ -334,6 +358,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 16,
   },
+  cabecalhoProprio: { justifyContent: 'space-between', gap: 8 },
+  botaoSair: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8, backgroundColor: '#A73916' },
+  textoSair: { color: '#FFF', fontWeight: 'bold' },
   titulo: {
     fontSize: 16,
     fontWeight: 'bold',

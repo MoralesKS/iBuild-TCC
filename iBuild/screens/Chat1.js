@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import BottomBar from "../componentes/BottomBar";
 
 /* ================================================================== */
 /* DADOS: edite aqui as conversas, mensagens e respostas do bot        */
@@ -436,6 +437,7 @@ export default function Chat1({ navigation }) {
       </View>
 
       <FlatList
+        style={styles.lista}
         data={lista}
         keyExtractor={(c) => c.id}
         contentContainerStyle={{ paddingTop: 8, paddingBottom: 24 }}
@@ -482,12 +484,14 @@ export default function Chat1({ navigation }) {
           </Pressable>
         )}
       />
+      <BottomBar ativa="chat" />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: "#fff" },
+  lista: { flex: 1 },
   titulo: {
     fontSize: 26,
     fontWeight: "700",

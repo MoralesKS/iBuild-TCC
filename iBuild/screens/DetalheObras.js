@@ -178,29 +178,33 @@ function ConteudoDetalhes({ obra }) {
         </View>
  
         <Text style={styles.tituloSecao}>Equipe</Text>
-        <View style={[styles.infoCard, { flexDirection: 'row', justifyContent: 'space-around' }]}>
-          <View style={styles.divisao}>
-            <Image style={styles.foto1} source={require('../assets/icones/engenheiro.png')}/>
-            <Text style={[styles.infoLinha, { fontSize: 8 }]}>Mestre de Obras</Text>
-            <Text style={[styles.infoLinha, { fontSize: 14 }]}>{obra.equipe.mestre ?? '—'}</Text>
+        <View style={styles.infoCard}>
+          <View style={styles.equipeIndicadores}>
+            <View style={styles.divisao}>
+              <Image style={styles.foto1} source={require('../assets/icones/engenheiro.png')} />
+              <Text style={styles.equipeRotulo}>Mestre de Obras</Text>
+              <Text style={styles.equipeValor}>{obra.equipe.mestre ?? '—'}</Text>
+            </View>
+
+            <View style={styles.divisao}>
+              <Image style={styles.foto1} source={require('../assets/icones/equipe.png')} />
+              <Text style={styles.equipeRotulo}>Funcionários Ativos</Text>
+              <Text style={[styles.equipeValor, styles.equipeDestaque]}>{obra.equipe.funcionariosAtivos ?? '—'}</Text>
+            </View>
+
+            <View style={styles.divisao}>
+              <Image style={styles.foto1} source={require('../assets/icones/relogio.png')} />
+              <Text style={styles.equipeRotulo}>Horas Trabalhadas</Text>
+              <Text style={[styles.equipeValor, styles.equipeDestaque]}>{obra.equipe.horasTrabalhadas ?? '—'}</Text>
+            </View>
           </View>
 
-          <View style={styles.divisao}>
-            <Image style={styles.foto1} source={require('../assets/icones/equipe.png')}/>
-            <Text style={[styles.infoLinha, { fontSize: 8 }]}>Funcionários Ativos</Text>
-            <Text style={[styles.infoLinha, { fontSize: 14, color: '#F57C00' }]}>{obra.equipe.funcionariosAtivos ?? '—'}</Text>
-          </View>
- 
-          <View style={styles.divisao}>
-            <Image style={styles.foto1} source={require('../assets/icones/relogio.png')}/>
-            <Text style={[styles.infoLinha, { fontSize: 8 }]}>Horas Trabalhadas</Text>
-            <Text style={[styles.infoLinha, { fontSize: 14, color: '#F57C00' }]}>{obra.equipe.horasTrabalhadas ?? '—'}</Text>
-          </View>
- 
-          <View style={styles.divisao}>
-            <Image style={styles.foto1} source={require('../assets/icones/checklist.png')}/>
-            <Text style={[styles.infoLinha, { fontSize: 8 }]}>Próxima Ação</Text>
-            <Text style={[styles.infoLinha, { fontSize: 14, color: '#F57C00' }]}>{obra.equipe.proximaAcao ?? '—'}</Text>
+          <View style={styles.proximaAcao}>
+            <Image style={styles.foto1} source={require('../assets/icones/checklist.png')} />
+            <View style={styles.proximaAcaoTexto}>
+              <Text style={styles.equipeRotulo}>Próxima Ação</Text>
+              <Text style={[styles.equipeValor, styles.equipeDestaque]}>{obra.equipe.proximaAcao ?? '—'}</Text>
+            </View>
           </View>
         </View>
 
@@ -413,10 +417,19 @@ const styles = StyleSheet.create({
     width: 23,
     tintColor: '#277D2C',
   },
-  divisao: {
-    borderLeftWidth: .5,
-    borderRightWidth: .5,
-    padding: 12,
-    alignItems: 'center',
+  equipeIndicadores: { flexDirection: 'row', gap: 8 },
+  divisao: { flex: 1, minWidth: 0, alignItems: 'center', paddingVertical: 6, gap: 4 },
+  equipeRotulo: { fontSize: 11, color: '#555' },
+  equipeValor: { fontSize: 14, color: '#111', fontWeight: '600' },
+  equipeDestaque: { color: '#984B00' },
+  proximaAcao: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#D5D5D5',
+    marginTop: 8,
+    paddingTop: 10,
   },
+  proximaAcaoTexto: { flex: 1, minWidth: 0, gap: 4 },
 });
