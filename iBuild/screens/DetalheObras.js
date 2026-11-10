@@ -1,75 +1,84 @@
 import { Text, View, TouchableOpacity, ScrollView, Image, TextInput, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
-import { useCallback, useEffect, useState } from 'react';
-import { useFocusEffect, useRoute } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../src/api';
 import Checkbox from 'expo-checkbox';
-import { useAppNavigation, obras, calcularProgresso  } from '../src/Functions';
+import { useAppNavigation, calcularProgresso  } from '../src/Functions';
 
-export default function DetalhesObra() {
-  const route = useRoute();
-  const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
-  const [obra, setObra] = useState(route.params?.obra || obras[0]);   // no lugar do "const obra = ..."
- 
-  // Cada obra tem sua própria lista de tarefas — guardamos elas aqui
-  // como um ARRAY de objetos, não uma variável só, porque cada
-  // checkbox precisa poder ser marcado/desmarcado independente dos outros.
-  const [proximasAcoes, setProximasAcoes] = useState(obra.proximasAcoes);
- 
-  // Se a pessoa voltar e clicar em "Ver detalhes" de OUTRA obra, esse
-  // efeito garante que o checklist é reiniciado com as tarefas da
-  // nova obra, mesmo que essa tela continue montada em memória.
-  useEffect(() => {
-    setProximasAcoes(obra.proximasAcoes);
-  }, [obra.id]);
- 
-  useEffect(() => { if (route.params?.obra) setObra(route.params.obra); }, [route.params?.obra]);
+export default function DetalhesObra({ route }) {
+  const { obra, obraId, edicaoTemporaria } = route.params ?? {};
+  return (
+    <CarregarDetalhes
+      key={obra?.id ?? obraId ?? 'sem-obra'}
+      obraInicial={obra}
+      idBanco={obra?.doBanco ? obra.id : obraId}
+      edicaoTemporaria={edicaoTemporaria}
+    />
+  );
+}
+
+function CarregarDetalhes({ obraInicial, idBanco, edicaoTemporaria }) {
+  const { gerenciar } = useAppNavigation();
+  const [resposta, setResposta] = useState(null);
+
   useFocusEffect(useCallback(() => {
-    if (obra.doBanco) api.obra(obra.id).then(setObra).catch((e) => console.log(e.message));
-  }, [obra.id]));
-  useEffect(() => { setProximasAcoes(obra.proximasAcoes); }, [obra]);   // era [obra.id]
+    if (!idBanco) return;
+    let ativo = true;
+    api.obra(idBanco)
+      .then((dados) => { if (ativo) setResposta({ dados }); })
+      .catch((erro) => { if (ativo) setResposta({ status: erro.status ?? 0 }); });
+    return () => { ativo = false; };
+  }, [idBanco]));
 
-  function alternarAcao(id) {
-    const acao = proximasAcoes.find((a) => a.id === id);
-    setProximasAcoes((atuais) => atuais.map((a) => (a.id === id ? { ...a, feito: !a.feito } : a)));
-    if (obra.doBanco && acao) api.marcarTarefa(id, !acao.feito).catch((e) => alert(e.message));
+  const dados = resposta?.dados ?? obraInicial;
+  if (resposta?.status === 404 || !dados) {
+    const mensagem = resposta?.status === 404 || !idBanco
+      ? 'Obra não encontrada ou removida.'
+      : resposta ? 'Não foi possível carregar a obra.' : 'Carregando obra…';
+    return (
+      <View style={[styles.container, { paddingHorizontal: 16 }]}>
+        <Text accessibilityRole="alert">{mensagem}</Text>
+        <TouchableOpacity accessibilityRole="button" onPress={gerenciar} style={{ paddingVertical: 12 }}>
+          <Text>‹ Voltar às obras</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
-  async function adicionarAcao() {
+  const obra = {
+    ...dados,
+    ...edicaoTemporaria,
+    equipe: { ...dados.equipe, ...edicaoTemporaria?.equipe },
+  };
+  return <ConteudoDetalhes obra={obra} />;
+}
+
+function ConteudoDetalhes({ obra }) {
+  const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
+  const [acoesEditadas, setAcoesEditadas] = useState(null);
+  const acoesOriginais = obra.proximasAcoes ?? [];
+  const proximasAcoes = acoesEditadas ?? acoesOriginais;
+  const [novaAcaoTexto, setNovaAcaoTexto] = useState('');
+  const etapas = {
+    fundacao: Number(obra.etapas?.fundacao) || 0,
+    estrutura: Number(obra.etapas?.estrutura) || 0,
+    acabamento: Number(obra.etapas?.acabamento) || 0,
+  };
+
+  function alternarAcao(id) {
+    setAcoesEditadas((acoes) => (acoes ?? acoesOriginais).map((acao) =>
+      acao.id === id ? { ...acao, feito: !acao.feito } : acao,
+    ));
+  }
+
+  function adicionarAcao() {
     const texto = novaAcaoTexto.trim();
-    if (texto === '') return;
-    let id = Date.now();
-    if (obra.doBanco) {
-      try { id = (await api.novaTarefa(obra.id, texto)).id; } catch (e) { alert(e.message); return; }
-    }
-    setProximasAcoes((atuais) => [...atuais, { id, texto, feito: false }]);
+    if (!texto) return;
+    setAcoesEditadas((acoes) => [...(acoes ?? acoesOriginais), { id: Date.now(), texto, feito: false }]);
     setNovaAcaoTexto('');
   }
 
-  function alternarAcao(id) {
-    setProximasAcoes((acoesAtuais) =>
-      acoesAtuais.map((acao) =>
-        acao.id === id ? { ...acao, feito: !acao.feito } : acao
-      )
-    );
-  }
- 
-  // Campo de texto pra criar uma nova tarefa na checklist
-  const [novaAcaoTexto, setNovaAcaoTexto] = useState('');
- 
-  function adicionarAcao() {
-    if (novaAcaoTexto.trim() === '') return; // não adiciona tarefa vazia
- 
-    const novaAcao = {
-      id: Date.now(), // jeito simples de gerar um id único
-      texto: novaAcaoTexto.trim(),
-      feito: false,
-    };
- 
-    setProximasAcoes((acoesAtuais) => [...acoesAtuais, novaAcao]);
-    setNovaAcaoTexto(''); // limpa o campo depois de adicionar
-  }
- 
-  const porcentagemTotal = calcularProgresso(obra);
+  const porcentagemTotal = calcularProgresso({ etapas });
  
   return (
     <KeyboardAvoidingView
@@ -87,10 +96,10 @@ export default function DetalhesObra() {
  
       <ScrollView style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
         <View style={styles.resumoCard}>
-          <Image style={styles.foto} source={obra.imagem} />
+          <Image style={styles.foto} source={obra.imagem || require('../assets/gerenciar.png')} />
           <View style={{ marginLeft: '10%', width: '60%' }}>
             <Text style={styles.resumoNome}>{obra.nome}</Text>
-            <Text style={styles.resumoSub}>Entrega {obra.entrega}</Text>
+            <Text style={styles.resumoSub}>Entrega {obra.entrega || 'não informada'}</Text>
             <View style={styles.progressoBarraFundo}>
               <View style={[styles.progressoBarraPreenchida, { width: `${porcentagemTotal}%` }]} />
             </View>
@@ -109,7 +118,7 @@ export default function DetalhesObra() {
                   <Image style={styles.foto1} source={require('../assets/Home.png')}/>
                 </View>
                 <Text style={styles.infoLinha}>Tipo: </Text>
-                <Text style={styles.infoLinha}>{obra.tipo}</Text>
+                <Text style={styles.infoLinha}>{obra.tipo || 'Não informado'}</Text>
               </View>
  
               <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: 0.5 }}>
@@ -117,7 +126,7 @@ export default function DetalhesObra() {
                   <Image style={styles.foto1} source={require('../assets/icones/localizacao.png')}/>
                 </View>
                 <Text style={styles.infoLinha}>Endereço: </Text>
-                <Text style={styles.infoLinha}>{obra.endereco}</Text>
+                <Text style={styles.infoLinha}>{obra.endereco || 'Não informado'}</Text>
               </View>
  
               <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: 0.5 }}>
@@ -125,7 +134,7 @@ export default function DetalhesObra() {
                   <Image style={styles.foto1} source={require('../assets/Perfil.png')}/>
                 </View>
                 <Text style={styles.infoLinha}>Responsável técnico: </Text>
-                <Text style={styles.infoLinha}>{obra.responsavel}</Text>
+                <Text style={styles.infoLinha}>{obra.responsavel || 'Não informado'}</Text>
               </View>
  
               <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: 0.5 }}>
@@ -133,7 +142,7 @@ export default function DetalhesObra() {
                   <Image style={styles.foto1} source={require('../assets/icones/orçamento.png')}/>
                 </View>
                 <Text style={styles.infoLinha}>Orçamento: </Text>
-                <Text style={styles.infoLinha}>{obra.orcamento}</Text>
+                <Text style={styles.infoLinha}>{obra.orcamento || 'Não informado'}</Text>
               </View>
             </View>
           </View>
@@ -145,25 +154,25 @@ export default function DetalhesObra() {
             <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center' }}>
               <Text style={styles.infoLinha}>Fundação </Text>
               <View style={[styles.progressoBarraFundo, { width: '70%', margin: 8, marginTop: -1 }]}>
-                <View style={[styles.progressoBarraPreenchida, { width: `${obra.etapas.fundacao}%` }]} />
+                <View style={[styles.progressoBarraPreenchida, { width: `${etapas.fundacao}%` }]} />
               </View>
-              <Text style={styles.infoLinha}>{obra.etapas.fundacao}%</Text>
+              <Text style={styles.infoLinha}>{etapas.fundacao}%</Text>
             </View>
  
             <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center' }}>
               <Text style={styles.infoLinha}>Estrutura </Text>
               <View style={[styles.progressoBarraFundo, { width: '70%', margin: 8, marginTop: -1 }]}>
-                <View style={[styles.progressoBarraPreenchida, { width: `${obra.etapas.estrutura}%` }]} />
+                <View style={[styles.progressoBarraPreenchida, { width: `${etapas.estrutura}%` }]} />
               </View>
-              <Text style={styles.infoLinha}>{obra.etapas.estrutura}%</Text>
+              <Text style={styles.infoLinha}>{etapas.estrutura}%</Text>
             </View>
  
             <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center' }}>
               <Text style={styles.infoLinha}>Acabamento </Text>
               <View style={[styles.progressoBarraFundo, { width: '65%', margin: 8, marginTop: -1 }]}>
-                <View style={[styles.progressoBarraPreenchida, { width: `${obra.etapas.acabamento}%` }]} />
+                <View style={[styles.progressoBarraPreenchida, { width: `${etapas.acabamento}%` }]} />
               </View>
-              <Text style={styles.infoLinha}>{obra.etapas.acabamento}%</Text>
+              <Text style={styles.infoLinha}>{etapas.acabamento}%</Text>
             </View>
           </View>
         </View>
@@ -173,25 +182,25 @@ export default function DetalhesObra() {
           <View style={styles.divisao}>
             <Image style={styles.foto1} source={require('../assets/icones/engenheiro.png')}/>
             <Text style={[styles.infoLinha, { fontSize: 8 }]}>Mestre de Obras</Text>
-            <Text style={[styles.infoLinha, { fontSize: 14 }]}>{obra.equipe.mestre}</Text>
+            <Text style={[styles.infoLinha, { fontSize: 14 }]}>{obra.equipe.mestre ?? '—'}</Text>
           </View>
 
           <View style={styles.divisao}>
             <Image style={styles.foto1} source={require('../assets/icones/equipe.png')}/>
             <Text style={[styles.infoLinha, { fontSize: 8 }]}>Funcionários Ativos</Text>
-            <Text style={[styles.infoLinha, { fontSize: 14, color: '#F57C00' }]}>{obra.equipe.funcionariosAtivos}</Text>
+            <Text style={[styles.infoLinha, { fontSize: 14, color: '#F57C00' }]}>{obra.equipe.funcionariosAtivos ?? '—'}</Text>
           </View>
  
           <View style={styles.divisao}>
             <Image style={styles.foto1} source={require('../assets/icones/relogio.png')}/>
             <Text style={[styles.infoLinha, { fontSize: 8 }]}>Horas Trabalhadas</Text>
-            <Text style={[styles.infoLinha, { fontSize: 14, color: '#F57C00' }]}>{obra.equipe.horasTrabalhadas}</Text>
+            <Text style={[styles.infoLinha, { fontSize: 14, color: '#F57C00' }]}>{obra.equipe.horasTrabalhadas ?? '—'}</Text>
           </View>
  
           <View style={styles.divisao}>
             <Image style={styles.foto1} source={require('../assets/icones/checklist.png')}/>
             <Text style={[styles.infoLinha, { fontSize: 8 }]}>Próxima Ação</Text>
-            <Text style={[styles.infoLinha, { fontSize: 14, color: '#F57C00' }]}>{obra.equipe.proximaAcao}</Text>
+            <Text style={[styles.infoLinha, { fontSize: 14, color: '#F57C00' }]}>{obra.equipe.proximaAcao ?? '—'}</Text>
           </View>
         </View>
 

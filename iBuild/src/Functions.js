@@ -32,7 +32,7 @@ export function useAppNavigation() {
     navigation.navigate('Anunciar'); 
   }
   function chat() {
-    alert('Tela em construção, aguardando orçamento');
+    navigation.navigate('Chat 1');
   }
 
   return { home, detalheProdutos, mapa, contratar, carrinho, gerenciar, detalhesObra, perfil, anunciar, chat };
@@ -211,8 +211,10 @@ export const obras = [
 // Calcula a % geral de uma obra a partir das 3 etapas — assim o número
 // nunca fica "desencontrado" do que está de fato preenchido em etapas.
 export function calcularProgresso(obra) {
-  const { fundacao, estrutura, acabamento } = obra.etapas;
-  return Math.round((fundacao + estrutura + acabamento) / 3);
+  const etapas = obra.etapas || {};
+  const total = [etapas.fundacao, etapas.estrutura, etapas.acabamento]
+    .reduce((soma, valor) => soma + Math.min(100, Math.max(0, Number(valor) || 0)), 0);
+  return Math.round(total / 3);
 }
 
 

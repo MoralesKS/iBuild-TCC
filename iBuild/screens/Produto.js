@@ -1,18 +1,32 @@
 import { Text, View, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useAppNavigation, produtos, abrirNoGoogleMaps } from '../src/Functions';
+import { useAppNavigation, produtos } from '../src/Functions';
+import { obterConversaDoVendedor, useConversas } from './Chat1';
 import { useCarrinho } from '../src/CarrinhoItens';
 
 export default function Produto() {
   const navigation = useNavigation();
   const route = useRoute();
   const { home, mapa, contratar, gerenciar, perfil, chat, carrinho } = useAppNavigation();
+  const conversas = useConversas();
   const { adicionarAoCarrinho } = useCarrinho();
 
   // route.params.produto vem do navigation.navigate('Produto', { produto })
   // lá do Home.js. O "|| produtos[0]" é só um fallback pra tela não quebrar
   // caso você abra ela direto, sem vir de um clique (ex: testando no Storybook).
   const produto = route.params?.produto || produtos[0];
+
+  function abrirVendedor() {
+    navigation.navigate('PerfilAutonomo', {
+      usuarioId: produto.idVendedor ?? null,
+      vendedor: { nome: produto.vendedor, local: produto.local },
+    });
+  }
+
+  function chamarVendedor() {
+    const conversaId = obterConversaDoVendedor(conversas, produto);
+    navigation.navigate('Chat 2', { conversaId });
+  }
 
   function comprarAgora() {
     adicionarAoCarrinho(produto);
@@ -23,14 +37,18 @@ export default function Produto() {
     <View style={styles.container}>
 
       {/* Cabeçalho */}
-      <TouchableOpacity onPress={home}>
+      <TouchableOpacity accessibilityLabel="Voltar" onPress={() => navigation.canGoBack() ? navigation.goBack() : home()}>
         <Text style={styles.seta}>{'<'}</Text>
       </TouchableOpacity>
 
       <ScrollView style={{ flex: 1, paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
 
         {/* Imagem do produto */}
-        <Image style={styles.imagemProduto} source={produto.imagem} />
+        {produto.imagem ? (
+          <Image style={styles.imagemProduto} source={produto.imagem} resizeMode="contain" />
+        ) : (
+          <View style={[styles.imagemProduto, styles.semImagem]}><Text>Sem imagem</Text></View>
+        )}
 
         {/* Nome e tipo */}
         <View style={styles.tituloRow}>
@@ -49,7 +67,7 @@ export default function Produto() {
         </Text>
 
         {/* Vendedor */}
-        <TouchableOpacity style={styles.vendedorCard}>
+        <TouchableOpacity style={styles.vendedorCard} onPress={abrirVendedor}>
           <View style={[styles.vendedorIcone, {justifyContent: 'center', alignItems: 'center'}]}>
             <Image style={{height: 25, width: 25, tintColor: '#000000'}} source={require('../assets/empresas.png')}/>
           </View>
@@ -86,7 +104,7 @@ export default function Produto() {
 
         {/* Botões de ação */}
         <View style={styles.botoesRow}>
-          <TouchableOpacity style={styles.chatBotao} onPress={chat}>
+          <TouchableOpacity style={styles.chatBotao} onPress={chamarVendedor}>
             <Text style={styles.chatTexto}>Chamar no chat</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.comprarBotao} onPress={comprarAgora}>
@@ -141,10 +159,11 @@ const styles = StyleSheet.create({
   }, 
   imagemProduto: {
     width: '100%',
-    height: '30%',
+    height: 220,
     borderRadius: 12,
     backgroundColor: '#F5F5F5',
   },
+  semImagem: { alignItems: 'center', justifyContent: 'center' },
   tituloRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { Avatar, buscarConversa, gerarResposta } from "./Chat1";
+import { Avatar, gerarResposta, useConversas } from "./Chat1";
 
 const TAM_AVATAR = 28;
 const horaAgora = () =>
@@ -20,19 +20,32 @@ const horaAgora = () =>
   });
 
 export default function Chat2({ navigation, route }) {
-  const conversa = buscarConversa(route.params?.conversaId);
+  const conversas = useConversas();
+  const conversa = conversas.find((item) => item.id === route.params?.conversaId);
+  if (!conversa) {
+    return (
+      <SafeAreaView style={styles.tela}>
+        <Pressable onPress={() => navigation.navigate("Chat 1")}>
+          <Text style={{ padding: 16 }}>Conversa indisponível. Voltar às conversas</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
+  return <Conversa key={conversa.id} conversa={conversa} navigation={navigation} />;
+}
+
+function Conversa({ conversa, navigation }) {
   const [mensagens, setMensagens] = useState([...conversa.mensagens]);
   const [texto, setTexto] = useState("");
   const [digitando, setDigitando] = useState(false);
   const listaRef = useRef(null);
+  const respostaPendente = useRef(null);
 
   // Ao abrir uma conversa: carrega as mensagens dela e marca como lida
   useEffect(() => {
     conversa.naoLida = false;
-    setMensagens([...conversa.mensagens]);
-    setTexto("");
-    setDigitando(false);
-  }, [conversa.id]);
+    return () => clearTimeout(respostaPendente.current);
+  }, [conversa]);
 
   const rolarParaFim = () =>
     setTimeout(() => listaRef.current?.scrollToEnd({ animated: true }), 50);
@@ -54,7 +67,7 @@ export default function Chat2({ navigation, route }) {
     adicionar("eu", conteudo);
     setTexto("");
     setDigitando(true);
-    setTimeout(() => {
+    respostaPendente.current = setTimeout(() => {
       adicionar("outro", gerarResposta(conversa, conteudo));
       setDigitando(false);
     }, 900);
@@ -105,7 +118,12 @@ export default function Chat2({ navigation, route }) {
     <SafeAreaView style={styles.tela} edges={["top", "bottom"]}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <View style={styles.cabecalho}>
-          <Pressable onPress={() => navigation.navigate("Chat 1")} hitSlop={10}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Voltar da conversa"
+            onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate("Chat 1")}
+            hitSlop={10}
+          >
             <Ionicons name="chevron-back" size={26} color="#111" />
           </Pressable>
           <Avatar
@@ -119,7 +137,7 @@ export default function Chat2({ navigation, route }) {
               {conversa.nome}
             </Text>
             <Text style={styles.status}>
-              {digitando ? "digitando…" : conversa.status}
+              {digitando ? "digitando…" : "Conversa demonstrativa"}
             </Text>
           </View>
           <Ionicons name="call-outline" size={24} color="#111" />

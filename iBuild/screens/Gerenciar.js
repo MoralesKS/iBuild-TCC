@@ -15,9 +15,13 @@ const limitarPercentual = (valor) => Math.min(100, Math.max(0, Number(valor) || 
 export default function Gerenciar() {
   const navigation = useNavigation();
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
-  const { usuario } = useUsuario();
+  const { usuario, carregando: carregandoPerfil, erroPerfil, recarregarUsuario } = useUsuario();
   const [textoBusca, setTextoBusca] = useState('');
   const [obrasDb, setObrasDb] = useState([]);
+  const [carregandoObras, setCarregandoObras] = useState(false);
+  const [erroObras, setErroObras] = useState(false);
+  const [tentativa, setTentativa] = useState(0);
+  const idUsuario = usuario?.idUsuario;
   const [filtro, setFiltro] = useState('todas');
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
   const [favoritos, setFavoritos] = useState([]);
@@ -26,13 +30,19 @@ export default function Gerenciar() {
   const [obraEditando, setObraEditando] = useState(null);
   const [rascunho, setRascunho] = useState(null);
 
-  const carregarObras = useCallback(() => {
-    if (!usuario) return;
-    api.obras(usuario.idUsuario)
-      .then((lista) => setObrasDb(lista || []))
-      .catch((erro) => console.log(erro.message));
-  }, [usuario]);
-  useFocusEffect(carregarObras);
+  useFocusEffect(useCallback(() => {
+    if (!idUsuario) return;
+    let ativo = true;
+    setCarregandoObras(true);
+    setErroObras(false);
+
+    api.obras(idUsuario)
+      .then((lista) => { if (ativo) setObrasDb(lista); })
+      .catch(() => { if (ativo) setErroObras(true); })
+      .finally(() => { if (ativo) setCarregandoObras(false); });
+
+    return () => { ativo = false; };
+  }, [idUsuario, tentativa]));
 
   const obras = useMemo(() => [...obrasDb, ...obrasExemplo]
     .filter((obra) => !excluidas.includes(obra.id))
@@ -71,12 +81,12 @@ export default function Gerenciar() {
   }
 
   function abrirDetalhesObra(obra) {
-    navigation.navigate('DetalhesObra', { obra });
+    navigation.navigate('DetalhesObra', { obra, edicaoTemporaria: alteracoes[obra.id] ?? null });
   }
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.conteudo} contentContainerStyle={{ paddingBottom: 16 }}>
+      <ScrollView style={styles.conteudo} contentContainerStyle={{ paddingBottom: 16 }} keyboardShouldPersistTaps="handled">
         <Text style={styles.avisoDemo}>Modo de demonstração. Favoritos, edições e exclusões são temporários e ficam apenas nesta sessão.</Text>
         <TextInput style={styles.searchInput} placeholder="Pesquisar obra ou construtora" value={textoBusca} onChangeText={setTextoBusca} />
 
@@ -97,6 +107,19 @@ export default function Gerenciar() {
         </View>
 
         <Text style={styles.tituloSecao}>Obras</Text>
+        {(carregandoPerfil || (idUsuario && carregandoObras)) ? <Text>Carregando obras…</Text> : null}
+        {(erroPerfil || (idUsuario && erroObras)) ? (
+          <View style={styles.opcoesFiltro}>
+            <Text accessibilityRole="alert" style={styles.opcaoFiltro}>Não foi possível carregar as obras do servidor.</Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              style={styles.opcaoFiltro}
+              onPress={() => idUsuario ? setTentativa((atual) => atual + 1) : recarregarUsuario()}
+            >
+              <Text>Tentar novamente</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
         {obrasFiltradas.length === 0 ? <Text style={styles.semResultados}>Nenhuma obra encontrada.</Text> : obrasFiltradas.map((obra) => {
           const progresso = calcularProgresso(obra);
           const favorita = favoritos.includes(obra.id);
@@ -145,7 +168,7 @@ export default function Gerenciar() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF', paddingTop: '10%' }, conteudo: { paddingHorizontal: 16 },
+  container: { flex: 1, backgroundColor: '#FFF', paddingTop: '10%' }, conteudo: { flex: 1, paddingHorizontal: 16 },
   avisoDemo: { color: '#8A4B08', backgroundColor: '#FFF3E0', fontSize: 11, padding: 8, borderRadius: 6, marginBottom: 10 },
   searchInput: { backgroundColor: '#F5F5F5', height: 42, borderRadius: 8, paddingHorizontal: 12 },
   filtro: { marginTop: 12, borderColor: '#AAA', borderWidth: 1, borderRadius: 8, padding: 9, alignSelf: 'flex-start', minWidth: 150 },
@@ -156,6 +179,6 @@ const styles = StyleSheet.create({
   foto: { width: 48, height: 48, tintColor: '#000' }, cardInfo: { flex: 1, marginLeft: 12 }, obraNome: { fontWeight: 'bold', fontSize: 14 }, obraSub: { fontSize: 12, color: '#777', marginBottom: 8 },
   progressoBarraFundo: { height: 7, backgroundColor: '#E0E0E0', borderRadius: 4, overflow: 'hidden' }, progressoBarraPreenchida: { height: 7, backgroundColor: '#277D2C' }, progressoTexto: { fontSize: 11, marginTop: 5 },
   acoesLinha: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 8 }, acaoSecundaria: { paddingVertical: 6, paddingHorizontal: 8, backgroundColor: '#F2F2F2', borderRadius: 6 }, acaoIcone: { paddingHorizontal: 8, paddingVertical: 2 },
-  footer: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', height: 54, borderTopWidth: 1, borderTopColor: '#EEE' }, footerItem: { flex: 1, alignItems: 'center' }, footerIcone: { height: 23, width: 23, tintColor: '#AAA' }, footerIconeAtivo: { tintColor: '#277D2C' },
+  footer: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', height: 54, flexShrink: 0, borderTopWidth: 1, borderTopColor: '#EEE' }, footerItem: { flex: 1, alignItems: 'center' }, footerIcone: { height: 23, width: 23, tintColor: '#AAA' }, footerIconeAtivo: { tintColor: '#277D2C' },
   modalFundo: { flex: 1, backgroundColor: '#0008', justifyContent: 'center', padding: 20 }, modalCard: { backgroundColor: '#FFF', borderRadius: 12, padding: 18 }, campoEdicao: { borderWidth: 1, borderColor: '#DDD', borderRadius: 7, padding: 10, marginBottom: 8 }, rotuloCampo: { fontWeight: '600', marginVertical: 5 }, statusSelecionado: { backgroundColor: '#DFF0E0' }, botaoSalvar: { backgroundColor: '#F57C00', padding: 12, alignItems: 'center', borderRadius: 8, marginTop: 8 }, botaoSalvarTexto: { color: '#FFF', fontWeight: 'bold' }, cancelar: { color: '#277D2C', textAlign: 'center', padding: 12 },
 });

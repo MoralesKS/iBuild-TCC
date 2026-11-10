@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import {
   FlatList,
   Image,
@@ -291,8 +291,44 @@ const REGRAS = [
 /* ================================================================== */
 /* FUNÇÕES AUXILIARES (usadas também pelo Chat2.js)                    */
 /* ================================================================== */
-export const buscarConversa = (id) =>
-  CONVERSAS.find((c) => c.id === id) || CONVERSAS[0];
+const ConversasContext = createContext(null);
+
+export function ConversasProvider({ children }) {
+  const conversas = useRef(null);
+  if (!conversas.current) {
+    conversas.current = CONVERSAS.map((conversa) => ({
+      ...conversa,
+      mensagens: [...conversa.mensagens],
+    }));
+  }
+  return (
+    <ConversasContext.Provider value={conversas.current}>
+      {children}
+    </ConversasContext.Provider>
+  );
+}
+
+export function useConversas() {
+  return useContext(ConversasContext);
+}
+
+export function obterConversaDoVendedor(conversas, produto) {
+  const id = produto.idVendedor ? `vendedor-${produto.idVendedor}` : `demo-${produto.vendedor}`;
+  const existente = conversas.find((conversa) => conversa.id === id);
+  if (existente) return existente.id;
+
+  conversas.unshift({
+    id,
+    nome: produto.vendedor || "Vendedor",
+    status: "Conversa demonstrativa",
+    cor: "#277D2C",
+    grupos: [],
+    tempo: "",
+    mensagens: [],
+    padrao: "Esta é uma resposta de demonstração.",
+  });
+  return id;
+}
 
 export function gerarResposta(conversa, textoUsuario) {
   const t = textoUsuario
@@ -344,6 +380,7 @@ const VERDE = "#2f8f3a";
 const FILTROS = ["Geral", "Seguidores", "Seguindo", "Bloqueados"];
 
 export default function Chat1({ navigation }) {
+  const conversas = useConversas();
   const [filtro, setFiltro] = useState("Geral");
   const [, atualizar] = useState(0);
 
@@ -353,7 +390,7 @@ export default function Chat1({ navigation }) {
     [navigation],
   );
 
-  const lista = CONVERSAS.filter((c) =>
+  const lista = conversas.filter((c) =>
     filtro === "Geral"
       ? !c.grupos.includes("bloqueados")
       : c.grupos.includes(filtro.toLowerCase()),
@@ -361,12 +398,17 @@ export default function Chat1({ navigation }) {
 
   const previa = (c) => {
     const u = c.mensagens[c.mensagens.length - 1];
+    if (!u) return "Nenhuma mensagem ainda";
     return (u.autor === "eu" ? "Você: " : "") + u.texto;
   };
 
   return (
     <SafeAreaView style={styles.tela} edges={["top"]}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate("Home")}>
+        <Text style={{ marginHorizontal: 16, marginTop: 8 }}>‹ Voltar</Text>
+      </Pressable>
       <Text style={styles.titulo}>Conversas</Text>
+      <Text style={{ marginHorizontal: 16, marginBottom: 8 }}>Conversas de demonstração</Text>
 
       <View>
         <ScrollView

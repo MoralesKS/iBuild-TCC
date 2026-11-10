@@ -2,17 +2,25 @@ import { useCallback, useState } from 'react';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { api, useUsuario } from '../src/api';
 import { useAppNavigation } from '../src/Functions';
-import { Text, View, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
+import { Text, View, TouchableOpacity, ScrollView, Image, Modal, TextInput, StyleSheet } from 'react-native';
 
 const ICONE_PERFIL = require('../assets/Perfil.png');
 
 export default function Perfil({ route }) {
   const ehProprio = route.name === 'Perfil';
   const idPublico = ehProprio ? null : route.params?.usuarioId;
-  return <TelaPerfil key={ehProprio ? 'proprio' : idPublico} ehProprio={ehProprio} idPublico={idPublico} />;
+  const vendedor = ehProprio ? null : route.params?.vendedor;
+  return (
+    <TelaPerfil
+      key={ehProprio ? 'proprio' : idPublico ?? vendedor?.nome}
+      ehProprio={ehProprio}
+      idPublico={idPublico}
+      vendedor={vendedor}
+    />
+  );
 }
 
-function TelaPerfil({ ehProprio, idPublico }) {
+function TelaPerfil({ ehProprio, idPublico, vendedor }) {
   const navigation = useNavigation();
   const { home, mapa, contratar, gerenciar, chat, perfil } = useAppNavigation();
   const { usuario: usuarioLogado, usuarioFirebase, carregando, erroPerfil, recarregarUsuario } = useUsuario();
@@ -22,6 +30,9 @@ function TelaPerfil({ ehProprio, idPublico }) {
   const [erroAnuncios, setErroAnuncios] = useState(false);
   const [minhasObras, setMinhasObras] = useState([]);
   const [escolhendoObra, setEscolhendoObra] = useState(false);
+  const [edicao, setEdicao] = useState(null);
+  const [rascunho, setRascunho] = useState(null);
+  const [erroEdicao, setErroEdicao] = useState('');
   const usuario = ehProprio ? usuarioLogado : outro;
   const idUsuarioLogado = usuarioLogado?.idUsuario;
   const idPerfil = ehProprio ? idUsuarioLogado : idPublico;
@@ -60,9 +71,12 @@ function TelaPerfil({ ehProprio, idPublico }) {
     navigation.navigate('Produto', { produto });
   }
 
-  const nome = usuario?.nome || (ehProprio ? usuarioFirebase?.displayName || 'Sua conta' : null);
+  const nome = edicao?.nome || usuario?.nome
+    || (ehProprio ? usuarioFirebase?.displayName || 'Sua conta' : vendedor?.nome);
+  const cidade = edicao?.cidade ?? (usuario?.cidade || vendedor?.local);
+  const bio = edicao?.bio ?? usuario?.bio;
   const email = ehProprio ? usuarioFirebase?.email || usuario?.email : null;
-  const telefone = ehProprio ? usuario?.telefone : null;
+  const telefone = ehProprio ? edicao?.telefone ?? usuario?.telefone : null;
   const identificacao = [usuario?.rotuloPerfil, usuario?.profissao].filter(Boolean).join(' • ');
   const dadosPrivados = [
     ['CPF', usuario?.cpf],
@@ -74,11 +88,41 @@ function TelaPerfil({ ehProprio, idPublico }) {
   const falhaPerfil = ehProprio ? Boolean(erroPerfil) : !idPublico || erroPublico;
   const podeAdicionarNaObra = !ehProprio && usuario?.idProfissional && idUsuarioLogado && idUsuarioLogado !== idPublico;
 
+  function abrirEdicao() {
+    setErroEdicao('');
+    setRascunho({
+      nome: edicao?.nome ?? usuario?.nome ?? usuarioFirebase?.displayName ?? '',
+      telefone: telefone || '',
+      cidade: cidade || '',
+      bio: bio || '',
+    });
+  }
+
+  function salvarEdicao() {
+    if (!rascunho) return;
+    const dados = Object.fromEntries(Object.entries(rascunho).map(([campo, valor]) => [campo, valor.trim()]));
+    if (dados.nome.length < 2) {
+      setErroEdicao('Informe um nome com pelo menos 2 caracteres.');
+      return;
+    }
+    if (dados.telefone && (!/^[+\d ()-]+$/.test(dados.telefone) || !/^\d{10,13}$/.test(dados.telefone.replace(/\D/g, '')))) {
+      setErroEdicao('Informe um telefone válido com DDD ou deixe o campo vazio.');
+      return;
+    }
+    setEdicao(dados);
+    setRascunho(null);
+  }
+
   return (
     <View style={styles.container}>
 
       <View style={styles.headerRow}>
-        <Text style={styles.titulo}>{ehProprio ? 'Meu Perfil' : 'Perfil profissional'}</Text>
+        {!ehProprio && (
+          <TouchableOpacity accessibilityRole="button" onPress={() => navigation.canGoBack() ? navigation.goBack() : home()}>
+            <Text style={styles.voltar}>‹ Voltar</Text>
+          </TouchableOpacity>
+        )}
+        <Text style={styles.titulo}>{ehProprio ? 'Meu Perfil' : vendedor ? 'Perfil do vendedor' : 'Perfil profissional'}</Text>
       </View>
 
       <ScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
@@ -88,10 +132,10 @@ function TelaPerfil({ ehProprio, idPublico }) {
             <View style={styles.perfilInfo}>
               <Text style={styles.nome}>{nome}</Text>
               {identificacao ? <Text style={styles.profissao}>{identificacao}</Text> : null}
-              {usuario?.cidade ? (
+              {cidade ? (
                 <View style={styles.localRow}>
                   <Image style={styles.iconePequeno} source={require('../assets/icones/localizacao.png')} />
-                  <Text style={styles.localTexto}>{usuario.cidade}</Text>
+                  <Text style={styles.localTexto}>{cidade}</Text>
                 </View>
               ) : null}
             </View>
@@ -122,12 +166,19 @@ function TelaPerfil({ ehProprio, idPublico }) {
           </View>
         ))}
 
-        {usuario?.bio ? <Text style={styles.bio}>{usuario.bio}</Text> : null}
+        {bio ? <Text style={styles.bio}>{bio}</Text> : null}
+
+        {ehProprio && usuarioFirebase && (
+          <TouchableOpacity accessibilityRole="button" style={styles.anunciarCard} onPress={abrirEdicao}>
+            <Text style={styles.anunciarTitulo}>Editar perfil</Text>
+            <Text style={styles.anunciarSub}>Alterações disponíveis nesta sessão.</Text>
+          </TouchableOpacity>
+        )}
 
         {carregandoPerfil && <Text style={styles.aviso}>Carregando perfil...</Text>}
         {falhaPerfil && (
           <View style={styles.aviso}>
-            <Text style={styles.profissao}>Não foi possível carregar os dados do perfil.</Text>
+            <Text style={styles.profissao}>{vendedor ? 'Exibindo os dados do vendedor informados no anúncio.' : 'Não foi possível carregar os dados do perfil.'}</Text>
             {ehProprio && (
               <TouchableOpacity accessibilityRole="button" onPress={recarregarUsuario} style={styles.anunciarCard}>
                 <Text style={styles.anunciarTitulo}>Tentar novamente</Text>
@@ -198,6 +249,42 @@ function TelaPerfil({ ehProprio, idPublico }) {
         )}
       </ScrollView>
 
+      <Modal visible={rascunho !== null} transparent animationType="fade" onRequestClose={() => setRascunho(null)}>
+        <View style={styles.modalFundo}>
+          <View style={styles.modalCard}>
+            <ScrollView keyboardShouldPersistTaps="handled">
+              <Text style={styles.titulo}>Editar perfil</Text>
+              {[
+                ['nome', 'Nome', 150],
+                ['telefone', 'Telefone (opcional)', 24],
+                ['cidade', 'Cidade (opcional)', 100],
+                ['bio', 'Biografia (opcional)', 300],
+              ].map(([campo, rotulo, limite]) => (
+                <View key={campo}>
+                  <Text style={styles.dadoRotulo}>{rotulo}</Text>
+                  <TextInput
+                    accessibilityLabel={rotulo}
+                    style={styles.campoEdicao}
+                    value={rascunho?.[campo] ?? ''}
+                    onChangeText={(valor) => setRascunho((atual) => atual ? { ...atual, [campo]: valor } : null)}
+                    keyboardType={campo === 'telefone' ? 'phone-pad' : 'default'}
+                    maxLength={limite}
+                    multiline={campo === 'bio'}
+                  />
+                </View>
+              ))}
+              {erroEdicao ? <Text accessibilityRole="alert" style={styles.erroEdicao}>{erroEdicao}</Text> : null}
+              <TouchableOpacity accessibilityRole="button" style={styles.anunciarCard} onPress={salvarEdicao}>
+                <Text style={styles.anunciarTitulo}>Salvar nesta sessão</Text>
+              </TouchableOpacity>
+              <TouchableOpacity accessibilityRole="button" onPress={() => setRascunho(null)}>
+                <Text style={styles.voltar}>Cancelar</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* BOTTOM TAB BAR */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.footerItem} onPress={home}>
@@ -229,6 +316,11 @@ function TelaPerfil({ ehProprio, idPublico }) {
 }
 
 const styles = StyleSheet.create({
+  voltar: { color: '#277D2C', fontWeight: 'bold', padding: 8 },
+  modalFundo: { flex: 1, backgroundColor: '#0008', justifyContent: 'center', padding: 20 },
+  modalCard: { backgroundColor: '#FFF', borderRadius: 12, padding: 16, maxHeight: '85%' },
+  campoEdicao: { borderWidth: 1, borderColor: '#DDD', borderRadius: 8, padding: 8, marginVertical: 6 },
+  erroEdicao: { color: '#A32222', marginVertical: 8 },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
