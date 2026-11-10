@@ -1,140 +1,201 @@
+import { useCallback, useState } from 'react';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { api, useUsuario } from '../src/api';
+import { useAppNavigation } from '../src/Functions';
 import { Text, View, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { useAppNavigation, produtos } from '../src/Functions';
-import { usuario } from '../src/Usuario';
 
-export default function Perfil() {
+const ICONE_PERFIL = require('../assets/Perfil.png');
+
+export default function Perfil({ route }) {
+  const ehProprio = route.name === 'Perfil';
+  const idPublico = ehProprio ? null : route.params?.usuarioId;
+  return <TelaPerfil key={ehProprio ? 'proprio' : idPublico} ehProprio={ehProprio} idPublico={idPublico} />;
+}
+
+function TelaPerfil({ ehProprio, idPublico }) {
   const navigation = useNavigation();
-  const { home, mapa, contratar, gerenciar, chat, anunciar } = useAppNavigation();
+  const { home, mapa, contratar, gerenciar, chat, perfil } = useAppNavigation();
+  const { usuario: usuarioLogado, usuarioFirebase, carregando, erroPerfil, recarregarUsuario } = useUsuario();
+  const [outro, setOutro] = useState(null);
+  const [erroPublico, setErroPublico] = useState(false);
+  const [itensAVenda, setItensAVenda] = useState(null);
+  const [erroAnuncios, setErroAnuncios] = useState(false);
+  const [minhasObras, setMinhasObras] = useState([]);
+  const [escolhendoObra, setEscolhendoObra] = useState(false);
+  const usuario = ehProprio ? usuarioLogado : outro;
+  const idUsuarioLogado = usuarioLogado?.idUsuario;
+  const idPerfil = ehProprio ? idUsuarioLogado : idPublico;
 
-  // Dados de exemplo: por enquanto todos os produtos aparecem como "itens à venda"
-  // e os favoritos são os mesmos em outra ordem. Quando tiver backend ou Context
-  // de anúncios/favoritos, é só trocar essas duas linhas.
-  const itensAVenda = produtos;
-  const favoritos = [...produtos].reverse();
+  useFocusEffect(useCallback(() => {
+    if (!idPerfil) return;
+    let ativo = true;
+    setErroAnuncios(false);
+    api.produtos(idPerfil)
+      .then((itens) => { if (ativo) setItensAVenda(itens); })
+      .catch(() => { if (ativo) setErroAnuncios(true); });
+
+    if (!ehProprio) {
+      setErroPublico(false);
+      api.usuario(idPerfil)
+        .then((dados) => { if (ativo) setOutro(dados); })
+        .catch(() => { if (ativo) setErroPublico(true); });
+      if (idUsuarioLogado) {
+        api.obras(idUsuarioLogado)
+          .then((obras) => { if (ativo) setMinhasObras(obras); })
+          .catch(() => { if (ativo) setMinhasObras([]); });
+      }
+    }
+    return () => { ativo = false; };
+  }, [ehProprio, idPerfil, idUsuarioLogado]));
+
+  async function adicionarNaObra(obra) {
+    try {
+      await api.adicionarProfissional(obra.id, usuario.idProfissional, usuario.profissao);
+      alert(`${usuario.nome} foi adicionado à obra ${obra.nome}`);
+      setEscolhendoObra(false);
+    } catch (e) { alert(e.message); }
+  }
 
   function abrirProduto(produto) {
     navigation.navigate('Produto', { produto });
   }
 
-  // Função simples (não um componente) pra não repetir o mesmo JSX nas duas listas
-  function renderizarLista(lista) {
-    return (
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {lista.map((produto) => (
-          <TouchableOpacity
-            key={produto.id}
-            style={styles.produtoCard}
-            onPress={() => abrirProduto(produto)}
-          >
-            <Image style={styles.produtoImagem} source={produto.imagem} />
-            <Text style={styles.produtoNome} numberOfLines={1}>{produto.nome}</Text>
-            <Text style={styles.produtoPreco}>{produto.preco} / un.</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    );
-  }
+  const nome = usuario?.nome || (ehProprio ? usuarioFirebase?.displayName || 'Sua conta' : null);
+  const email = ehProprio ? usuarioFirebase?.email || usuario?.email : null;
+  const telefone = ehProprio ? usuario?.telefone : null;
+  const identificacao = [usuario?.rotuloPerfil, usuario?.profissao].filter(Boolean).join(' • ');
+  const dadosPrivados = [
+    ['CPF', usuario?.cpf],
+    ['CNPJ', usuario?.cnpj],
+    ['Data de nascimento', usuario?.dataNascimento],
+    ['Responsável pela empresa', usuario?.nomeResponsavel],
+  ].filter(([, valor]) => valor);
+  const carregandoPerfil = ehProprio ? carregando : Boolean(idPublico && !outro && !erroPublico);
+  const falhaPerfil = ehProprio ? Boolean(erroPerfil) : !idPublico || erroPublico;
+  const podeAdicionarNaObra = !ehProprio && usuario?.idProfissional && idUsuarioLogado && idUsuarioLogado !== idPublico;
 
   return (
     <View style={styles.container}>
 
       <View style={styles.headerRow}>
-        <Text style={styles.titulo}>Meu Perfil</Text>
-        <TouchableOpacity
-          style={styles.botaoConfig}
-          onPress={() => alert('Tela em construção, aguardando orçamento')}
-        >
-          <Image style={styles.iconeConfig} source={require('../assets/icones/configuracoes.png')}/>
-        </TouchableOpacity>
+        <Text style={styles.titulo}>{ehProprio ? 'Meu Perfil' : 'Perfil profissional'}</Text>
       </View>
 
       <ScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
-
-        {/* Foto e dados principais */}
-        <View style={styles.perfilRow}>
-          <View style={styles.avatarWrapper}>
-            <Image style={styles.avatar} source={usuario.foto} />
-            <View style={styles.editarBadge}>
-              <Text style={styles.editarTexto}>✎</Text>
+        {nome && (
+          <View style={styles.perfilRow}>
+            <Image style={styles.avatar} source={usuario?.foto || ICONE_PERFIL} />
+            <View style={styles.perfilInfo}>
+              <Text style={styles.nome}>{nome}</Text>
+              {identificacao ? <Text style={styles.profissao}>{identificacao}</Text> : null}
+              {usuario?.cidade ? (
+                <View style={styles.localRow}>
+                  <Image style={styles.iconePequeno} source={require('../assets/icones/localizacao.png')} />
+                  <Text style={styles.localTexto}>{usuario.cidade}</Text>
+                </View>
+              ) : null}
             </View>
           </View>
+        )}
+
+        {Boolean(email || telefone) && (
+          <View style={styles.contato}>
+            {email ? (
+              <View style={styles.contatoItem}>
+                <Image style={styles.contatoIcone} source={require('../assets/icones/email.png')} />
+                <Text style={styles.contatoTexto}>{email}</Text>
+              </View>
+            ) : null}
+            {telefone ? (
+              <View style={styles.contatoItem}>
+                <Image style={styles.contatoIcone} source={require('../assets/icones/telefone.png')} />
+                <Text style={styles.contatoTexto}>{telefone}</Text>
+              </View>
+            ) : null}
+          </View>
+        )}
+
+        {ehProprio && dadosPrivados.map(([rotulo, valor]) => (
+          <View key={rotulo} style={styles.dadoPrivado}>
+            <Text style={styles.dadoRotulo}>{rotulo}</Text>
+            <Text style={styles.contatoTexto}>{valor}</Text>
+          </View>
+        ))}
+
+        {usuario?.bio ? <Text style={styles.bio}>{usuario.bio}</Text> : null}
+
+        {carregandoPerfil && <Text style={styles.aviso}>Carregando perfil...</Text>}
+        {falhaPerfil && (
+          <View style={styles.aviso}>
+            <Text style={styles.profissao}>Não foi possível carregar os dados do perfil.</Text>
+            {ehProprio && (
+              <TouchableOpacity accessibilityRole="button" onPress={recarregarUsuario} style={styles.anunciarCard}>
+                <Text style={styles.anunciarTitulo}>Tentar novamente</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {usuario && (
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValor}>{itensAVenda?.length ?? '—'}</Text>
+              <Text style={styles.statLabel}>Produtos</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statValor}>{usuario.avaliacoes}</Text>
+              <Text style={styles.statLabel}>Avaliações</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statValor}>
+                {usuario.avaliacoes > 0 ? <><Text style={styles.estrela}>★ </Text>{usuario.notaMedia}</> : '—'}
+              </Text>
+              <Text style={styles.statLabel}>Nota média</Text>
+            </View>
+          </View>
+        )}
+
+        {Boolean(podeAdicionarNaObra) && (
           <View>
-            <Text style={styles.nome}>{usuario.nome}</Text>
-            <Text style={styles.profissao}>{usuario.profissao}</Text>
-            <View style={styles.localRow}>
-              <Image style={styles.iconePequeno} source={require('../assets/icones/localizacao.png')}/>
-              <Text style={styles.localTexto}>{usuario.cidade}</Text>
-            </View>
+            <TouchableOpacity style={styles.anunciarCard} onPress={() => setEscolhendoObra((v) => !v)}>
+              <View style={styles.anunciarInfo}>
+                <Text style={styles.anunciarTitulo}>Adicionar a uma obra</Text>
+                <Text style={styles.anunciarSub}>Escolha em qual das suas obras ele vai trabalhar</Text>
+              </View>
+            </TouchableOpacity>
+            {escolhendoObra && (minhasObras.length === 0
+              ? <Text style={styles.anunciarSub}>Você ainda não tem obras.</Text>
+              : minhasObras.map((o) => (
+                  <TouchableOpacity key={o.id} style={styles.anunciarCard} onPress={() => adicionarNaObra(o)}>
+                    <Text style={styles.anunciarTitulo}>{o.nome}</Text>
+                  </TouchableOpacity>
+                )))}
           </View>
-        </View>
+        )}
 
-        {/* Contato */}
-        <View style={styles.contatoRow}>
-          <View style={styles.contatoItem}>
-            <Image style={styles.contatoIcone} source={require('../assets/icones/telefone.png')}/>
-            <Text style={styles.contatoTexto}>{usuario.telefone}</Text>
+        {usuario && (
+          <View>
+            <View style={styles.divisor} />
+            <Text style={styles.secaoTitulo}>Itens à venda</Text>
+            {erroAnuncios ? <Text style={styles.profissao}>Não foi possível carregar os anúncios.</Text> : (
+              itensAVenda?.length ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {itensAVenda.map((produto) => (
+                    <TouchableOpacity key={produto.id} style={styles.produtoCard} onPress={() => abrirProduto(produto)}>
+                      {produto.imagem
+                        ? <Image style={styles.produtoImagem} source={produto.imagem} />
+                        : <View style={styles.produtoImagem} />}
+                      <Text style={styles.produtoNome} numberOfLines={1}>{produto.nome}</Text>
+                      <Text style={styles.produtoPreco}>{produto.preco} / un.</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              ) : (
+                <Text style={styles.profissao}>{itensAVenda ? 'Nenhum anúncio publicado.' : 'Carregando anúncios...'}</Text>
+              )
+            )}
           </View>
-          <View style={styles.contatoItem}>
-            <Image style={styles.contatoIcone} source={require('../assets/icones/email.png')}/>
-            <Text style={styles.contatoTexto}>{usuario.email}</Text>
-          </View>
-        </View>
-
-        <Text style={styles.bio}>{usuario.bio}</Text>
-
-        {/* Estatísticas — Produtos e Favoritos vêm das listas, não são números fixos */}
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValor}>{itensAVenda.length}</Text>
-            <Text style={styles.statLabel}>Produtos</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValor}>{favoritos.length}</Text>
-            <Text style={styles.statLabel}>Favoritos</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValor}>{usuario.avaliacoes}</Text>
-            <Text style={styles.statLabel}>Avaliações</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValor}>
-              <Text style={styles.estrela}>★ </Text>{usuario.notaMedia}
-            </Text>
-            <Text style={styles.statLabel}>Nota média</Text>
-          </View>
-        </View>
-
-        {/* Botão pra anunciar */}
-        <TouchableOpacity style={styles.anunciarCard} onPress={anunciar}>
-          <Image style={styles.anunciarIcone} source={require('../assets/icones/anuncio.png')}/>
-          <View style={styles.anunciarInfo}>
-            <Text style={styles.anunciarTitulo}>Anunciar produtos ou materiais</Text>
-            <Text style={styles.anunciarSub}>Divulgue seus produtos e alcance mais clientes</Text>
-          </View>
-          <Text style={styles.setaDireita}>{'>'}</Text>
-        </TouchableOpacity>
-
-        <View style={styles.divisor} />
-
-        {/* Itens à venda */}
-        <View style={styles.secaoHeader}>
-          <Text style={styles.secaoTitulo}>Itens a venda</Text>
-          <TouchableOpacity>
-            <Text style={styles.verTodos}>Ver todos {'>'}</Text>
-          </TouchableOpacity>
-        </View>
-        {renderizarLista(itensAVenda)}
-
-        {/* Favoritos */}
-        <View style={styles.secaoHeader}>
-          <Text style={styles.secaoTitulo}>Favoritos</Text>
-          <TouchableOpacity>
-            <Text style={styles.verTodos}>Ver todos {'>'}</Text>
-          </TouchableOpacity>
-        </View>
-        {renderizarLista(favoritos)}
-
+        )}
       </ScrollView>
 
       {/* BOTTOM TAB BAR */}
@@ -159,8 +220,8 @@ export default function Perfil() {
           <Image style={styles.footerIcone} source={require('../assets/Chat.png')}/>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerItem}>
-          <Image style={styles.footerIcone1} source={require('../assets/Perfil.png')}/>
+        <TouchableOpacity style={styles.footerItem} onPress={perfil} accessibilityRole="button" accessibilityLabel="Meu perfil">
+          <Image style={ehProprio ? styles.footerIcone1 : styles.footerIcone} source={ICONE_PERFIL} />
         </TouchableOpacity>
       </View>
     </View>
@@ -186,44 +247,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  botaoConfig: {
-    position: 'absolute',
-    right: 16,
-  },
-  iconeConfig: {
-    width: 24,
-    height: 24,
-    tintColor: '#000000',
-  },
   perfilRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  avatarWrapper: {
-    marginRight: 16,
+  perfilInfo: {
+    flex: 1,
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
     backgroundColor: '#F0F0F0',
-  },
-  editarBadge: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  editarTexto: {
-    fontSize: 12,
-    color: '#000000',
+    marginRight: 16,
   },
   nome: {
     fontSize: 18,
@@ -250,14 +286,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#000000',
   },
-  contatoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  contato: {
     marginTop: 16,
   },
   contatoItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 6,
   },
   contatoIcone: {
     width: 18,
@@ -266,8 +301,20 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   contatoTexto: {
+    flexShrink: 1,
     fontSize: 13,
     color: '#000000',
+  },
+  dadoPrivado: {
+    marginTop: 8,
+  },
+  dadoRotulo: {
+    color: '#666666',
+    fontSize: 12,
+  },
+  aviso: {
+    marginTop: 16,
+    color: '#666666',
   },
   bio: {
     fontSize: 13,
@@ -304,12 +351,6 @@ const styles = StyleSheet.create({
     padding: 12,
     marginTop: 16,
   },
-  anunciarIcone: {
-    width: 32,
-    height: 32,
-    tintColor: '#F57C00',
-    marginRight: 12,
-  },
   anunciarInfo: {
     flex: 1,
   },
@@ -323,30 +364,16 @@ const styles = StyleSheet.create({
     color: '#828282',
     marginTop: 2,
   },
-  setaDireita: {
-    fontSize: 16,
-    color: '#828282',
-  },
   divisor: {
     height: 1,
     backgroundColor: '#E0E0E0',
     marginVertical: 16,
   },
-  secaoHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 8,
-  },
   secaoTitulo: {
     fontSize: 15,
     fontWeight: 'bold',
     color: '#000000',
-  },
-  verTodos: {
-    fontSize: 12,
-    color: '#F57C00',
+    marginBottom: 8,
   },
   produtoCard: {
     width: 90,

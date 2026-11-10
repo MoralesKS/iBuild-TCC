@@ -1,30 +1,39 @@
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image} from 'react-native';
 import { useState } from 'react';
-import {useNavigation} from '@react-navigation/native';
-import { createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { useNavigation } from '@react-navigation/native';
+import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase.config';
 
 export default function RedefinicaoSenha() {
   const [userMail, setUserMail] = useState('');
-  const [userPass, setUserPass] = useState('');
-  const [confirmePass, setConfirmePass] = useState('');
+  const [enviando, setEnviando] = useState(false);
   const navigation = useNavigation();
 
-  function replacePass(){
-    if(userMail !== ''){
-        sendPasswordResetEmail(auth, userMail)
-        .then(() => {
-            alert(`Foi enviado um email para: ${userMail}. Verifique a sua caixa de email ou spam`);
-            navigation.navigate('Login')
-        })
-        .catch((error) => {
-            const errorMessage = error.message;
-            alert(`Ops! Algo deu errado. ${errorMessage}. Tente novamente ou precione voltar`);
-            return;
-        })
-    }else{
-        alert("Inforeme seu email")
+  async function replacePass() {
+    const email = userMail.trim();
+    if (!email) {
+      alert('Informe seu e-mail.');
+      return;
     }
+    if (enviando) return;
+
+    setEnviando(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (erro) {
+      // Projetos sem a proteção de enumeração podem devolver estes erros.
+      if (!['auth/user-not-found', 'auth/user-disabled'].includes(erro.code)) {
+        alert(erro.code === 'auth/invalid-email'
+          ? 'Informe um e-mail válido.'
+          : 'Não foi possível solicitar a recuperação. Tente novamente.');
+        return;
+      }
+    } finally {
+      setEnviando(false);
+    }
+
+    alert('Se houver uma conta com esse e-mail, você receberá as instruções de recuperação. Confira sua caixa de entrada e a pasta de spam.');
+    navigation.navigate('Login');
   }
 
   function voltar(){
@@ -53,11 +62,11 @@ export default function RedefinicaoSenha() {
             onChangeText={setUserMail}
         />
 
-        <TouchableOpacity style={styles.continuar} onPress={replacePass}>
-            <Text style={{color: '#ffffff'}}>Continuar</Text>
+        <TouchableOpacity style={styles.continuar} onPress={replacePass} disabled={enviando}>
+            <Text style={{color: '#ffffff'}}>{enviando ? 'Enviando...' : 'Continuar'}</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.voltar} onPress={voltar}>
+        <TouchableOpacity style={styles.voltar} onPress={voltar} disabled={enviando}>
             <Text style={{color: '#F57C00'}}>Voltar</Text>
         </TouchableOpacity>
 
@@ -171,4 +180,3 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 });
- 
