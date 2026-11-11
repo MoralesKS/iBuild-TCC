@@ -19,7 +19,7 @@ const pool = mysql.createPool({
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));   // fotos chegam em base64
+app.use(express.json({ limit: '30mb' }));   // fotos chegam em base64
 app.use((req, res, next) => { console.log(new Date().toLocaleTimeString(), req.method, req.url); next(); });
 
 // pasta onde ficam as fotos enviadas (servida em /uploads/arquivo.jpg)
@@ -206,48 +206,215 @@ app.put('/usuarios/:id/foto', h(async (req, res) => {
 /* ================================================================== */
 /* ANÚNCIOS (produtos)                                                 */
 /* ================================================================== */
+const MAX_FOTOS_EXTRAS = 4;
+const ESTADO_BANCO = { Novo: 'novo', Seminovo: 'bom', Usado: 'regular' };
+
+function salvarImagem(base64, ext, prefixo) {
+  const extensao = ['jpg', 'jpeg', 'png', 'webp'].includes(String(ext).toLowerCase()) ? String(ext).toLowerCase() : 'jpg';
+  const arquivo = `${prefixo}-${Date.now()}-${Math.floor(Math.random() * 1e6)}.${extensao}`;
+  fs.writeFileSync(path.join(PASTA_UPLOADS, arquivo), Buffer.from(base64, 'base64'));
+  return `/uploads/${arquivo}`;
+}
+function apagarImagem(url) {
+  if (url && url.startsWith('/uploads/')) fs.unlink(path.join(PASTA_UPLOADS, path.basename(url)), () => {});
+}
+
+// Regras do anúncio (o app também confere, mas o servidor é quem garante)
+function validarAnuncio(b) {
+  const erros = [];
+  const nome = String(b.titulo == null ? '' : b.titulo).trim();
+  if (nome.length < 3 || !/[A-Za-zÀ-ÿ]/.test(nome)) erros.push('Nome do produto inválido (mínimo 3 caracteres, com letras).');
+  if (nome.length > 150) erros.push('Nome do produto muito longo (máximo 150 caracteres).');
+  if (!String(b.categoria || '').trim()) erros.push('Escolha uma categoria.');
+
+  if (b.preco == null || b.preco === '') erros.push('Informe o preço.');
+  else {
+    const preco = Number(b.preco);
+    if (!Number.isFinite(preco)) erros.push('Preço inválido.');
+    else if (preco < 0) erros.push('O preço não pode ser negativo.');
+    else if (preco === 0) erros.push('O preço deve ser maior que zero.');
+    else if (preco > 99999999.99 || Math.abs(Math.round(preco * 100) - preco * 100) > 1e-6) erros.push('Preço inválido (máximo de 2 casas decimais).');
+  }
+
+  if (b.quantidade == null || b.quantidade === '') erros.push('Informe a quantidade.');
+  else {
+    const qtd = Number(b.quantidade);
+    if (!Number.isFinite(qtd)) erros.push('Quantidade inválida.');
+    else if (qtd < 0) erros.push('A quantidade não pode ser negativa.');
+    else if (!Number.isInteger(qtd)) erros.push('A quantidade deve ser um número inteiro.');
+    else if (qtd === 0) erros.push('A quantidade deve ser pelo menos 1.');
+    else if (qtd > 99999999) erros.push('Quantidade alta demais.');
+  }
+
+  if (!String(b.unidade || '').trim()) erros.push('Escolha a unidade.');
+  if (String(b.descricao || '').length > 200) erros.push('A descrição pode ter no máximo 200 caracteres.');
+
+  const local = String(b.localizacao || '').trim();
+  if (local.length < 3 || !/[A-Za-zÀ-ÿ]/.test(local)) erros.push('Informe a localização do produto.');
+
+  const tel = String(b.contato || '').replace(/\D/g, '');
+  if (tel.length !== 11 || Number(tel.slice(0, 2)) < 11 || tel[2] !== '9' || /^(\d)\1+$/.test(tel)) erros.push('Informe um celular de contato válido, com DDD.');
+  return erros;
+}
+
+async function idCategoria(nome, conn = pool) {
+  const nomeCat = (nome || 'Outros').trim();
+  await q('INSERT IGNORE INTO categorias_materiais (nome) VALUES (?)', [nomeCat], conn);
+  const [cat] = await q('SELECT id_categoria FROM categorias_materiais WHERE nome = ?', [nomeCat], conn);
+  return cat.id_categoria;
+}
+
+// "where" só recebe condições fixas do código
+async function montarAnuncios(where, params) {
+  const rows = await q(
+    `SELECT a.id_anuncio, a.titulo, c.nome AS categoria, u.id_usuario AS id_vendedor,
+            COALESCE(u.razao_social, u.nome) AS vendedor, u.cidade, u.telefone, a.localizacao, a.contato,
+            a.descricao, a.preco_unitario, a.unidade, a.quantidade, a.estado_material, a.disponibilidade
+       FROM anuncios a
+       JOIN categorias_materiais c ON c.id_categoria = a.id_categoria
+       JOIN usuarios u ON u.id_usuario = a.id_vendedor
+      WHERE ${where}
+      ORDER BY a.data_publicacao DESC, a.id_anuncio DESC`,
+    params
+  );
+  if (!rows.length) return [];
+  const fotos = await q(
+    'SELECT id_foto, id_anuncio, url_foto, principal FROM fotos_anuncio WHERE id_anuncio IN (?) ORDER BY principal DESC, ordem, id_foto',
+    [rows.map((r) => r.id_anuncio)]
+  );
+  return rows.map((r) => {
+    const f = fotos.filter((x) => x.id_anuncio === r.id_anuncio);
+    const capa = f.find((x) => x.principal);
+    return {
+      id: r.id_anuncio, nome: r.titulo, tipo: r.categoria, idVendedor: r.id_vendedor, vendedor: r.vendedor,
+      localizacao: r.localizacao || r.cidade || '', contato: r.contato || r.telefone || '',
+      descricao: r.descricao || '', preco: r.preco_unitario, unidade: r.unidade, quantidade: r.quantidade,
+      estado: r.estado_material, disponibilidade: r.disponibilidade,
+      capa: capa ? { id: capa.id_foto, url: capa.url_foto } : null,
+      fotos: f.filter((x) => !x.principal).map((x) => ({ id: x.id_foto, url: x.url_foto })),
+    };
+  });
+}
+
 app.post('/anuncios', h(async (req, res) => {
   const b = req.body;
-  if (!b.id_vendedor || !b.titulo || b.preco == null) return res.status(400).json({ erro: 'Dados incompletos' });
+  if (!b.id_vendedor) return res.status(400).json({ erro: 'Vendedor não informado' });
 
-  const nomeCat = (b.categoria || 'Outros').trim();
-  await q('INSERT IGNORE INTO categorias_materiais (nome) VALUES (?)', [nomeCat]);
-  const [cat] = await q('SELECT id_categoria FROM categorias_materiais WHERE nome = ?', [nomeCat]);
+  const erros = validarAnuncio(b);
+  if (!b.foto_capa || !b.foto_capa.base64) erros.push('Adicione a foto da capa.');
+  const extras = Array.isArray(b.fotos) ? b.fotos.filter((f) => f && f.base64) : [];
+  if (extras.length > MAX_FOTOS_EXTRAS) erros.push(`Envie no máximo ${MAX_FOTOS_EXTRAS} fotos extras.`);
+  if (erros.length) return res.status(400).json({ erro: erros.join(' ') });
 
-  const estado = { Novo: 'novo', Seminovo: 'bom', Usado: 'regular' }[b.estado] || 'bom';
-  const quantidade = Number(b.quantidade) > 0 ? Number(b.quantidade) : 1;
+  const salvas = [];
+  const conn = await pool.getConnection();
+  let id;
+  try {
+    await conn.beginTransaction();
+    const idCat = await idCategoria(b.categoria, conn);
+    const [r] = await conn.query(
+      `INSERT INTO anuncios (id_vendedor, id_categoria, titulo, descricao, quantidade, unidade, preco_unitario,
+                             estado_material, disponibilidade, localizacao, contato, status_curadoria)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?, 'aprovado')`,
+      [b.id_vendedor, idCat, String(b.titulo).trim(), b.descricao || null, Number(b.quantidade), b.unidade,
+       Number(b.preco), ESTADO_BANCO[b.estado] || 'bom', b.disponibilidade === 'Entregar' ? 'entrega' : 'retirada',
+       String(b.localizacao).trim(), b.contato]
+    );
+    id = r.insertId;
 
-  const [r] = await pool.query(
-    `INSERT INTO anuncios (id_vendedor, id_categoria, titulo, descricao, quantidade, unidade, preco_unitario,
-                           estado_material, disponibilidade, status_curadoria)
-     VALUES (?,?,?,?,?,?,?,?,?, 'aprovado')`,
-    [b.id_vendedor, cat.id_categoria, b.titulo, b.descricao || null, quantidade, b.unidade || null,
-     Number(b.preco), estado, b.disponibilidade === 'Entregar' ? 'entrega' : 'retirada']
-  );
-  await notificar(pool, b.id_vendedor, 'sistema', 'Anúncio publicado', `Seu anúncio "${b.titulo}" já está no ar.`);
-  res.status(201).json({ id: r.insertId });
+    const capa = salvarImagem(b.foto_capa.base64, b.foto_capa.ext, `anuncio-${id}-capa`);
+    salvas.push(capa);
+    await conn.query('INSERT INTO fotos_anuncio (id_anuncio, url_foto, ordem, principal) VALUES (?,?,1,1)', [id, capa]);
+    for (let i = 0; i < extras.length; i++) {
+      const url = salvarImagem(extras[i].base64, extras[i].ext, `anuncio-${id}`);
+      salvas.push(url);
+      await conn.query('INSERT INTO fotos_anuncio (id_anuncio, url_foto, ordem, principal) VALUES (?,?,?,0)', [id, url, i + 2]);
+    }
+    await conn.commit();
+  } catch (e) {
+    await conn.rollback();
+    salvas.forEach(apagarImagem);
+    throw e;
+  } finally {
+    conn.release();
+  }
+  await notificar(pool, b.id_vendedor, 'sistema', 'Anúncio publicado', `Seu anúncio "${String(b.titulo).trim()}" já está no ar.`);
+  res.status(201).json({ id });
 }));
 
 app.get('/anuncios', h(async (req, res) => {
   const where = ["a.status = 'ativo'", "a.status_curadoria = 'aprovado'"];
   const params = [];
   if (req.query.vendedor) { where.push('a.id_vendedor = ?'); params.push(req.query.vendedor); }
-  const rows = await q(
-    `SELECT a.id_anuncio, a.titulo, c.nome AS categoria, u.id_usuario AS id_vendedor,
-            COALESCE(u.razao_social, u.nome) AS vendedor, u.cidade, a.descricao,
-            a.preco_unitario, a.unidade, a.quantidade, a.estado_material, a.disponibilidade
-       FROM anuncios a
-       JOIN categorias_materiais c ON c.id_categoria = a.id_categoria
-       JOIN usuarios u ON u.id_usuario = a.id_vendedor
-      WHERE ${where.join(' AND ')}
-      ORDER BY a.data_publicacao DESC, a.id_anuncio DESC`,
-    params
-  );
-  res.json(rows.map((r) => ({
-    id: r.id_anuncio, nome: r.titulo, tipo: r.categoria, idVendedor: r.id_vendedor, vendedor: r.vendedor,
-    local: r.cidade || '', descricao: r.descricao || '', preco: r.preco_unitario, unidade: r.unidade,
-    quantidade: r.quantidade, estado: r.estado_material, disponibilidade: r.disponibilidade,
-  })));
+  res.json(await montarAnuncios(where.join(' AND '), params));
+}));
+
+app.get('/anuncios/:id', h(async (req, res) => {
+  const [anuncio] = await montarAnuncios("a.status <> 'removido' AND a.id_anuncio = ?", [req.params.id]);
+  if (!anuncio) return res.status(404).json({ erro: 'Anúncio não encontrado' });
+  res.json(anuncio);
+}));
+
+// Editar anúncio (só quem publicou). Fotos: foto_capa (nova), fotos (novas extras), remover_fotos (ids)
+app.patch('/anuncios/:id', h(async (req, res) => {
+  const b = req.body;
+  const [atual] = await q("SELECT id_anuncio, id_vendedor FROM anuncios WHERE id_anuncio = ? AND status <> 'removido'", [req.params.id]);
+  if (!atual) return res.status(404).json({ erro: 'Anúncio não encontrado' });
+  if (Number(b.id_usuario) !== atual.id_vendedor) return res.status(403).json({ erro: 'Só quem publicou o anúncio pode editá-lo.' });
+
+  const erros = validarAnuncio(b);
+  const novas = Array.isArray(b.fotos) ? b.fotos.filter((f) => f && f.base64) : [];
+  const remover = (Array.isArray(b.remover_fotos) ? b.remover_fotos : []).map(Number);
+  const existentes = await q('SELECT id_foto, url_foto, principal FROM fotos_anuncio WHERE id_anuncio = ?', [atual.id_anuncio]);
+  const extrasMantidas = existentes.filter((f) => !f.principal && !remover.includes(f.id_foto)).length;
+  if (extrasMantidas + novas.length > MAX_FOTOS_EXTRAS) erros.push(`O anúncio pode ter no máximo ${MAX_FOTOS_EXTRAS} fotos extras.`);
+  const temCapa = existentes.some((f) => f.principal) || (b.foto_capa && b.foto_capa.base64);
+  if (!temCapa) erros.push('Adicione a foto da capa.');
+  if (erros.length) return res.status(400).json({ erro: erros.join(' ') });
+
+  const salvas = [];
+  const apagarDepois = [];
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const idCat = await idCategoria(b.categoria, conn);
+    await conn.query(
+      `UPDATE anuncios SET titulo = ?, id_categoria = ?, descricao = ?, quantidade = ?, unidade = ?, preco_unitario = ?,
+              estado_material = ?, disponibilidade = ?, localizacao = ?, contato = ? WHERE id_anuncio = ?`,
+      [String(b.titulo).trim(), idCat, b.descricao || null, Number(b.quantidade), b.unidade, Number(b.preco),
+       ESTADO_BANCO[b.estado] || 'bom', b.disponibilidade === 'Entregar' ? 'entrega' : 'retirada',
+       String(b.localizacao).trim(), b.contato, atual.id_anuncio]
+    );
+
+    for (const f of existentes.filter((x) => !x.principal && remover.includes(x.id_foto))) {
+      await conn.query('DELETE FROM fotos_anuncio WHERE id_foto = ?', [f.id_foto]);
+      apagarDepois.push(f.url_foto);
+    }
+    if (b.foto_capa && b.foto_capa.base64) {
+      for (const f of existentes.filter((x) => x.principal)) {
+        await conn.query('DELETE FROM fotos_anuncio WHERE id_foto = ?', [f.id_foto]);
+        apagarDepois.push(f.url_foto);
+      }
+      const capa = salvarImagem(b.foto_capa.base64, b.foto_capa.ext, `anuncio-${atual.id_anuncio}-capa`);
+      salvas.push(capa);
+      await conn.query('INSERT INTO fotos_anuncio (id_anuncio, url_foto, ordem, principal) VALUES (?,?,1,1)', [atual.id_anuncio, capa]);
+    }
+    for (let i = 0; i < novas.length; i++) {
+      const url = salvarImagem(novas[i].base64, novas[i].ext, `anuncio-${atual.id_anuncio}`);
+      salvas.push(url);
+      await conn.query('INSERT INTO fotos_anuncio (id_anuncio, url_foto, ordem, principal) VALUES (?,?,?,0)', [atual.id_anuncio, url, 50 + i]);
+    }
+    await conn.commit();
+  } catch (e) {
+    await conn.rollback();
+    salvas.forEach(apagarImagem);
+    throw e;
+  } finally {
+    conn.release();
+  }
+  apagarDepois.forEach(apagarImagem);
+  const [anuncio] = await montarAnuncios('a.id_anuncio = ?', [atual.id_anuncio]);
+  res.json(anuncio);
 }));
 
 /* ================================================================== */
@@ -512,5 +679,19 @@ app.post('/notificacoes/lidas', h(async (req, res) => {
 }));
 
 /* ---------- iniciar ---------- */
+// Ao iniciar: testa o MySQL e avisa se falta rodar a migração
+(async () => {
+  try {
+    await pool.query('SELECT 1');
+    const [col] = await pool.query("SHOW COLUMNS FROM usuarios LIKE 'firebase_uid'");
+    const [col2] = await pool.query("SHOW COLUMNS FROM anuncios LIKE 'localizacao'");
+    if (!col.length) console.log('MySQL conectado, mas FALTA rodar o migracao.sql (coluna firebase_uid não existe).');
+    else if (!col2.length) console.log('MySQL conectado, mas FALTA rodar o migracao2.sql (anuncios.localizacao / contato).');
+    else console.log('MySQL conectado.');
+  } catch (e) {
+    console.log('ERRO ao conectar no MySQL:', e.message, '— confira o .env (DB_USER / DB_PASSWORD / DB_NAME) e se o MySQL está ligado.');
+  }
+})();
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => console.log(`API iBuild rodando na porta ${PORT}`));

@@ -31,8 +31,6 @@ export default function Route({ usuario }) {
     <UsuarioProvider>
       <CarrinhoProvider>
         <Drawer.Navigator>
-          <Drawer.Screen name='NovaObra' component={NovaObraScreen} options={{headerShown: false}}/>
-          <Drawer.Screen name='Configuracoes' component={ConfiguracoesScreen} options={{headerShown: false}}/>
           <Drawer.Screen name='Login' component={LoginScreen} options={{headerShown: false}}/>
           <Drawer.Screen name='Cadastro' component={CadastroScreen} options={{headerShown: false}}/>
           <Drawer.Screen name='CadastroPessoaFisica' component={CadastroPFScreen} options={{headerShown: false}}/>
@@ -52,6 +50,8 @@ export default function Route({ usuario }) {
           <Drawer.Screen name='Chat 2' component={Chat2Screen} options={{headerShown: false}}/>
           <Drawer.Screen name='Perfil' component={PerfilScreen} options={{headerShown: false}}/>
           <Drawer.Screen name='Anunciar' component={AnunciarScreen} options={{headerShown: false}}/>
+          <Drawer.Screen name='NovaObra' component={NovaObraScreen} options={{headerShown: false}}/>
+          <Drawer.Screen name='Configuracoes' component={ConfiguracoesScreen} options={{headerShown: false}}/>
         </Drawer.Navigator>
       </CarrinhoProvider>
     </UsuarioProvider>

@@ -75,17 +75,18 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   logoView: {
-    height: 130,
-    width: 258,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 24,
-  },
-  logo: {
-    height: 130,
-    width: 258,
-    borderRadius: 8,
-  },
+  height: 150,
+  width: '100%',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginTop: 24,
+},
+
+logo: {
+  height: 150,
+  width: 300,
+  resizeMode: 'contain',
+},
   textView: {
     width: 375,
     alignItems: 'center',

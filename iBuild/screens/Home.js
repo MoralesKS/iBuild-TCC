@@ -20,13 +20,6 @@ export default function Home() {
   }, []));
   const produtos = [...produtosDb, ...(MOSTRAR_EXEMPLOS ? produtosExemplo : [])];
 
-  // BOTÃO TEMPORÁRIO DE LOGOUT - remover quando a tela final estiver pronta
-  function sairDaConta() {
-    signOut(auth).catch((error) => {
-      alert(error.message);
-    });
-  }
-
   function abrirProduto(produto) {
     navigation.navigate('Produto', { produto });
   }
@@ -81,20 +74,6 @@ export default function Home() {
             />
           </TouchableOpacity>
 
-          {/* BOTÃO TEMPORÁRIO DE LOGOUT - remover quando a tela final estiver pronta */}
-          <TouchableOpacity
-            onPress={sairDaConta}
-            style={{
-              backgroundColor: '#F57C00',
-              paddingHorizontal: 10,
-              paddingVertical: 8,
-              borderRadius: 8,
-            }}
-          >
-            <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 12 }}>
-              Sair
-            </Text>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.acoesRapidasRow}>

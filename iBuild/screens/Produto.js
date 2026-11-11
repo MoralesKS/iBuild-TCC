@@ -1,22 +1,55 @@
-import { Text, View, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { useAppNavigation, produtos, abrirNoGoogleMaps } from '../src/Functions';
+import { useCallback, useEffect, useState } from 'react';
+import { Text, View, TouchableOpacity, ScrollView, Image, Linking, StyleSheet } from 'react-native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import { useAppNavigation, produtos } from '../src/Functions';
 import { useCarrinho } from '../src/CarrinhoItens';
+import { api, useUsuario } from '../src/api';
+import BarraInferior from '../src/BarraInferior';
 
 export default function Produto() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { home, mapa, contratar, gerenciar, perfil, chat, carrinho } = useAppNavigation();
+  const { home, chat, carrinho } = useAppNavigation();
   const { adicionarAoCarrinho } = useCarrinho();
+  const { usuario } = useUsuario();
 
-  // route.params.produto vem do navigation.navigate('Produto', { produto })
-  // lá do Home.js. O "|| produtos[0]" é só um fallback pra tela não quebrar
-  // caso você abra ela direto, sem vir de um clique (ex: testando no Storybook).
-  const produto = route.params?.produto || produtos[0];
+  // route.params.produto vem do navigation.navigate('Produto', { produto }).
+  // O "|| produtos[0]" é só um plano B pra tela não quebrar se abrir sem clique.
+  const [produto, setProduto] = useState(route.params?.produto || produtos[0]);
+  const [fotoIndex, setFotoIndex] = useState(0);
+
+  // Chegou um produto novo pela navegação (ex.: depois de editar): usa ele
+  useEffect(() => {
+    if (route.params?.produto) {
+      setProduto(route.params.produto);
+      setFotoIndex(0);
+    }
+  }, [route.params?.produto]);
+
+  // Produto do banco: busca a versão mais recente sempre que a tela ganha foco
+  useFocusEffect(
+    useCallback(() => {
+      if (produto.idAnuncio) {
+        api.produto(produto.idAnuncio).then(setProduto).catch((e) => console.log(e.message));
+      }
+    }, [produto.idAnuncio])
+  );
+
+  // Só quem publicou o anúncio vê o botão de editar
+  const ehDono = !!usuario && !!produto.idVendedor && produto.idVendedor === usuario.idUsuario;
+
+  // Capa + fotos extras (produtos de exemplo têm só a imagem principal)
+  const galeria = [produto.imagem, ...(produto.fotos || []).map((f) => f.imagem)].filter(Boolean);
+  const fotoPrincipal = galeria[fotoIndex] || produto.imagem;
 
   function comprarAgora() {
     adicionarAoCarrinho(produto);
     carrinho();
+  }
+
+  function abrirWhatsApp() {
+    const numeros = produto.contato.replace(/\D/g, '');
+    Linking.openURL(`https://wa.me/55${numeros}`).catch(() => alert('Não consegui abrir o WhatsApp.'));
   }
 
   return (
@@ -30,7 +63,20 @@ export default function Produto() {
       <ScrollView style={{ flex: 1, paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
 
         {/* Imagem do produto */}
-        <Image style={styles.imagemProduto} source={produto.imagem} />
+        <Image style={styles.imagemProduto} source={fotoPrincipal} />
+
+        {galeria.length > 1 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.galeriaRow}>
+            {galeria.map((imagem, indice) => (
+              <TouchableOpacity key={indice} onPress={() => setFotoIndex(indice)}>
+                <Image
+                  style={[styles.miniatura, fotoIndex === indice && styles.miniaturaAtiva]}
+                  source={imagem}
+                />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
         {/* Nome e tipo */}
         <View style={styles.tituloRow}>
@@ -60,6 +106,15 @@ export default function Produto() {
           <Text style={styles.setaDireita}>{'>'}</Text>
         </TouchableOpacity>
 
+        {/* Contato (toque para abrir o WhatsApp) */}
+        {!!produto.contato && (
+          <TouchableOpacity style={styles.contatoCard} onPress={abrirWhatsApp}>
+            <Image style={styles.contatoIcone} source={require('../assets/icones/whatsapp.png')}/>
+            <Text style={styles.contatoTexto}>Contato: {produto.contato}</Text>
+            <Text style={styles.setaDireita}>{'>'}</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Descrição */}
         <Text style={styles.descricaoTexto}>{produto.descricao}</Text>
 
@@ -86,47 +141,75 @@ export default function Produto() {
 
         {/* Botões de ação */}
         <View style={styles.botoesRow}>
-          <TouchableOpacity style={styles.chatBotao} onPress={chat}>
-            <Text style={styles.chatTexto}>Chamar no chat</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.comprarBotao} onPress={comprarAgora}>
-            <Text style={styles.comprarTexto}>Comprar agora</Text>
-          </TouchableOpacity>
+          {ehDono ? (
+            <TouchableOpacity
+              style={styles.editarBotao}
+              onPress={() => navigation.navigate('EditarAnuncio', { produto })}
+            >
+              <Text style={styles.comprarTexto}>Editar anúncio</Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TouchableOpacity style={styles.chatBotao} onPress={chat}>
+                <Text style={styles.chatTexto}>Chamar no chat</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.comprarBotao} onPress={comprarAgora}>
+                <Text style={styles.comprarTexto}>Comprar agora</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
       </ScrollView>
 
-      {/* BOTTOM TAB BAR */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerItem} onPress={home}>
-          <Image style={styles.footerIcone1} source={require('../assets/Home.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
-          <Image style={styles.footerIcone} source={require('../assets/gerenciar.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={mapa}>
-          <Image style={styles.footerIcone} source={require('../assets/Bussola.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={contratar}>
-          <Image style={styles.footerIcone} source={require('../assets/Trabalho.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={chat}>
-          <Image style={styles.footerIcone} source={require('../assets/Chat.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={perfil}>
-          <Image style={styles.footerIcone} source={require('../assets/Perfil.png')}/>
-        </TouchableOpacity>
-      </View>
+      <BarraInferior ativo="home" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  galeriaRow: {
+    marginTop: 10,
+  },
+  miniatura: {
+    width: 56,
+    height: 56,
+    borderRadius: 8,
+    marginRight: 8,
+    backgroundColor: '#F5F5F5',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  miniaturaAtiva: {
+    borderColor: '#F57C00',
+  },
+  contatoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 10,
+  },
+  contatoIcone: {
+    width: 20,
+    height: 20,
+    marginRight: 10,
+  },
+  contatoTexto: {
+    flex: 1,
+    fontSize: 13,
+    color: '#000000',
+  },
+  editarBotao: {
+    flex: 1,
+    backgroundColor: '#F57C00',
+    borderRadius: 8,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -281,30 +364,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 13,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 60,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-  },
-  footerItem: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 42,
-    width: 72,
-  },
-  footerIcone: {
-    height: 23,
-    width: 23,
-    tintColor: '#9C9C9C',
-  },
-  footerIcone1: {
-    height: 23,
-    width: 23,
-    tintColor: '#277D2C',
   },
 });

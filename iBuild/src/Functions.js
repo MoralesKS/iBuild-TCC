@@ -32,7 +32,7 @@ export function useAppNavigation() {
     navigation.navigate('Anunciar'); 
   }
   function chat() {
-    alert('Tela em construção, aguardando orçamento');
+    navigation.navigate('Chat 1');
   }
 
   return { home, detalheProdutos, mapa, contratar, carrinho, gerenciar, detalhesObra, perfil, anunciar, chat };

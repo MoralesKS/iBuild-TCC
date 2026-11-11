@@ -1,13 +1,14 @@
 import { createElement, createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { createUserWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
 import { auth } from '../firebase.config';
 
 /* ================================================================== */
 /* CONFIGURAÇÃO                                                        */
 /* Coloque o IP do seu PC no .env:  EXPO_PUBLIC_API_URL=http://192.168.X.X:3000 */
 /* ================================================================== */
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.15.85:3000';
+export const API_URL = (process.env.EXPO_PUBLIC_API_URL || 'http://192.168.15.85:3000').trim().replace(/\/+$/, '');
 console.log('API_URL =', API_URL);
 
 // true  = mostra os dados de exemplo (Functions.js) junto com os do banco
@@ -23,7 +24,7 @@ async function req(metodo, caminho, corpo) {
   try {
     const resposta = await fetch(API_URL + caminho, {
       method: metodo,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
       body: corpo ? JSON.stringify(corpo) : undefined,
       signal: controle.signal,
     });
@@ -52,6 +53,10 @@ const dinheiro = (n) => 'R$ ' + Number(n || 0).toFixed(2).replace('.', ',');
 const IMG_PERFIL = require('../assets/Perfil.png');
 const IMG_OBRA = require('../assets/gerenciar.png');
 
+// imagem guardada na API (o cabeçalho evita a página de aviso do ngrok)
+const imagemDoServidor = (url) => ({ uri: API_URL + url, headers: { 'ngrok-skip-browser-warning': 'true' } });
+const urlFoto = (f) => (f ? imagemDoServidor(f.url) : null);
+
 const produtoApp = (a) => ({
   id: 'db-' + a.id,
   idAnuncio: a.id,
@@ -59,10 +64,18 @@ const produtoApp = (a) => ({
   tipo: a.tipo,
   vendedor: a.vendedor,
   idVendedor: a.idVendedor,
-  local: a.local || 'Local não informado',
+  localizacao: a.localizacao || '',
+  local: a.localizacao || 'Local não informado',
+  contato: a.contato || '',
   descricao: a.descricao || 'Sem descrição.',
   preco: dinheiro(a.preco),
-  imagem: null,
+  precoNumero: a.preco,
+  quantidade: a.quantidade,
+  unidade: a.unidade,
+  estado: a.estado,
+  disponibilidade: a.disponibilidade,
+  imagem: urlFoto(a.capa),                                            // foto da capa
+  fotos: (a.fotos || []).map((f) => ({ id: f.id, imagem: urlFoto(f) })), // fotos extras
   avaliacao: 0,
   numAvaliacoes: 0,
   especificacoes: { material: a.tipo, cor: '—', dimensoes: '—', quantidade: `${a.quantidade} ${a.unidade || 'un.'}` },
@@ -95,7 +108,7 @@ const usuarioApp = (u) => ({
   ...u,
   profissao: u.profissao || ROTULO_PERFIL[u.tipoPerfil],
   temFoto: !!u.foto,
-  foto: u.foto ? { uri: API_URL + u.foto } : IMG_PERFIL,
+  foto: u.foto ? imagemDoServidor(u.foto) : IMG_PERFIL,
 });
 
 const notificacaoApp = (n) => ({
@@ -107,6 +120,7 @@ const notificacaoApp = (n) => ({
 /* Funções que as telas chamam                                         */
 /* ------------------------------------------------------------------ */
 export const api = {
+  ping: () => req('GET', '/'),
   usuarioPorUid: (uid) => req('GET', `/usuarios/firebase/${uid}`).then(usuarioApp),
   criarUsuario: (dados) => req('POST', '/usuarios', dados).then(usuarioApp),
   usuario: (id) => req('GET', `/usuarios/${id}`).then(usuarioApp),
@@ -114,7 +128,9 @@ export const api = {
   enviarFoto: (id, base64, ext) => req('PUT', `/usuarios/${id}/foto`, { base64, ext }).then(usuarioApp),
 
   produtos: (vendedor) => req('GET', '/anuncios' + (vendedor ? `?vendedor=${vendedor}` : '')).then((l) => l.map(produtoApp)),
+  produto: (id) => req('GET', `/anuncios/${id}`).then(produtoApp),
   anunciar: (dados) => req('POST', '/anuncios', dados),
+  atualizarAnuncio: (id, dados) => req('PATCH', `/anuncios/${id}`, dados).then(produtoApp),
   fazerPedido: (idComprador, itens) => req('POST', '/pedidos', { id_comprador: idComprador, itens }),
 
   lojas: () => req('GET', '/lojas').then((l) => l.map(lojaApp)),
@@ -141,14 +157,36 @@ export const api = {
 /* ------------------------------------------------------------------ */
 let cadastroEmAndamento = false;
 
+// Traduz os erros do Firebase para português
+export function traduzirErroFirebase(e) {
+  const codigo = e && e.code;
+  if (codigo === 'auth/email-already-in-use') return 'Este e-mail já tem conta. Use "Entrar". (Se o cadastro deu erro antes, entre com este e-mail: o perfil é criado automaticamente.)';
+  if (codigo === 'auth/invalid-email') return 'E-mail inválido.';
+  if (codigo === 'auth/weak-password') return 'A senha precisa ter pelo menos 6 caracteres.';
+  if (codigo === 'auth/invalid-credential' || codigo === 'auth/wrong-password' || codigo === 'auth/user-not-found') return 'E-mail ou senha incorretos.';
+  if (codigo === 'auth/network-request-failed') return 'Sem internet. Confira a conexão do celular.';
+  if (codigo === 'auth/too-many-requests') return 'Muitas tentativas. Aguarde um pouco e tente de novo.';
+  return (e && e.message) || 'Erro desconhecido.';
+}
+
 export async function cadastrarUsuario(email, senha, dados, recarregarUsuario) {
+  // 1) confere se a API responde ANTES de criar a conta (evita conta "pela metade")
+  await api.ping();
+
   cadastroEmAndamento = true;
   try {
-    const credencial = await createUserWithEmailAndPassword(auth, email, senha);
+    let credencial;
+    try {
+      credencial = await createUserWithEmailAndPassword(auth, email, senha);
+    } catch (e) {
+      throw new Error(traduzirErroFirebase(e));
+    }
     try {
       await api.criarUsuario({ ...dados, email, firebase_uid: credencial.user.uid });
     } catch (e) {
-      throw new Error('Conta criada, mas não consegui salvar o perfil no banco: ' + e.message);
+      // 2) se o banco falhar, desfaz a conta do Firebase para você poder tentar de novo
+      try { await credencial.user.delete(); } catch (_) {}
+      throw new Error('Não consegui salvar o perfil no banco, então a conta não foi criada. Tente de novo. (' + e.message + ')');
     }
     await recarregarUsuario();
   } finally {
@@ -236,3 +274,85 @@ export function distanciaKm(a, b) {
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.latitude)) * Math.cos(rad(b.latitude)) * Math.sin(dLon / 2) ** 2;
   return 6371 * 2 * Math.asin(Math.sqrt(h));
 }
+
+/* ------------------------------------------------------------------ */
+/* Telefone                                                            */
+/* ------------------------------------------------------------------ */
+export function formatarTelefone(texto) {
+  const numeros = texto.replace(/\D/g, '').slice(0, 11);
+  if (numeros.length <= 2) return numeros;
+  if (numeros.length <= 7) return `(${numeros.slice(0, 2)}) ${numeros.slice(2)}`;
+  return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 7)}-${numeros.slice(7)}`;
+}
+
+export function telefoneValido(texto) {
+  const n = texto.replace(/\D/g, '');
+  if (n.length !== 11) return false;
+  const ddd = Number(n.slice(0, 2));
+  if (ddd < 11 || ddd > 99) return false;
+  if (n[2] !== '9') return false;
+  if (/^(\d)\1+$/.test(n)) return false;
+  return true;
+}
+
+/* ------------------------------------------------------------------ */
+/* Fotos: abre a galeria e devolve [{ uri, base64, ext }]              */
+/* ------------------------------------------------------------------ */
+export async function escolherImagens({ multiplo = false, limite = 1 } = {}) {
+  const r = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsMultipleSelection: multiplo,
+    selectionLimit: limite,
+    allowsEditing: !multiplo,   // só a foto única (capa) pode ser recortada
+    aspect: [4, 3],
+    quality: 0.5,
+    base64: true,
+  });
+  if (r.canceled) return [];
+  return r.assets.map((a) => ({
+    uri: a.uri,
+    base64: a.base64,
+    ext: (a.uri.split('?')[0].split('.').pop() || 'jpg').toLowerCase(),
+  }));
+}
+
+/* ------------------------------------------------------------------ */
+/* Anúncio: confere o formulário ANTES de enviar. Devolve a lista de   */
+/* problemas; lista vazia = pode publicar.                             */
+/* ------------------------------------------------------------------ */
+export function validarAnuncio(f) {
+  const erros = [];
+
+  const nome = f.nome.trim();
+  if (nome.length < 3 || !/[A-Za-zÀ-ÿ]/.test(nome)) erros.push('• Nome do produto inválido (mínimo 3 caracteres, com letras).');
+  if (!f.categoria) erros.push('• Escolha uma categoria.');
+
+  const preco = f.preco.trim().replace(/\s/g, '');
+  if (preco === '') erros.push('• Informe o preço.');
+  else if (preco.startsWith('-')) erros.push('• O preço não pode ser negativo.');
+  else if (!/^\d+([.,]\d{1,2})?$/.test(preco)) erros.push('• Preço inválido. Use só números e vírgula para os centavos (ex.: 12,50).');
+  else {
+    const valor = Number(preco.replace(',', '.'));
+    if (valor === 0) erros.push('• O preço deve ser maior que zero.');
+    else if (valor > 99999999.99) erros.push('• O preço é alto demais.');
+  }
+
+  const qtd = f.quantidade.trim();
+  if (qtd === '') erros.push('• Informe a quantidade.');
+  else if (qtd.startsWith('-')) erros.push('• A quantidade não pode ser negativa.');
+  else if (/[.,]/.test(qtd)) erros.push('• A quantidade deve ser um número inteiro (sem vírgula nem ponto).');
+  else if (!/^\d+$/.test(qtd)) erros.push('• Quantidade inválida. Use só números.');
+  else if (Number(qtd) < 1) erros.push('• A quantidade deve ser pelo menos 1.');
+  else if (Number(qtd) > 99999999) erros.push('• A quantidade é alta demais.');
+
+  if (!f.unidade) erros.push('• Escolha a unidade.');
+
+  const local = f.localizacao.trim();
+  if (local.length < 3 || !/[A-Za-zÀ-ÿ]/.test(local)) erros.push('• Informe a localização do produto (cidade ou endereço).');
+  if (!telefoneValido(f.contato)) erros.push('• Informe um celular de contato válido, com DDD.');
+  if (!f.temCapa) erros.push('• Adicione a foto da capa.');
+  return erros;
+}
+
+// "12,50" -> 12.5   (use só depois de validarAnuncio)
+export const paraNumero = (texto) => Number(texto.trim().replace(',', '.'));
