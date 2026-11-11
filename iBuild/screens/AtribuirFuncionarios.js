@@ -4,8 +4,10 @@ import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/nativ
 import { useAppNavigation } from '../src/Functions';
 import { api } from '../src/api';
 import BarraInferior from '../src/BarraInferior';
+import { useAreaSegura } from '../src/responsivo';
 
 export default function AtribuirFuncionarios() {
+  const areaSegura = useAreaSegura();
   const navigation = useNavigation();
   const route = useRoute();
   const { gerenciar } = useAppNavigation();
@@ -62,7 +64,7 @@ export default function AtribuirFuncionarios() {
   // Sem obra (ou obra de exemplo): explica o que fazer
   if (!obra || !obra.doBanco) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, areaSegura, areaSegura]}>
         <Text style={styles.titulo}>Atribuir funcionários</Text>
         <View style={styles.aviso}>
           <Text style={styles.avisoTexto}>
@@ -80,7 +82,7 @@ export default function AtribuirFuncionarios() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, areaSegura, areaSegura]}>
       <TouchableOpacity onPress={voltar}>
         <Text style={styles.seta}>{'<'}</Text>
       </TouchableOpacity>

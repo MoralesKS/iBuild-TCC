@@ -25,7 +25,12 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.morales_ks.iBuild"
+      "package": "com.morales_ks.iBuild",
+      "config": {
+        "googleMaps": {
+          "apiKey": "COLE_AQUI_SUA_CHAVE_DO_GOOGLE_MAPS"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -33,7 +38,20 @@
     "plugins": [
       "expo-status-bar",
       "@react-native-community/datetimepicker",
-      ["expo-build-properties", { "android": { "usesCleartextTraffic": true } }]
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O iBuild precisa acessar suas fotos para você escolher a foto do perfil."
+        }
+      ]
     ],
     "extra": {
       "eas": {

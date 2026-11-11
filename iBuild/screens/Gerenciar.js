@@ -3,8 +3,10 @@ import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet 
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAppNavigation, obras as obrasExemplo, calcularProgresso } from '../src/Functions';
 import { api, useUsuario, MOSTRAR_EXEMPLOS } from '../src/api';
+import { useAreaSegura } from '../src/responsivo';
 
 export default function Gerenciar() {
+  const areaSegura = useAreaSegura();
   const navigation = useNavigation();
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
   const { usuario } = useUsuario();
@@ -54,7 +56,7 @@ export default function Gerenciar() {
   }
   
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, areaSegura, areaSegura]}>
       <ScrollView style={{ paddingHorizontal: 16 }}>
         <TextInput
           style={styles.searchInput}
@@ -90,12 +92,9 @@ export default function Gerenciar() {
           <Text style={styles.verDetalhesTexto}>+ Nova obra</Text>
         </TouchableOpacity>
 
-        {obras.length === 0 && usuario && (
-          <TouchableOpacity style={styles.verDetalhesBotao} onPress={async () => {
-            await api.criarObrasExemplo(usuario.idUsuario);
-            setObras(await api.obras(usuario.idUsuario));
-          }}>
-            <Text style={styles.verDetalhesTexto}>Criar obras de exemplo</Text>
+        {obrasDb.length === 0 && usuario && (
+          <TouchableOpacity style={styles.verDetalhesBotao} onPress={criarObrasExemplo}>
+            <Text style={styles.verDetalhesTexto}>Criar obras de exemplo no banco</Text>
           </TouchableOpacity>
         )}
 
@@ -162,6 +161,10 @@ export default function Gerenciar() {
 }
 
 const styles = StyleSheet.create({
+  semResultados: {
+    margin: 8,
+    color: '#828282',
+  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',

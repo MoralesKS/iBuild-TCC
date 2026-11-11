@@ -3,8 +3,10 @@ import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet 
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAppNavigation, profissionais as profissionaisExemplo, categoriasProfissionais } from '../src/Functions';
 import { api, MOSTRAR_EXEMPLOS } from '../src/api';
+import { useAreaSegura } from '../src/responsivo';
 
 export default function Contratar() {
+  const areaSegura = useAreaSegura();
   const navigation = useNavigation();
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
 
@@ -33,8 +35,17 @@ export default function Contratar() {
     return passaCategoria && passaBusca;
   });
  
+  // Abre o perfil do autônomo (do banco ou de exemplo)
+  function abrirPerfil(profissional) {
+    if (profissional.idUsuario) {
+      navigation.navigate('PerfilAutonomo', { usuarioId: profissional.idUsuario });
+    } else {
+      navigation.navigate('PerfilAutonomo', { profissional });
+    }
+  }
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, areaSegura, areaSegura]}>
  
       <Text style={styles.titulo}>Contratar Ajudantes</Text>
  
@@ -61,7 +72,12 @@ export default function Contratar() {
           <Text style={styles.semResultados}>Nenhum profissional encontrado.</Text>
         ) : (
           profissionaisFiltrados.map((profissional) => (
-            <View key={profissional.id} style={styles.card}>
+            <TouchableOpacity
+              key={profissional.id}
+              style={styles.card}
+              activeOpacity={0.7}
+              onPress={() => abrirPerfil(profissional)}
+            >
               <Image style={styles.avatar} source={profissional.imagem} />
               <View style={styles.cardInfo}>
                 <Text style={styles.nome}>{profissional.nome}</Text>
@@ -72,12 +88,10 @@ export default function Contratar() {
                   {profissional.cidade} - {profissional.experiencia}
                 </Text>
               </View>
-              <TouchableOpacity style={styles.verPerfilBotao} onPress={() => profissional.idUsuario
-              ? navigation.navigate('PerfilAutonomo', { usuarioId: profissional.idUsuario })
-              : chat()}>
+              <View style={styles.verPerfilBotao}>
                 <Text style={styles.verPerfilTexto}>Ver perfil</Text>
-              </TouchableOpacity>
-            </View>
+              </View>
+            </TouchableOpacity>
           ))
         )}
       </ScrollView>
@@ -113,6 +127,11 @@ export default function Contratar() {
 }
 
 const styles = StyleSheet.create({
+  semResultados: {
+    marginTop: 16,
+    textAlign: 'center',
+    color: '#828282',
+  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -133,6 +152,8 @@ const styles = StyleSheet.create({
   },
   linhaFiltros: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    rowGap: 6,
     marginTop: 16,
     marginBottom: 8,
   },

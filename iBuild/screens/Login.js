@@ -10,16 +10,23 @@ import {
   Platform,
   useWindowDimensions,
 } from 'react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { auth } from '../firebase.config.js';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { api, API_URL, traduzirErroFirebase, VERSAO_API_MINIMA } from '../src/api';
 
 export default function Login() {
   const [userMail, setUserMail] = useState('');
   const [userPass, setUserPass] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  // null = verificando, true = API respondeu, false = API fora do ar / sem conexão
+  const [apiOnline, setApiOnline] = useState(null);
+  useEffect(() => {
+    api.ping().then((info) => setApiOnline((info && info.versao) >= VERSAO_API_MINIMA ? true : 'antiga')).catch(() => setApiOnline(false));
+  }, []);
 
   const navigation = useNavigation();
   const { width, height } = useWindowDimensions();
@@ -30,12 +37,16 @@ export default function Login() {
   const logoHeight = logoWidth * 0.5;
 
   function userLogin() {
-    signInWithEmailAndPassword(auth, userMail, userPass)
+    if (userMail.trim() === '' || userPass === '') {
+      alert('Informe o e-mail e a senha.');
+      return;
+    }
+    signInWithEmailAndPassword(auth, userMail.trim(), userPass)
       .then(() => {
         navigation.navigate('Home');
       })
       .catch((error) => {
-        alert(error.message);
+        alert(traduzirErroFirebase(error));
       });
   }
 
@@ -72,6 +83,17 @@ export default function Login() {
               resizeMode="contain"
             />
           </View>
+
+          {apiOnline === false && (
+            <Text style={{ color: '#D32F2F', fontSize: 12, textAlign: 'center', marginBottom: 8, paddingHorizontal: 16 }}>
+              ⚠ Sem conexão com o servidor ({API_URL}). Produtos, obras e perfil não vão carregar.
+            </Text>
+          )}
+          {apiOnline === 'antiga' && (
+            <Text style={{ color: '#D32F2F', fontSize: 12, textAlign: 'center', marginBottom: 8, paddingHorizontal: 16 }}>
+              ⚠ A API do PC está desatualizada. Substitua o server.js da pasta ibuild-api e reinicie com npm start.
+            </Text>
+          )}
 
           <View style={[styles.textView, { width: contentWidth }]}>
             <Text style={styles.titulo}>Entre na sua conta</Text>

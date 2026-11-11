@@ -1,62 +1,73 @@
 import { useEffect, useState } from 'react';
 import {
-  Text, View, TextInput, TouchableOpacity, ScrollView, Image,
+  Text, View, TextInput, TouchableOpacity, ScrollView,
   KeyboardAvoidingView, Platform, Alert, StyleSheet,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import * as ImagePicker from 'expo-image-picker';
 import { useAppNavigation } from '../src/Functions';
-import { api, sair, useUsuario } from '../src/api';
+import { api, coordenadasDoEndereco, escolherImagens, formatarTelefone, sair, useUsuario } from '../src/api';
+import FotoProduto from '../src/FotoProduto';
 import BarraInferior from '../src/BarraInferior';
+import { useAreaSegura } from '../src/responsivo';
 
-function formatarTelefone(texto) {
-  const numeros = texto.replace(/\D/g, '').slice(0, 11);
-  if (numeros.length <= 2) return numeros;
-  if (numeros.length <= 7) return `(${numeros.slice(0, 2)}) ${numeros.slice(2)}`;
-  return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 7)}-${numeros.slice(7)}`;
-}
+// Alert com "Sim/Não" que devolve true/false
+const confirmar = (titulo, mensagem, sim = 'Sim') =>
+  new Promise((resolve) =>
+    Alert.alert(
+      titulo,
+      mensagem,
+      [
+        { text: 'Não', style: 'cancel', onPress: () => resolve(false) },
+        { text: sim, onPress: () => resolve(true) },
+      ],
+      { onDismiss: () => resolve(false) }
+    )
+  );
 
 export default function Configuracoes() {
+  const areaSegura = useAreaSegura();
   const navigation = useNavigation();
   const { perfil } = useAppNavigation();
   const { usuario, recarregarUsuario } = useUsuario();
 
+  // Perfil (todos)
   const [nome, setNome] = useState('');
-  const [razaoSocial, setRazaoSocial] = useState('');
   const [telefone, setTelefone] = useState('');
   const [cidade, setCidade] = useState('');
   const [bio, setBio] = useState('');
-  const [profissao, setProfissao] = useState('');
+  const [profissao, setProfissao] = useState('');   // autônomo
+
+  // Card da loja (só lojista)
+  const [razaoSocial, setRazaoSocial] = useState('');
+  const [endereco, setEndereco] = useState('');
+  const [bairro, setBairro] = useState('');
+  const [uf, setUf] = useState('');
+
   const [salvando, setSalvando] = useState(false);
   const [enviandoFoto, setEnviandoFoto] = useState(false);
+  const [enviandoFotoLoja, setEnviandoFotoLoja] = useState(false);
 
   // Preenche os campos quando o perfil carregar
   useEffect(() => {
     if (!usuario) return;
+    const e = usuario.endereco || {};
     setNome(usuario.nomePessoa || '');
-    setRazaoSocial(usuario.razaoSocial || '');
     setTelefone(usuario.telefone || '');
-    setCidade(usuario.cidade || '');
+    setCidade(e.cidade || usuario.cidade || '');
     setBio(usuario.bio || '');
     setProfissao(usuario.tipoPerfil === 'autonomo' ? usuario.profissao || '' : '');
+    setRazaoSocial(usuario.razaoSocial || '');
+    setEndereco(e.logradouro || '');
+    setBairro(e.bairro || '');
+    setUf(e.estado || '');
   }, [usuario?.idUsuario]);
 
-  async function escolherFoto() {
-    const resultado = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.5,
-      base64: true,
-    });
-    if (resultado.canceled) return;
-
-    const imagem = resultado.assets[0];
-    const extensao = (imagem.uri.split('?')[0].split('.').pop() || 'jpg').toLowerCase();
-
+  async function trocarFotoPerfil() {
+    const [imagem] = await escolherImagens({ multiplo: false, aspecto: [1, 1] });
+    if (!imagem) return;
     setEnviandoFoto(true);
     try {
-      await api.enviarFoto(usuario.idUsuario, imagem.base64, extensao);
+      await api.enviarFoto(usuario.idUsuario, imagem.base64, imagem.ext);
       await recarregarUsuario();
     } catch (e) {
       alert('Erro ao enviar a foto: ' + e.message);
@@ -65,20 +76,84 @@ export default function Configuracoes() {
     }
   }
 
+  async function trocarFotoLoja() {
+    const [imagem] = await escolherImagens({ multiplo: false });
+    if (!imagem) return;
+    setEnviandoFotoLoja(true);
+    try {
+      await api.enviarFotoLoja(usuario.idUsuario, imagem.base64, imagem.ext);
+      await recarregarUsuario();
+    } catch (e) {
+      alert('Erro ao enviar a foto da loja: ' + e.message);
+    } finally {
+      setEnviandoFotoLoja(false);
+    }
+  }
+
   async function salvar() {
     if (nome.trim() === '') {
       alert('O nome não pode ficar vazio.');
       return;
     }
+    const ehLoja = usuario.tipoPerfil === 'loja';
+    if (ehLoja) {
+      if (razaoSocial.trim().length < 2) {
+        alert('Informe o nome da loja.');
+        return;
+      }
+      if (endereco.trim().length < 3 || cidade.trim().length < 2 || uf.length !== 2) {
+        alert('Preencha o endereço da loja: rua e número, cidade e UF.');
+        return;
+      }
+    }
+
     setSalvando(true);
     try {
       const dados = { nome: nome.trim(), telefone, cidade: cidade.trim(), bio: bio.trim() };
-      if (usuario.tipoPerfil === 'loja') dados.razao_social = razaoSocial.trim();
       if (usuario.tipoPerfil === 'autonomo') dados.profissao = profissao.trim();
+
+      if (ehLoja) {
+        dados.razao_social = razaoSocial.trim();
+
+        // Só procura as coordenadas de novo se o endereço mudou
+        const atual = usuario.endereco || {};
+        const mudou =
+          endereco.trim() !== (atual.logradouro || '') ||
+          bairro.trim() !== (atual.bairro || '') ||
+          cidade.trim() !== (atual.cidade || '') ||
+          uf !== (atual.estado || '') ||
+          atual.latitude == null;
+
+        if (mudou) {
+          const consulta = `${endereco.trim()}, ${bairro.trim()}, ${cidade.trim()} - ${uf}, Brasil`;
+          let coord = await coordenadasDoEndereco(consulta, { fallbackGps: false });
+          if (!coord) {
+            const usar = await confirmar(
+              'Endereço não encontrado',
+              'Não consegui localizar esse endereço no mapa. Quer usar a sua localização atual como a posição da loja?',
+              'Usar minha localização'
+            );
+            if (!usar) return;
+            coord = await coordenadasDoEndereco(consulta, { fallbackGps: true });
+            if (!coord) {
+              alert('Não consegui obter a sua localização. Confira a permissão de localização do app.');
+              return;
+            }
+          }
+          dados.endereco = {
+            logradouro: endereco.trim(),
+            bairro: bairro.trim(),
+            cidade: cidade.trim(),
+            estado: uf,
+            latitude: coord.latitude,
+            longitude: coord.longitude,
+          };
+        }
+      }
 
       await api.atualizarUsuario(usuario.idUsuario, dados);
       await recarregarUsuario();
-      alert('Perfil atualizado!');
+      alert(ehLoja ? 'Perfil e card da loja atualizados!' : 'Perfil atualizado!');
       perfil();
     } catch (e) {
       alert('Erro ao salvar: ' + e.message);
@@ -107,7 +182,7 @@ export default function Configuracoes() {
 
   if (!usuario) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, areaSegura, areaSegura]}>
         <Text style={styles.titulo}>Configurações</Text>
         <Text style={styles.carregando}>Carregando perfil...</Text>
       </View>
@@ -117,9 +192,16 @@ export default function Configuracoes() {
   const ehLoja = usuario.tipoPerfil === 'loja';
   const ehAutonomo = usuario.tipoPerfil === 'autonomo';
 
+  // Mesmo texto que o Mapa mostra no card
+  const enderecoNoCard = [
+    endereco.trim(),
+    bairro.trim(),
+    [cidade.trim(), uf].filter(Boolean).join(' - '),
+  ].filter(Boolean).join(' • ');
+
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.container}>
+      <View style={[styles.container, areaSegura, areaSegura]}>
         <TouchableOpacity onPress={perfil}>
           <Text style={styles.seta}>{'<'}</Text>
         </TouchableOpacity>
@@ -130,10 +212,10 @@ export default function Configuracoes() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Foto */}
+          {/* Foto do perfil */}
           <View style={styles.fotoArea}>
-            <TouchableOpacity onPress={escolherFoto} disabled={enviandoFoto}>
-              <Image style={styles.avatar} source={usuario.foto} />
+            <TouchableOpacity onPress={trocarFotoPerfil} disabled={enviandoFoto}>
+              <FotoProduto style={styles.avatar} source={usuario.foto} />
               <View style={styles.editarBadge}>
                 <Text style={styles.editarTexto}>✎</Text>
               </View>
@@ -143,22 +225,111 @@ export default function Configuracoes() {
             </Text>
           </View>
 
-          {/* Formulário */}
+          {/* ===== CARD DA LOJA (só lojista) ===== */}
+          {ehLoja && (
+            <View style={styles.formCard}>
+              <Text style={styles.formTitulo}>Card da loja no Mapa</Text>
+              <Text style={styles.cardDica}>
+                É assim que os clientes veem a sua loja quando tocam no pin do mapa.
+              </Text>
+
+              {/* Pré-visualização (muda enquanto você digita) */}
+              <View style={styles.lojaCard}>
+                <TouchableOpacity onPress={trocarFotoLoja} disabled={enviandoFotoLoja} activeOpacity={0.85}>
+                  <FotoProduto style={styles.lojaImagem} source={usuario.fotoLoja} />
+                  <View style={styles.fotoTrocar}>
+                    <Text style={styles.fotoTrocarTexto}>
+                      {enviandoFotoLoja
+                        ? 'Enviando...'
+                        : usuario.fotoLoja ? 'Trocar foto da loja' : 'Adicionar foto da loja'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                <View style={styles.lojaInfo}>
+                  <Text style={styles.lojaNome}>{razaoSocial.trim() || 'Nome da loja'}</Text>
+                  <Text style={styles.lojaAvaliacao}>
+                    {usuario.notaMedia} ({usuario.avaliacoes} avaliações)
+                  </Text>
+                  <Text style={styles.lojaEndereco}>{enderecoNoCard || 'Endereço da loja'}</Text>
+                  {!!bio.trim() && (
+                    <Text style={styles.lojaSobre} numberOfLines={2}>{bio.trim()}</Text>
+                  )}
+                </View>
+              </View>
+
+              <Text style={styles.label}>Nome da loja</Text>
+              <TextInput
+                style={styles.input}
+                value={razaoSocial}
+                onChangeText={setRazaoSocial}
+                placeholder="Nome que aparece no card"
+                placeholderTextColor="#828282"
+                maxLength={150}
+              />
+
+              <Text style={styles.label}>Endereço (rua e número)</Text>
+              <TextInput
+                style={styles.input}
+                value={endereco}
+                onChangeText={setEndereco}
+                placeholder="Ex: Rua das Flores, 120"
+                placeholderTextColor="#828282"
+              />
+
+              <Text style={styles.label}>Bairro</Text>
+              <TextInput
+                style={styles.input}
+                value={bairro}
+                onChangeText={setBairro}
+                placeholder="Ex: Centro"
+                placeholderTextColor="#828282"
+              />
+
+              <View style={styles.linhaCampos}>
+                <View style={styles.campoCidade}>
+                  <Text style={styles.label}>Cidade</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={cidade}
+                    onChangeText={setCidade}
+                    placeholder="Ex: Embu das Artes"
+                    placeholderTextColor="#828282"
+                  />
+                </View>
+                <View style={styles.campoUf}>
+                  <Text style={styles.label}>UF</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={uf}
+                    onChangeText={(t) => setUf(t.replace(/[^A-Za-z]/g, '').toUpperCase())}
+                    placeholder="SP"
+                    placeholderTextColor="#828282"
+                    maxLength={2}
+                    autoCapitalize="characters"
+                  />
+                </View>
+              </View>
+
+              <Text style={styles.label}>Sobre a loja</Text>
+              <TextInput
+                style={[styles.input, styles.bioInput]}
+                value={bio}
+                onChangeText={setBio}
+                placeholder="Ex: Materiais de construção e acabamento. Entregamos na região."
+                placeholderTextColor="#828282"
+                multiline
+                maxLength={200}
+              />
+              <Text style={styles.contador}>{bio.length}/200</Text>
+              <Text style={styles.cardDica}>
+                Ao salvar um endereço novo, o pin da loja é reposicionado no Mapa.
+              </Text>
+            </View>
+          )}
+
+          {/* ===== INFORMAÇÕES DO PERFIL ===== */}
           <View style={styles.formCard}>
             <Text style={styles.formTitulo}>Informações do perfil</Text>
-
-            {ehLoja && (
-              <>
-                <Text style={styles.label}>Nome da loja (razão social)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={razaoSocial}
-                  onChangeText={setRazaoSocial}
-                  placeholder="Razão social"
-                  placeholderTextColor="#828282"
-                />
-              </>
-            )}
 
             <Text style={styles.label}>{ehLoja ? 'Nome do responsável' : 'Nome completo'}</Text>
             <TextInput
@@ -195,26 +366,30 @@ export default function Configuracoes() {
               maxLength={15}
             />
 
-            <Text style={styles.label}>Cidade</Text>
-            <TextInput
-              style={styles.input}
-              value={cidade}
-              onChangeText={setCidade}
-              placeholder="Ex: Embu das Artes"
-              placeholderTextColor="#828282"
-            />
+            {!ehLoja && (
+              <>
+                <Text style={styles.label}>Cidade</Text>
+                <TextInput
+                  style={styles.input}
+                  value={cidade}
+                  onChangeText={setCidade}
+                  placeholder="Ex: Embu das Artes"
+                  placeholderTextColor="#828282"
+                />
 
-            <Text style={styles.label}>Sobre você</Text>
-            <TextInput
-              style={[styles.input, styles.bioInput]}
-              value={bio}
-              onChangeText={setBio}
-              placeholder="Conte um pouco sobre você ou sua empresa"
-              placeholderTextColor="#828282"
-              multiline
-              maxLength={200}
-            />
-            <Text style={styles.contador}>{bio.length}/200</Text>
+                <Text style={styles.label}>Sobre você</Text>
+                <TextInput
+                  style={[styles.input, styles.bioInput]}
+                  value={bio}
+                  onChangeText={setBio}
+                  placeholder="Conte um pouco sobre você"
+                  placeholderTextColor="#828282"
+                  multiline
+                  maxLength={200}
+                />
+                <Text style={styles.contador}>{bio.length}/200</Text>
+              </>
+            )}
 
             <Text style={styles.label}>E-mail (não pode ser alterado)</Text>
             <View style={[styles.input, styles.inputBloqueado]}>
@@ -275,6 +450,7 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: 48,
     backgroundColor: '#F0F0F0',
+    overflow: 'hidden',
   },
   editarBadge: {
     position: 'absolute',
@@ -310,6 +486,69 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000000',
     marginBottom: 4,
+  },
+  cardDica: {
+    fontSize: 11,
+    color: '#828282',
+    marginTop: 4,
+  },
+  lojaCard: {
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+    overflow: 'hidden',
+  },
+  lojaImagem: {
+    width: '100%',
+    height: 110,
+    backgroundColor: '#F5F5F5',
+  },
+  fotoTrocar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingVertical: 5,
+    alignItems: 'center',
+  },
+  fotoTrocarTexto: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  lojaInfo: {
+    padding: 12,
+  },
+  lojaNome: {
+    fontWeight: 'bold',
+    fontSize: 14,
+    color: '#000000',
+  },
+  lojaAvaliacao: {
+    fontSize: 12,
+    color: '#828282',
+    marginTop: 2,
+  },
+  lojaEndereco: {
+    fontSize: 12,
+    color: '#828282',
+  },
+  lojaSobre: {
+    fontSize: 12,
+    color: '#000000',
+    marginTop: 4,
+  },
+  linhaCampos: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  campoCidade: {
+    width: '68%',
+  },
+  campoUf: {
+    width: '28%',
   },
   label: {
     fontSize: 11,

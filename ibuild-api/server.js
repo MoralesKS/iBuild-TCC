@@ -47,7 +47,9 @@ const notificar = (conn, idUsuario, tipo, titulo, mensagem) =>
     conn
   );
 
-app.get('/', (req, res) => res.json({ ok: true, api: 'iBuild' }));
+// versao: o app confere se a API do PC está atualizada (sem isso, ele avisa)
+const VERSAO_API = 3;
+app.get('/', (req, res) => res.json({ ok: true, api: 'iBuild', versao: VERSAO_API }));
 
 /* ================================================================== */
 /* USUÁRIOS                                                            */
@@ -65,7 +67,7 @@ async function carregarUsuario(campo, valor) {
   // "campo" só recebe 'id_usuario' ou 'firebase_uid' (valores fixos do código)
   const [u] = await q(
     `SELECT u.id_usuario, u.tipo_perfil, u.nome, u.razao_social, u.email, u.telefone, u.cidade, u.bio,
-            u.foto_perfil, p.id_profissional, p.profissao,
+            u.foto_perfil, u.foto_loja, p.id_profissional, p.profissao,
             (SELECT COUNT(*) FROM avaliacoes a WHERE a.id_avaliado = u.id_usuario AND a.status = 'ativo') AS avaliacoes,
             (SELECT COALESCE(ROUND(AVG(a.nota), 1), 0) FROM avaliacoes a WHERE a.id_avaliado = u.id_usuario AND a.status = 'ativo') AS nota_media
        FROM usuarios u
@@ -74,6 +76,18 @@ async function carregarUsuario(campo, valor) {
     [valor]
   );
   if (!u) return null;
+  // Loja: endereço do card do Mapa
+  let endereco = null;
+  if (u.tipo_perfil === 'loja') {
+    const [e] = await q('SELECT logradouro, numero, bairro, cidade, estado, latitude, longitude FROM enderecos WHERE id_usuario = ? AND principal = 1 LIMIT 1', [u.id_usuario]);
+    if (e) {
+      endereco = {
+        logradouro: [e.logradouro, e.numero].filter(Boolean).join(', '),
+        bairro: e.bairro || '', cidade: e.cidade || '', estado: e.estado || '',
+        latitude: e.latitude, longitude: e.longitude,
+      };
+    }
+  }
   return {
     idUsuario: u.id_usuario,
     idProfissional: u.id_profissional || null,
@@ -82,6 +96,8 @@ async function carregarUsuario(campo, valor) {
     nomePessoa: u.nome,
     razaoSocial: u.razao_social || '',
     foto: u.foto_perfil || null,
+    fotoLoja: u.foto_loja || null,
+    endereco,
     profissao: u.profissao || null,
     email: u.email,
     telefone: u.telefone || '',
@@ -170,7 +186,34 @@ app.patch('/usuarios/:id', h(async (req, res) => {
   mudar('telefone', b.telefone);
   mudar('cidade', b.cidade);
   mudar('bio', b.bio);
+  // Loja: confere o endereço do card do Mapa ANTES de gravar qualquer coisa
+  let enderecoLoja = null;
+  if (atual.tipo_perfil === 'loja' && b.endereco) {
+    const e = b.endereco;
+    const logradouro = String(e.logradouro || '').trim();
+    const cidade = String(e.cidade || '').trim();
+    const estado = String(e.estado || '').trim().toUpperCase();
+    const lat = e.latitude == null ? null : Number(e.latitude);
+    const lng = e.longitude == null ? null : Number(e.longitude);
+    if (logradouro.length < 3 || cidade.length < 2 || !/^[A-Z]{2}$/.test(estado)) return res.status(400).json({ erro: 'Endereço da loja incompleto (rua e número, cidade e UF).' });
+    if ((lat != null && !Number.isFinite(lat)) || (lng != null && !Number.isFinite(lng))) return res.status(400).json({ erro: 'Localização da loja inválida.' });
+    enderecoLoja = { logradouro, bairro: String(e.bairro || '').trim() || null, cidade, estado, lat, lng };
+  }
+
   if (campos.length) await q(`UPDATE usuarios SET ${campos.join(', ')} WHERE id_usuario = ?`, [...valores, atual.id_usuario]);
+
+  if (enderecoLoja) {
+    const x = enderecoLoja;
+    const [existente] = await q('SELECT id_endereco FROM enderecos WHERE id_usuario = ? AND principal = 1 LIMIT 1', [atual.id_usuario]);
+    if (existente) {
+      await q('UPDATE enderecos SET logradouro = ?, numero = NULL, bairro = ?, cidade = ?, estado = ?, latitude = ?, longitude = ? WHERE id_endereco = ?',
+        [x.logradouro, x.bairro, x.cidade, x.estado, x.lat, x.lng, existente.id_endereco]);
+    } else {
+      await q("INSERT INTO enderecos (id_usuario, nome_endereco, logradouro, bairro, cidade, estado, latitude, longitude, principal) VALUES (?, 'Loja', ?,?,?,?,?,?, 1)",
+        [atual.id_usuario, x.logradouro, x.bairro, x.cidade, x.estado, x.lat, x.lng]);
+    }
+    await q('UPDATE usuarios SET cidade = ? WHERE id_usuario = ?', [x.cidade, atual.id_usuario]);
+  }
 
   if (atual.tipo_perfil === 'autonomo' && b.profissao !== undefined) {
     const [p] = await q('SELECT id_profissional FROM profissionais WHERE id_usuario = ?', [atual.id_usuario]);
@@ -203,6 +246,19 @@ app.put('/usuarios/:id/foto', h(async (req, res) => {
   res.json(await carregarUsuario('id_usuario', u.id_usuario));
 }));
 
+// Foto do card da loja (aparece no Mapa)
+app.put('/usuarios/:id/foto-loja', h(async (req, res) => {
+  const { base64, ext } = req.body;
+  if (!base64) return res.status(400).json({ erro: 'Imagem não enviada' });
+  const [u] = await q('SELECT id_usuario, tipo_perfil, foto_loja FROM usuarios WHERE id_usuario = ?', [req.params.id]);
+  if (!u) return res.status(404).json({ erro: 'Usuário não encontrado' });
+  if (u.tipo_perfil !== 'loja') return res.status(403).json({ erro: 'Só contas de loja têm card no Mapa.' });
+  const url = salvarImagem(base64, ext, `loja-${u.id_usuario}`);
+  apagarImagem(u.foto_loja);
+  await q('UPDATE usuarios SET foto_loja = ? WHERE id_usuario = ?', [url, u.id_usuario]);
+  res.json(await carregarUsuario('id_usuario', u.id_usuario));
+}));
+
 /* ================================================================== */
 /* ANÚNCIOS (produtos)                                                 */
 /* ================================================================== */
@@ -213,6 +269,7 @@ function salvarImagem(base64, ext, prefixo) {
   const extensao = ['jpg', 'jpeg', 'png', 'webp'].includes(String(ext).toLowerCase()) ? String(ext).toLowerCase() : 'jpg';
   const arquivo = `${prefixo}-${Date.now()}-${Math.floor(Math.random() * 1e6)}.${extensao}`;
   fs.writeFileSync(path.join(PASTA_UPLOADS, arquivo), Buffer.from(base64, 'base64'));
+  console.log('Foto salva:', arquivo);
   return `/uploads/${arquivo}`;
 }
 function apagarImagem(url) {
@@ -474,7 +531,7 @@ app.post('/pedidos', h(async (req, res) => {
 /* ================================================================== */
 app.get('/lojas', h(async (req, res) => {
   const rows = await q(
-    `SELECT u.id_usuario, COALESCE(u.razao_social, u.nome) AS nome, e.logradouro, e.numero, e.bairro, e.cidade,
+    `SELECT u.id_usuario, COALESCE(u.razao_social, u.nome) AS nome, u.foto_loja, u.bio, e.logradouro, e.numero, e.bairro, e.cidade,
             e.estado, e.latitude, e.longitude,
             (SELECT COUNT(*) FROM avaliacoes a WHERE a.id_avaliado = u.id_usuario AND a.status = 'ativo') AS num_avaliacoes,
             (SELECT COALESCE(ROUND(AVG(a.nota), 1), 0) FROM avaliacoes a WHERE a.id_avaliado = u.id_usuario AND a.status = 'ativo') AS avaliacao
@@ -485,7 +542,7 @@ app.get('/lojas', h(async (req, res) => {
   res.json(rows.map((r) => ({
     id: r.id_usuario, nome: r.nome,
     endereco: [[r.logradouro, r.numero].filter(Boolean).join(', '), r.bairro, [r.cidade, r.estado].filter(Boolean).join(' - ')].filter(Boolean).join(' • '),
-    latitude: r.latitude, longitude: r.longitude, avaliacao: r.avaliacao, numAvaliacoes: r.num_avaliacoes,
+    latitude: r.latitude, longitude: r.longitude, foto: r.foto_loja || null, sobre: r.bio || '', avaliacao: r.avaliacao, numAvaliacoes: r.num_avaliacoes,
   })));
 }));
 
@@ -687,6 +744,7 @@ app.post('/notificacoes/lidas', h(async (req, res) => {
     const [col2] = await pool.query("SHOW COLUMNS FROM anuncios LIKE 'localizacao'");
     if (!col.length) console.log('MySQL conectado, mas FALTA rodar o migracao.sql (coluna firebase_uid não existe).');
     else if (!col2.length) console.log('MySQL conectado, mas FALTA rodar o migracao2.sql (anuncios.localizacao / contato).');
+    else if (!(await pool.query("SHOW COLUMNS FROM usuarios LIKE 'foto_loja'"))[0].length) console.log('MySQL conectado, mas FALTA rodar o migracao3.sql (usuarios.foto_loja).');
     else console.log('MySQL conectado.');
   } catch (e) {
     console.log('ERRO ao conectar no MySQL:', e.message, '— confira o .env (DB_USER / DB_PASSWORD / DB_NAME) e se o MySQL está ligado.');

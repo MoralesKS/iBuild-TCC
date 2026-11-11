@@ -81,7 +81,7 @@ const produtoApp = (a) => ({
   especificacoes: { material: a.tipo, cor: '—', dimensoes: '—', quantidade: `${a.quantidade} ${a.unidade || 'un.'}` },
 });
 
-const lojaApp = (l) => ({ ...l, id: 'db-' + l.id, imagem: null });
+const lojaApp = (l) => ({ ...l, id: 'db-' + l.id, imagem: l.foto ? imagemDoServidor(l.foto) : null });
 
 const profissionalApp = (p) => ({
   id: 'db-' + p.id,
@@ -108,6 +108,7 @@ const usuarioApp = (u) => ({
   ...u,
   profissao: u.profissao || ROTULO_PERFIL[u.tipoPerfil],
   temFoto: !!u.foto,
+  fotoLoja: u.fotoLoja ? imagemDoServidor(u.fotoLoja) : null,
   foto: u.foto ? imagemDoServidor(u.foto) : IMG_PERFIL,
 });
 
@@ -125,6 +126,7 @@ export const api = {
   criarUsuario: (dados) => req('POST', '/usuarios', dados).then(usuarioApp),
   usuario: (id) => req('GET', `/usuarios/${id}`).then(usuarioApp),
   atualizarUsuario: (id, dados) => req('PATCH', `/usuarios/${id}`, dados).then(usuarioApp),
+  enviarFotoLoja: (id, base64, ext) => req('PUT', `/usuarios/${id}/foto-loja`, { base64, ext }).then(usuarioApp),
   enviarFoto: (id, base64, ext) => req('PUT', `/usuarios/${id}/foto`, { base64, ext }).then(usuarioApp),
 
   produtos: (vendedor) => req('GET', '/anuncios' + (vendedor ? `?vendedor=${vendedor}` : '')).then((l) => l.map(produtoApp)),
@@ -251,11 +253,13 @@ export function UsuarioProvider({ children }) {
 /* Localização                                                         */
 /* ------------------------------------------------------------------ */
 // Endereço (texto) -> coordenadas. Se não achar, usa o GPS do celular.
-export async function coordenadasDoEndereco(texto) {
+// fallbackGps: se não achar o endereço, usa o GPS do celular (use false para só aceitar o endereço digitado)
+export async function coordenadasDoEndereco(texto, { fallbackGps = true } = {}) {
   try {
     const r = await Location.geocodeAsync(texto);
     if (r.length) return { latitude: r[0].latitude, longitude: r[0].longitude, aproximada: false };
   } catch (e) {}
+  if (!fallbackGps) return null;
   try {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status === 'granted') {
@@ -298,13 +302,13 @@ export function telefoneValido(texto) {
 /* ------------------------------------------------------------------ */
 /* Fotos: abre a galeria e devolve [{ uri, base64, ext }]              */
 /* ------------------------------------------------------------------ */
-export async function escolherImagens({ multiplo = false, limite = 1 } = {}) {
+export async function escolherImagens({ multiplo = false, limite = 1, aspecto = [4, 3] } = {}) {
   const r = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
     allowsMultipleSelection: multiplo,
     selectionLimit: limite,
     allowsEditing: !multiplo,   // só a foto única (capa) pode ser recortada
-    aspect: [4, 3],
+    aspect: aspecto,
     quality: 0.5,
     base64: true,
   });
@@ -356,3 +360,15 @@ export function validarAnuncio(f) {
 
 // "12,50" -> 12.5   (use só depois de validarAnuncio)
 export const paraNumero = (texto) => Number(texto.trim().replace(',', '.'));
+
+/* ------------------------------------------------------------------ */
+/* Versão da API: avisa se o server.js do PC está desatualizado        */
+/* ------------------------------------------------------------------ */
+export const VERSAO_API_MINIMA = 3;
+
+export async function conferirApi() {
+  const info = await api.ping();
+  if (!info || (info.versao || 0) < VERSAO_API_MINIMA) {
+    throw new Error('A API do PC está desatualizada (sem as novidades de fotos/loja). Substitua o server.js da pasta ibuild-api pelo novo e reinicie com npm start.');
+  }
+}

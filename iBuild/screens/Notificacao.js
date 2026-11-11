@@ -3,6 +3,7 @@ import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet 
 import { useFocusEffect } from '@react-navigation/native';
 import { useAppNavigation } from '../src/Functions';
 import { api, useUsuario } from '../src/api';
+import { useAreaSegura } from '../src/responsivo';
 
 const FILTROS = [
   { label: 'Todas', tipo: null },
@@ -12,6 +13,7 @@ const FILTROS = [
 ];
 
 export default function Notificacoes() {
+  const areaSegura = useAreaSegura();
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
   const { usuario } = useUsuario();
 
@@ -23,9 +25,11 @@ export default function Notificacoes() {
     useCallback(() => {
       if (!usuario) return;
       api.notificacoes(usuario.idUsuario)
-        .then((l) => setLista(l || []))
+        .then((l) => {
+          setLista(l || []);
+          return api.lerNotificacoes(usuario.idUsuario);   // marca como lidas DEPOIS de mostrar
+        })
         .catch((e) => console.log(e.message));
-      api.lerNotificacoes(usuario.idUsuario).catch(() => {});
     }, [usuario])
   );
 
@@ -38,7 +42,7 @@ export default function Notificacoes() {
   });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, areaSegura, areaSegura]}>
       <Text style={styles.titulo}>Notificações</Text>
       <Text style={styles.subtitulo}>Acompanhe compras, recibos e atualizações de obra</Text>
 
@@ -122,6 +126,8 @@ const styles = StyleSheet.create({
   },
   linhaFiltros: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    rowGap: 6,
     marginTop: 16,
     marginBottom: 8,
   },

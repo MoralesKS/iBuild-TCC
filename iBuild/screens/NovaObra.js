@@ -7,10 +7,12 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAppNavigation } from '../src/Functions';
 import { api, useUsuario } from '../src/api';
 import BarraInferior from '../src/BarraInferior';
+import { useAreaSegura } from '../src/responsivo';
 
 const TIPOS = ['Residencial', 'Comercial', 'Reforma', 'Industrial'];
 
 export default function NovaObra() {
+  const areaSegura = useAreaSegura();
   const { gerenciar } = useAppNavigation();
   const { usuario } = useUsuario();
 
@@ -73,7 +75,7 @@ export default function NovaObra() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.container}>
+      <View style={[styles.container, areaSegura, areaSegura]}>
         <TouchableOpacity onPress={gerenciar}>
           <Text style={styles.seta}>{'<'}</Text>
         </TouchableOpacity>
@@ -155,7 +157,8 @@ export default function NovaObra() {
                 value={data}
                 mode="date"
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={aoEscolherData}
+                onValueChange={(evento, dataEscolhida) => aoEscolherData(evento, dataEscolhida)}
+                onDismiss={() => setMostrarCalendario(false)}
                 minimumDate={new Date()}
               />
             )}

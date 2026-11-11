@@ -1,5 +1,6 @@
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { CarrinhoProvider } from './src/CarrinhoItens';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { UsuarioProvider } from './src/api';
 
 import LoginScreen from './screens/Login'
@@ -26,11 +27,15 @@ import ConfiguracoesScreen from './screens/Configuracoes'
 
 const Drawer = createDrawerNavigator();
 
+// "usuario" é o usuário do Firebase (null se ninguém estiver logado).
+// Quem já está logado abre direto na Home; os outros começam no Login.
+// IMPORTANTE: a primeira tela da lista NÃO decide mais a tela inicial (initialRouteName decide).
 export default function Route({ usuario }) {
   return (
+    <SafeAreaProvider>
     <UsuarioProvider>
       <CarrinhoProvider>
-        <Drawer.Navigator>
+        <Drawer.Navigator initialRouteName={usuario ? 'Home' : 'Login'}>
           <Drawer.Screen name='Login' component={LoginScreen} options={{headerShown: false}}/>
           <Drawer.Screen name='Cadastro' component={CadastroScreen} options={{headerShown: false}}/>
           <Drawer.Screen name='CadastroPessoaFisica' component={CadastroPFScreen} options={{headerShown: false}}/>
@@ -40,6 +45,7 @@ export default function Route({ usuario }) {
           <Drawer.Screen name='Produto' component={ProdutoScreen} options={{headerShown: false}}/>
           <Drawer.Screen name='DetalhesObra' component={DetalhesObrasScreen} options={{headerShown: false}}/>
           <Drawer.Screen name='Gerenciar' component={GerenciarScreen} options={{headerShown: false}}/>
+          <Drawer.Screen name='NovaObra' component={NovaObraScreen} options={{headerShown: false}}/>
           <Drawer.Screen name='Contratar' component={ContratarScreen} options={{headerShown: false}}/>
           <Drawer.Screen name='Atribuir Funcionários' component={AtribuirFuncionariosScreen} options={{headerShown: false}}/>
           <Drawer.Screen name='Notificação' component={NotificacaoScreen} options={{headerShown: false}}/>
@@ -49,11 +55,13 @@ export default function Route({ usuario }) {
           <Drawer.Screen name='Chat 1' component={Chat1Screen} options={{headerShown: false}}/>
           <Drawer.Screen name='Chat 2' component={Chat2Screen} options={{headerShown: false}}/>
           <Drawer.Screen name='Perfil' component={PerfilScreen} options={{headerShown: false}}/>
-          <Drawer.Screen name='Anunciar' component={AnunciarScreen} options={{headerShown: false}}/>
-          <Drawer.Screen name='NovaObra' component={NovaObraScreen} options={{headerShown: false}}/>
+          <Drawer.Screen name='PerfilAutonomo' component={PerfilScreen} options={{headerShown: false}}/>
           <Drawer.Screen name='Configuracoes' component={ConfiguracoesScreen} options={{headerShown: false}}/>
+          <Drawer.Screen name='Anunciar' component={AnunciarScreen} options={{headerShown: false}}/>
+          <Drawer.Screen name='EditarAnuncio' component={AnunciarScreen} options={{headerShown: false}}/>
         </Drawer.Navigator>
       </CarrinhoProvider>
     </UsuarioProvider>
+    </SafeAreaProvider>
   );
 }

@@ -165,7 +165,8 @@ export default function CadastroPessoaFisica() {
               value={date}
               mode="date"
               display={Platform.OS === "ios" ? "spinner" : "default"}
-              onChange={onChangeDate}
+              onValueChange={(evento, dataEscolhida) => onChangeDate(evento, dataEscolhida)}
+              onDismiss={() => setShowDatePicker(false)}
               maximumDate={new Date()}
             />
           )}
@@ -267,7 +268,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    padding: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 8,
     paddingBottom: 40, // Garante um espaço extra no final da rolagem
   },
   logoView: {
@@ -275,7 +277,7 @@ const styles = StyleSheet.create({
     width: 258,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 100,
+    marginTop: 48,
     marginBottom: 50,
   },
   logo: {
@@ -283,7 +285,8 @@ const styles = StyleSheet.create({
     height: 90,
   },
   textView: {
-    width: 375,
+    width: '100%',
+    maxWidth: 420,
     alignItems: "center",
     marginBottom: 20,
   },
@@ -303,11 +306,11 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     color: "#000000",
     height: 40,
-    width: 327,
+    width: '100%',
     borderWidth: 1,
     borderColor: "#E0E0E0",
     borderRadius: 8,
-    margin: 8,
+    marginVertical: 6,
     paddingHorizontal: 10,
     justifyContent: "center",
   },
@@ -316,11 +319,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "white",
     height: 40,
-    width: 327,
+    width: '100%',
     borderWidth: 1,
     borderColor: "#E0E0E0",
     borderRadius: 8,
-    margin: 8,
+    marginVertical: 6,
   },
   passwordInput: {
     flex: 1,
@@ -336,15 +339,15 @@ const styles = StyleSheet.create({
   botoesRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: 327,
-    margin: 8,
+    width: '100%',
+    marginVertical: 6,
   },
   voltar: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#F57C00",
     height: 40,
-    width: 155,
+    width: '48%',
     borderRadius: 8,
     justify: "center",
     alignItems: "center",
@@ -353,7 +356,7 @@ const styles = StyleSheet.create({
   cadastrar: {
     backgroundColor: "#F57C00",
     height: 40,
-    width: 155,
+    width: '48%',
     borderRadius: 8,
     justify: "center",
     alignItems: "center",

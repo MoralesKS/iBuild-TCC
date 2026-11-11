@@ -1,17 +1,23 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Text, View, TouchableOpacity, ScrollView, Image, Linking, StyleSheet } from 'react-native';
+import { Text, View, TouchableOpacity, ScrollView, FlatList, Image, Linking, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useAppNavigation, produtos } from '../src/Functions';
 import { useCarrinho } from '../src/CarrinhoItens';
 import { api, useUsuario } from '../src/api';
+import { useLayout } from '../src/responsivo';
+import FotoProduto from '../src/FotoProduto';
 import BarraInferior from '../src/BarraInferior';
+import { garantirConversa } from './Chat1';
+import { useAreaSegura } from '../src/responsivo';
 
 export default function Produto() {
+  const areaSegura = useAreaSegura();
   const navigation = useNavigation();
   const route = useRoute();
   const { home, chat, carrinho } = useAppNavigation();
   const { adicionarAoCarrinho } = useCarrinho();
   const { usuario } = useUsuario();
+  const { larguraUtil } = useLayout();
 
   // route.params.produto vem do navigation.navigate('Produto', { produto }).
   // O "|| produtos[0]" é só um plano B pra tela não quebrar se abrir sem clique.
@@ -38,9 +44,12 @@ export default function Produto() {
   // Só quem publicou o anúncio vê o botão de editar
   const ehDono = !!usuario && !!produto.idVendedor && produto.idVendedor === usuario.idUsuario;
 
-  // Capa + fotos extras (produtos de exemplo têm só a imagem principal)
+  // Carrossel: capa + fotos extras (produtos de exemplo têm só a imagem principal)
   const galeria = [produto.imagem, ...(produto.fotos || []).map((f) => f.imagem)].filter(Boolean);
-  const fotoPrincipal = galeria[fotoIndex] || produto.imagem;
+  const dados = galeria.length > 0 ? galeria : [null];
+  const larguraFoto = larguraUtil - 32; // a tela tem 16 de margem em cada lado
+  const alturaFoto = Math.round(larguraFoto * 0.75);
+  const indiceAtual = fotoIndex < dados.length ? fotoIndex : 0;
 
   function comprarAgora() {
     adicionarAoCarrinho(produto);
@@ -52,8 +61,24 @@ export default function Produto() {
     Linking.openURL(`https://wa.me/55${numeros}`).catch(() => alert('Não consegui abrir o WhatsApp.'));
   }
 
+  // Abre (ou cria) a conversa com quem vende o produto
+  function chamarNoChat() {
+    if (!produto.idVendedor) {
+      chat();
+      return;
+    }
+    const id = garantirConversa({
+      id: `u-${produto.idVendedor}`,
+      nome: produto.vendedor,
+      status: 'Vendedor',
+      saudacao: `Olá! Aqui é da ${produto.vendedor}. Posso ajudar com o produto "${produto.nome}"?`,
+      padrao: 'Recebi sua mensagem! Já te respondo sobre o produto.',
+    });
+    navigation.navigate('Chat 2', { conversaId: id });
+  }
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, areaSegura, areaSegura]}>
 
       {/* Cabeçalho */}
       <TouchableOpacity onPress={home}>
@@ -62,21 +87,38 @@ export default function Produto() {
 
       <ScrollView style={{ flex: 1, paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
 
-        {/* Imagem do produto */}
-        <Image style={styles.imagemProduto} source={fotoPrincipal} />
-
-        {galeria.length > 1 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.galeriaRow}>
-            {galeria.map((imagem, indice) => (
-              <TouchableOpacity key={indice} onPress={() => setFotoIndex(indice)}>
-                <Image
-                  style={[styles.miniatura, fotoIndex === indice && styles.miniaturaAtiva]}
-                  source={imagem}
-                />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
+        {/* Carrossel de fotos (deslize para o lado) */}
+        <View>
+          <FlatList
+            key={`carrossel-${produto.id}-${dados.length}`}
+            data={dados}
+            keyExtractor={(_, indice) => String(indice)}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            getItemLayout={(_, indice) => ({ length: larguraFoto, offset: larguraFoto * indice, index: indice })}
+            onMomentumScrollEnd={(e) => setFotoIndex(Math.round(e.nativeEvent.contentOffset.x / larguraFoto))}
+            style={{ width: larguraFoto, alignSelf: 'center' }}
+            renderItem={({ item }) => (
+              <FotoProduto
+                source={item}
+                style={{ width: larguraFoto, height: alturaFoto, borderRadius: 12, backgroundColor: '#F5F5F5' }}
+              />
+            )}
+          />
+          {dados.length > 1 && (
+            <>
+              <View style={styles.contadorFotos}>
+                <Text style={styles.contadorFotosTexto}>{indiceAtual + 1}/{dados.length}</Text>
+              </View>
+              <View style={styles.pontos}>
+                {dados.map((_, indice) => (
+                  <View key={indice} style={[styles.ponto, indice === indiceAtual && styles.pontoAtivo]} />
+                ))}
+              </View>
+            </>
+          )}
+        </View>
 
         {/* Nome e tipo */}
         <View style={styles.tituloRow}>
@@ -150,7 +192,7 @@ export default function Produto() {
             </TouchableOpacity>
           ) : (
             <>
-              <TouchableOpacity style={styles.chatBotao} onPress={chat}>
+              <TouchableOpacity style={styles.chatBotao} onPress={chamarNoChat}>
                 <Text style={styles.chatTexto}>Chamar no chat</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.comprarBotao} onPress={comprarAgora}>
@@ -168,6 +210,36 @@ export default function Produto() {
 }
 
 const styles = StyleSheet.create({
+  contadorFotos: {
+    position: 'absolute',
+    top: 10,
+    right: 26,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  contadorFotosTexto: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  pontos: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  ponto: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#D0D0D0',
+    marginHorizontal: 3,
+  },
+  pontoAtivo: {
+    backgroundColor: '#F57C00',
+    width: 18,
+  },
   galeriaRow: {
     marginTop: 10,
   },

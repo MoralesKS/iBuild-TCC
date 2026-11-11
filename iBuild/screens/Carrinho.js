@@ -2,6 +2,8 @@ import { Text, View, TouchableOpacity, ScrollView, Image, StyleSheet } from 'rea
 import { useAppNavigation } from '../src/Functions';
 import { useCarrinho } from '../src/CarrinhoItens';
 import { api, useUsuario } from '../src/api';
+import FotoProduto from '../src/FotoProduto';
+import { useAreaSegura } from '../src/responsivo';
 
 // Transforma "R$ 1,20" (string) em 1.2 (número), pra dar pra somar
 function precoParaNumero(precoTexto) {
@@ -9,6 +11,7 @@ function precoParaNumero(precoTexto) {
 }
 
 export default function Carrinho() {
+  const areaSegura = useAreaSegura();
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
   const { itens, removerDoCarrinho } = useCarrinho();
   const { usuario } = useUsuario();
@@ -38,7 +41,7 @@ export default function Carrinho() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, areaSegura, areaSegura]}>
       <TouchableOpacity onPress={home}>
         <Text>{'<'}</Text>
       </TouchableOpacity>
@@ -70,7 +73,7 @@ export default function Carrinho() {
         <ScrollView>
           {itens.map((item) => (
             <View key={item.id} style={styles.itemRow}>
-              <Image style={styles.itemImagem} source={item.imagem} />
+              <FotoProduto style={styles.itemImagem} source={item.imagem} />
               <View style={styles.itemInfo}>
                 <Text style={styles.itemNome}>{item.nome}</Text>
                 <Text style={styles.itemQuantidade}>Quantidade: {item.quantidade}</Text>

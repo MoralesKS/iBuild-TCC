@@ -4,41 +4,50 @@ import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/nativ
 import { api } from '../src/api';
 import Checkbox from 'expo-checkbox';
 import { useAppNavigation, obras, calcularProgresso  } from '../src/Functions';
+import { useAreaSegura } from '../src/responsivo';
 
 export default function DetalhesObra() {
+  const areaSegura = useAreaSegura();
   const route = useRoute();
   const navigation = useNavigation();
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
-  const [obra, setObra] = useState(route.params?.obra || obras[0]);   // no lugar do "const obra = ..."
+  // route.params.obra vem do navigation.navigate('DetalhesObra', { obra }); "obras[0]" é só um plano B
+  const [obra, setObra] = useState(route.params?.obra || obras[0]);
  
   // Cada obra tem sua própria lista de tarefas — guardamos elas aqui
   // como um ARRAY de objetos, não uma variável só, porque cada
   // checkbox precisa poder ser marcado/desmarcado independente dos outros.
   const [proximasAcoes, setProximasAcoes] = useState(obra.proximasAcoes);
  
-  // Se a pessoa voltar e clicar em "Ver detalhes" de OUTRA obra, esse
-  // efeito garante que o checklist é reiniciado com as tarefas da
-  // nova obra, mesmo que essa tela continue montada em memória.
+  // Campo de texto pra criar uma nova tarefa na checklist
+  const [novaAcaoTexto, setNovaAcaoTexto] = useState('');
+
+  // Chegou uma obra nova (ou atualizada) pela navegação: usa ela
+  useEffect(() => {
+    if (route.params?.obra) setObra(route.params.obra);
+  }, [route.params?.obra]);
+
+  // Sempre que a obra muda, o checklist é refeito com as tarefas dela
   useEffect(() => {
     setProximasAcoes(obra.proximasAcoes);
-  }, [obra.id]);
- 
-  useEffect(() => { if (route.params?.obra) setObra(route.params.obra); }, [route.params?.obra]);
+  }, [obra]);
+
+  // Obras do banco: busca a versão mais recente toda vez que a tela ganha foco
   useFocusEffect(useCallback(() => {
     if (obra.doBanco) api.obra(obra.id).then(setObra).catch((e) => console.log(e.message));
   }, [obra.id]));
-  useEffect(() => { setProximasAcoes(obra.proximasAcoes); }, [obra]);   // era [obra.id]
 
   function alternarAcao(id) {
     const acao = proximasAcoes.find((a) => a.id === id);
     setProximasAcoes((atuais) => atuais.map((a) => (a.id === id ? { ...a, feito: !a.feito } : a)));
+    // obra do banco: salva a marcação no MySQL
     if (obra.doBanco && acao) api.marcarTarefa(id, !acao.feito).catch((e) => alert(e.message));
   }
 
   async function adicionarAcao() {
     const texto = novaAcaoTexto.trim();
-    if (texto === '') return;
-    let id = Date.now();
+    if (texto === '') return; // não adiciona tarefa vazia
+    let id = Date.now(); // obra de exemplo: id só local
     if (obra.doBanco) {
       try { id = (await api.novaTarefa(obra.id, texto)).id; } catch (e) { alert(e.message); return; }
     }
@@ -46,30 +55,6 @@ export default function DetalhesObra() {
     setNovaAcaoTexto('');
   }
 
-  function alternarAcao(id) {
-    setProximasAcoes((acoesAtuais) =>
-      acoesAtuais.map((acao) =>
-        acao.id === id ? { ...acao, feito: !acao.feito } : acao
-      )
-    );
-  }
- 
-  // Campo de texto pra criar uma nova tarefa na checklist
-  const [novaAcaoTexto, setNovaAcaoTexto] = useState('');
- 
-  function adicionarAcao() {
-    if (novaAcaoTexto.trim() === '') return; // não adiciona tarefa vazia
- 
-    const novaAcao = {
-      id: Date.now(), // jeito simples de gerar um id único
-      texto: novaAcaoTexto.trim(),
-      feito: false,
-    };
- 
-    setProximasAcoes((acoesAtuais) => [...acoesAtuais, novaAcao]);
-    setNovaAcaoTexto(''); // limpa o campo depois de adicionar
-  }
- 
   const porcentagemTotal = calcularProgresso(obra);
  
   return (
@@ -77,7 +62,7 @@ export default function DetalhesObra() {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-    <View style={styles.container}>
+    <View style={[styles.container, areaSegura, areaSegura]}>
       <Text style={styles.titulo}>Detalhes da obra</Text>
  
       <ScrollView style={{ paddingHorizontal: 16, paddingBottom: 8 }}>

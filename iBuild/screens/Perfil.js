@@ -3,24 +3,51 @@ import { Text, View, TouchableOpacity, ScrollView, Image, Alert, StyleSheet } fr
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useAppNavigation, produtos } from '../src/Functions';
 import { api, sair, useUsuario } from '../src/api';
+import FotoProduto from '../src/FotoProduto';
 import BarraInferior from '../src/BarraInferior';
+import { garantirConversa } from './Chat1';
+import { useAreaSegura } from '../src/responsivo';
+
+// Autônomos de exemplo (do Functions.js) não existem no banco: monta um perfil só de leitura
+function perfilDoExemplo(p) {
+  return {
+    idUsuario: null,
+    idProfissional: null,
+    tipoPerfil: 'autonomo',
+    exemplo: true,
+    nome: p.nome,
+    profissao: p.categoria,
+    email: '',
+    telefone: '',
+    cidade: p.cidade || '',
+    bio: p.experiencia ? `Experiência: ${p.experiencia}.` : '',
+    foto: p.imagem,
+    avaliacoes: 0,
+    notaMedia: p.avaliacao ?? 0,
+  };
+}
 
 export default function Perfil() {
+  const areaSegura = useAreaSegura();
   const navigation = useNavigation();
   const route = useRoute();
   const { contratar, anunciar } = useAppNavigation();
   const { usuario: usuarioLogado } = useUsuario();
 
-  // Se vier um usuarioId na rota (tela "PerfilAutonomo"), mostra o perfil de outra pessoa
+  // Rota "Perfil" = meu perfil. Rota "PerfilAutonomo" = perfil de outra pessoa:
+  //   { usuarioId }    -> usuário do banco
+  //   { profissional } -> autônomo de exemplo
   const idParam = route.params?.usuarioId;
-  const ehProprio = !idParam || idParam === usuarioLogado?.idUsuario;
+  const exemplo = route.params?.profissional;
+  const visitando = !!(idParam || exemplo);
+  const ehProprio = !visitando || (!!idParam && idParam === usuarioLogado?.idUsuario);
 
   const [outro, setOutro] = useState(null);
   const [itensAVenda, setItensAVenda] = useState([]);
   const [minhasObras, setMinhasObras] = useState([]);
   const [escolhendoObra, setEscolhendoObra] = useState(false);
 
-  const usuario = ehProprio ? usuarioLogado : outro;
+  const usuario = ehProprio ? usuarioLogado : exemplo ? perfilDoExemplo(exemplo) : outro;
 
   // Favoritos ainda são os dados de exemplo (não existe tabela de favoritos no banco)
   const favoritos = [...(produtos || [])].reverse();
@@ -28,11 +55,14 @@ export default function Perfil() {
   useFocusEffect(
     useCallback(() => {
       const id = ehProprio ? usuarioLogado?.idUsuario : idParam;
-      if (!ehProprio) {
+      if (!ehProprio && idParam) {
+        setOutro((atual) => (atual && atual.idUsuario === idParam ? atual : null));
         api.usuario(idParam).then(setOutro).catch((e) => console.log(e.message));
       }
       if (id) {
         api.produtos(id).then((l) => setItensAVenda(l || [])).catch(() => {});
+      } else {
+        setItensAVenda([]);
       }
       if (!ehProprio && usuarioLogado) {
         api.obras(usuarioLogado.idUsuario).then((l) => setMinhasObras(l || [])).catch(() => {});
@@ -42,6 +72,18 @@ export default function Perfil() {
 
   function abrirProduto(produto) {
     navigation.navigate('Produto', { produto });
+  }
+
+  // Abre (ou cria) a conversa com esta pessoa
+  function chamarNoChat() {
+    const id = garantirConversa({
+      id: usuario.idUsuario ? `u-${usuario.idUsuario}` : `ex-${usuario.nome}`,
+      nome: usuario.nome,
+      status: usuario.profissao || 'Online',
+      saudacao: `Olá! Sou ${usuario.nome}${usuario.profissao ? ', ' + usuario.profissao : ''}. Como posso ajudar na sua obra?`,
+      padrao: 'Entendi! Me envie mais detalhes do serviço para eu te passar um orçamento.',
+    });
+    navigation.navigate('Chat 2', { conversaId: id });
   }
 
   async function adicionarNaObra(obra) {
@@ -85,7 +127,7 @@ export default function Perfil() {
             style={styles.produtoCard}
             onPress={() => abrirProduto(produto)}
           >
-            <Image style={styles.produtoImagem} source={produto.imagem} />
+            <FotoProduto style={styles.produtoImagem} source={produto.imagem} />
             <Text style={styles.produtoNome} numberOfLines={1}>{produto.nome}</Text>
             <Text style={styles.produtoPreco}>{produto.preco} / un.</Text>
           </TouchableOpacity>
@@ -96,7 +138,7 @@ export default function Perfil() {
 
   if (!usuario) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, areaSegura, areaSegura]}>
         <Text style={styles.titulo}>Perfil</Text>
         <Text style={styles.listaVazia}>Carregando perfil...</Text>
         <BarraInferior ativo="perfil" />
@@ -104,8 +146,10 @@ export default function Perfil() {
     );
   }
 
+  const ehLoja = usuario.tipoPerfil === 'loja';
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, areaSegura, areaSegura]}>
 
       <View style={styles.headerRow}>
         {!ehProprio && (
@@ -133,7 +177,7 @@ export default function Perfil() {
             disabled={!ehProprio}
             onPress={() => navigation.navigate('Configuracoes')}
           >
-            <Image style={styles.avatar} source={usuario.foto} />
+            <FotoProduto style={styles.avatar} source={usuario.foto} />
             {ehProprio && (
               <View style={styles.editarBadge}>
                 <Text style={styles.editarTexto}>✎</Text>
@@ -153,27 +197,33 @@ export default function Perfil() {
         </View>
 
         {/* Contato */}
-        <View style={styles.contatoRow}>
-          {!!usuario.telefone && (
-            <View style={styles.contatoItem}>
-              <Image style={styles.contatoIcone} source={require('../assets/icones/telefone.png')}/>
-              <Text style={styles.contatoTexto}>{usuario.telefone}</Text>
-            </View>
-          )}
-          <View style={styles.contatoItem}>
-            <Image style={styles.contatoIcone} source={require('../assets/icones/email.png')}/>
-            <Text style={styles.contatoTexto}>{usuario.email}</Text>
+        {(!!usuario.telefone || !!usuario.email) && (
+          <View style={styles.contatoRow}>
+            {!!usuario.telefone && (
+              <View style={styles.contatoItem}>
+                <Image style={styles.contatoIcone} source={require('../assets/icones/telefone.png')}/>
+                <Text style={styles.contatoTexto}>{usuario.telefone}</Text>
+              </View>
+            )}
+            {!!usuario.email && (
+              <View style={styles.contatoItem}>
+                <Image style={styles.contatoIcone} source={require('../assets/icones/email.png')}/>
+                <Text style={styles.contatoTexto}>{usuario.email}</Text>
+              </View>
+            )}
           </View>
-        </View>
+        )}
 
         {!!usuario.bio && <Text style={styles.bio}>{usuario.bio}</Text>}
 
         {/* Estatísticas */}
         <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValor}>{itensAVenda.length}</Text>
-            <Text style={styles.statLabel}>Produtos</Text>
-          </View>
+          {(ehProprio || itensAVenda.length > 0) && (
+            <View style={styles.statItem}>
+              <Text style={styles.statValor}>{itensAVenda.length}</Text>
+              <Text style={styles.statLabel}>Produtos</Text>
+            </View>
+          )}
           {ehProprio && (
             <View style={styles.statItem}>
               <Text style={styles.statValor}>{favoritos.length}</Text>
@@ -192,6 +242,13 @@ export default function Perfil() {
           </View>
         </View>
 
+        {/* Perfil de outra pessoa: chat */}
+        {!ehProprio && (
+          <TouchableOpacity style={styles.chatBotao} onPress={chamarNoChat}>
+            <Text style={styles.chatTexto}>Chamar no chat</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Meu perfil: botão pra anunciar */}
         {ehProprio && (
           <TouchableOpacity style={styles.anunciarCard} onPress={anunciar}>
@@ -204,7 +261,19 @@ export default function Perfil() {
           </TouchableOpacity>
         )}
 
-        {/* Perfil de um autônomo: adicionar a uma obra */}
+        {/* Meu perfil de loja: atalho para o card do Mapa */}
+        {ehProprio && ehLoja && (
+          <TouchableOpacity style={styles.anunciarCard} onPress={() => navigation.navigate('Configuracoes')}>
+            <Image style={styles.anunciarIcone} source={require('../assets/icones/localizacao.png')}/>
+            <View style={styles.anunciarInfo}>
+              <Text style={styles.anunciarTitulo}>Editar card da loja no Mapa</Text>
+              <Text style={styles.anunciarSub}>Foto, nome e endereço que os clientes veem</Text>
+            </View>
+            <Text style={styles.setaDireita}>{'>'}</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Perfil de um autônomo do banco: adicionar a uma obra */}
         {!ehProprio && !!usuario.idProfissional && (
           <View>
             <TouchableOpacity style={styles.anunciarCard} onPress={() => setEscolhendoObra((v) => !v)}>
@@ -234,13 +303,19 @@ export default function Perfil() {
           </View>
         )}
 
-        <View style={styles.divisor} />
+        {!!usuario.exemplo && (
+          <Text style={styles.listaVazia}>Profissional de exemplo: só aparecem aqui os dados básicos dele.</Text>
+        )}
 
-        {/* Itens à venda */}
-        <View style={styles.secaoHeader}>
-          <Text style={styles.secaoTitulo}>Itens a venda</Text>
-        </View>
-        {renderizarLista(itensAVenda)}
+        {(ehProprio || itensAVenda.length > 0) && (
+          <>
+            <View style={styles.divisor} />
+            <View style={styles.secaoHeader}>
+              <Text style={styles.secaoTitulo}>Itens a venda</Text>
+            </View>
+            {renderizarLista(itensAVenda)}
+          </>
+        )}
 
         {/* Favoritos (só no meu perfil) */}
         {ehProprio && (
@@ -267,6 +342,20 @@ export default function Perfil() {
 }
 
 const styles = StyleSheet.create({
+  chatBotao: {
+    borderWidth: 1,
+    borderColor: '#277D2C',
+    borderRadius: 8,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  chatTexto: {
+    color: '#277D2C',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',

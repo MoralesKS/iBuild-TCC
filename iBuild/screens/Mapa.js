@@ -5,8 +5,11 @@ import * as Location from 'expo-location';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAppNavigation, lojas as lojasExemplo, abrirNoGoogleMaps } from '../src/Functions';
 import { api, distanciaKm, MOSTRAR_EXEMPLOS } from '../src/api';
+import FotoProduto from '../src/FotoProduto';
+import { useAreaSegura } from '../src/responsivo';
 
 export default function Mapa() {
+  const areaSegura = useAreaSegura();
   const { home, contratar, gerenciar, carrinho, perfil, chat } = useAppNavigation();
   const [carregando, setCarregando] = useState(true);
   const [permissaoNegada, setPermissaoNegada] = useState(false);
@@ -28,6 +31,11 @@ export default function Mapa() {
         .catch((e) => console.log(e.message));
     }, [])
   );
+
+  // Depois de editar o card da loja, atualiza o card que já estava aberto
+  useEffect(() => {
+    setLojaSelecionada((sel) => (sel ? lojasDb.find((l) => l.id === sel.id) || sel : sel));
+  }, [lojasDb]);
 
   // lojas do banco (com distância calculada) + as de exemplo que já existiam
   const lojas = [
@@ -75,7 +83,7 @@ export default function Mapa() {
 
   if (carregando) {
     return (
-      <View style={[styles.container, styles.centralizado]}>
+      <View style={[styles.container, areaSegura, styles.centralizado]}>
         <ActivityIndicator size="large" color="#277D2C" />
       </View>
     );
@@ -83,7 +91,7 @@ export default function Mapa() {
 
   if (permissaoNegada) {
     return (
-      <View style={[styles.container, styles.centralizado, { padding: 24 }]}>
+      <View style={[styles.container, areaSegura, styles.centralizado, { padding: 24 }]}>
         <Text style={styles.permissaoTexto}>
           Precisamos da sua localização para mostrar as lojas mais próximas no mapa.
         </Text>
@@ -95,7 +103,7 @@ export default function Mapa() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, areaSegura, areaSegura]}>
       <View style={styles.buscaWrapper}>
         <TextInput
           style={styles.busca}
@@ -158,7 +166,7 @@ export default function Mapa() {
       {/* CARD DA LOJA SELECIONADA */}
       {lojaSelecionada && (
         <View style={styles.lojaCard}>
-          <Image style={styles.lojaImagem} source={lojaSelecionada.imagem} />
+          <FotoProduto style={styles.lojaImagem} source={lojaSelecionada.imagem} />
           <View style={styles.lojaInfoRow}>
             <View style={styles.lojaInfo}>
               <Text style={styles.lojaNome}>{lojaSelecionada.nome}</Text>
@@ -166,6 +174,9 @@ export default function Mapa() {
                 {lojaSelecionada.avaliacao} ({lojaSelecionada.numAvaliacoes} avaliações)
               </Text>
               <Text style={styles.lojaEndereco}>{lojaSelecionada.endereco}</Text>
+              {!!lojaSelecionada.sobre && (
+                <Text style={styles.lojaSobre} numberOfLines={2}>{lojaSelecionada.sobre}</Text>
+              )}
               <Text style={styles.lojaDistancia}>{lojaSelecionada.distancia} km de distância</Text>
             </View>
             <TouchableOpacity
@@ -320,6 +331,11 @@ const styles = StyleSheet.create({
   lojaEndereco: {
     fontSize: 12,
     color: '#828282',
+  },
+  lojaSobre: {
+    fontSize: 12,
+    color: '#000000',
+    marginTop: 2,
   },
   lojaDistancia: {
     fontSize: 12,

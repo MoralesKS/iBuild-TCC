@@ -5,8 +5,9 @@ import {
 } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { categorias, useAppNavigation } from '../src/Functions';
-import { api, escolherImagens, formatarTelefone, paraNumero, useUsuario, validarAnuncio } from '../src/api';
+import { api, conferirApi, escolherImagens, formatarTelefone, paraNumero, useUsuario, validarAnuncio } from '../src/api';
 import BarraInferior from '../src/BarraInferior';
+import { useAreaSegura } from '../src/responsivo';
 
 const UNIDADES = ['un.', 'kg', 'm', 'm²', 'm³', 'saco', 'milheiro'];
 const MAX_EXTRAS = 4;
@@ -38,6 +39,7 @@ function Segmentado({ opcoes, valor, aoMudar }) {
 // Esta MESMA tela serve para anunciar (rota "Anunciar") e para editar (rota "EditarAnuncio",
 // que recebe o produto em route.params.produto).
 export default function Anunciar() {
+  const areaSegura = useAreaSegura();
   const navigation = useNavigation();
   const route = useRoute();
   const { home } = useAppNavigation();
@@ -160,6 +162,7 @@ export default function Anunciar() {
 
     setSalvando(true);
     try {
+      await conferirApi(); // avisa se o server.js do PC estiver desatualizado (senão as fotos não seriam salvas)
       if (editando) {
         const corpo = { ...dados, id_usuario: usuario.idUsuario, remover_fotos: removerFotos, fotos: novasExtras };
         if (capa?.base64) corpo.foto_capa = { base64: capa.base64, ext: capa.ext };
@@ -184,18 +187,9 @@ export default function Anunciar() {
     }
   }
 
-  useFocusEffect(
-    useCallback(() => {
-      return () => {
-        if (!editando) {
-          limpar();
-        }
-      };
-    }, [editando, usuario?.idUsuario])
-  );
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.container}>
+      <View style={[styles.container, areaSegura, areaSegura]}>
 
         <View style={styles.headerRow}>
           {editando && (

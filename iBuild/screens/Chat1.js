@@ -307,6 +307,32 @@ export function gerarResposta(conversa, textoUsuario) {
   return regra ? regra.resposta : conversa.padrao;
 }
 
+// Cria (se ainda não existir) uma conversa com uma pessoa do app e devolve o id dela.
+// Usado pelos botões "Chamar no chat" (perfil do autônomo, página do produto).
+// As respostas são automáticas, por palavra-chave (veja REGRAS acima).
+export function garantirConversa({ id, nome, status, saudacao, padrao, cor }) {
+  const existente = CONVERSAS.find((c) => c.id === id);
+  if (existente) return existente.id;
+
+  const agora = new Date();
+  const hora = agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  CONVERSAS.unshift({
+    id,
+    nome,
+    cor: cor || "#277D2C",
+    tempo: "agora",
+    status: status || "Online",
+    grupos: ["seguindo"],
+    naoLida: false,
+    data: `${agora.toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })}, ${hora}`,
+    padrao: padrao || "Recebi sua mensagem! Já te respondo.",
+    mensagens: [
+      { id: `${id}-0`, autor: "outro", texto: saudacao || "Olá! Como posso ajudar?", hora },
+    ],
+  });
+  return id;
+}
+
 // Foto (se existir) ou círculo colorido com as iniciais
 export function Avatar({ nome, cor, foto, tamanho = 48 }) {
   const base = { width: tamanho, height: tamanho, borderRadius: tamanho / 2 };

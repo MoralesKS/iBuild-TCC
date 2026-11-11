@@ -1,12 +1,13 @@
 import { useCallback, useState } from 'react';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { api, MOSTRAR_EXEMPLOS } from '../src/api';
+import FotoProduto from '../src/FotoProduto';
 import { useAppNavigation, categorias, produtos as produtosExemplo } from '../src/Functions';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
-import { signOut } from 'firebase/auth';
-import { auth } from '../firebase.config';
+import { useAreaSegura } from '../src/responsivo';
 
 export default function Home() {
+  const areaSegura = useAreaSegura();
   const navigation = useNavigation();
   const { mapa, contratar, gerenciar, perfil, chat, carrinho } = useAppNavigation();
 
@@ -47,7 +48,7 @@ export default function Home() {
   });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, areaSegura, areaSegura]}>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
@@ -73,7 +74,6 @@ export default function Home() {
               source={require('../assets/icones/notificacao-1.png')}
             />
           </TouchableOpacity>
-
         </View>
 
         <View style={styles.acoesRapidasRow}>
@@ -105,10 +105,10 @@ export default function Home() {
         <View style={styles.banner}>
           <Text style={styles.bannerAnuncio}>Anúncio</Text>
           <Text style={styles.bannerTitulo}>
-            O MIX DE{'\\n'}
-            PRODUTOS{'\\n'}
-            IDEAL PARA SEU{'\\n'}
-            MATERIAL DE{'\\n'}
+            O MIX DE{'\n'}
+            PRODUTOS{'\n'}
+            IDEAL PARA SEU{'\n'}
+            MATERIAL DE{'\n'}
             CONSTRUÇÃO
           </Text>
         </View>
@@ -160,10 +160,7 @@ export default function Home() {
                 style={styles.produtoCard}
                 onPress={() => abrirProduto(produto)}
               >
-                <Image
-                  style={styles.produtoImagem}
-                  source={produto.imagem}
-                />
+                <FotoProduto style={styles.produtoImagem} source={produto.imagem} />
 
                 <Text style={styles.produtoMarca}>
                   {produto.vendedor}
@@ -255,7 +252,7 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
     paddingHorizontal: 16,
-    marginTop: '10%',
+    marginTop: 0,
   },
   busca: {
     backgroundColor: '#F5F5F5',
@@ -280,7 +277,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    width: 104,
+    width: '31%',
     height: 32,
     borderColor: 'gray',
     borderRadius: 8,
@@ -298,7 +295,7 @@ const styles = StyleSheet.create({
   banner: {
     backgroundColor: '#F57C00',
     borderRadius: 12,
-    height: 120,
+    minHeight: 120,
     marginTop: 16,
     padding: 16,
     justifyContent: 'center',
@@ -394,6 +391,11 @@ const styles = StyleSheet.create({
     height: 23,
     width: 23,
     tintColor: '#277D2C',
+  },
+  categoriaItemAtiva: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#277D2C',
+    paddingBottom: 4,
   },
   semResultados: {
     margin: 8,
