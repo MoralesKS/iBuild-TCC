@@ -4,6 +4,8 @@ import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/nativ
 import { api } from '../src/api';
 import Checkbox from 'expo-checkbox';
 import { useAppNavigation, obras, calcularProgresso  } from '../src/Functions';
+import { useUsuario } from '../src/api';
+import { Alert } from 'react-native';
 import { useAreaSegura } from '../src/responsivo';
 
 export default function DetalhesObra() {
@@ -11,8 +13,10 @@ export default function DetalhesObra() {
   const route = useRoute();
   const navigation = useNavigation();
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
+  const { usuario } = useUsuario();
   // route.params.obra vem do navigation.navigate('DetalhesObra', { obra }); "obras[0]" é só um plano B
   const [obra, setObra] = useState(route.params?.obra || obras[0]);
+  const ehProprietario = !!usuario && String(obra.idProprietario) === String(usuario.idUsuario);
  
   // Cada obra tem sua própria lista de tarefas — guardamos elas aqui
   // como um ARRAY de objetos, não uma variável só, porque cada
@@ -34,22 +38,23 @@ export default function DetalhesObra() {
 
   // Obras do banco: busca a versão mais recente toda vez que a tela ganha foco
   useFocusEffect(useCallback(() => {
-    if (obra.doBanco) api.obra(obra.id).then(setObra).catch((e) => console.log(e.message));
-  }, [obra.id]));
+    if (obra.doBanco && usuario?.idUsuario) api.obra(obra.id, usuario.idUsuario).then(setObra).catch((e) => console.log(e.message));
+  }, [obra.id, usuario?.idUsuario]));
 
   function alternarAcao(id) {
     const acao = proximasAcoes.find((a) => a.id === id);
     setProximasAcoes((atuais) => atuais.map((a) => (a.id === id ? { ...a, feito: !a.feito } : a)));
     // obra do banco: salva a marcação no MySQL
-    if (obra.doBanco && acao) api.marcarTarefa(id, !acao.feito).catch((e) => alert(e.message));
+    if (obra.doBanco && acao && ehProprietario) api.marcarTarefa(id, !acao.feito, usuario?.idUsuario).catch((e) => alert(e.message));
   }
 
   async function adicionarAcao() {
     const texto = novaAcaoTexto.trim();
     if (texto === '') return; // não adiciona tarefa vazia
+    if (!ehProprietario) return;
     let id = Date.now(); // obra de exemplo: id só local
     if (obra.doBanco) {
-      try { id = (await api.novaTarefa(obra.id, texto)).id; } catch (e) { alert(e.message); return; }
+      try { id = (await api.novaTarefa(obra.id, texto, usuario?.idUsuario)).id; } catch (e) { alert(e.message); return; }
     }
     setProximasAcoes((atuais) => [...atuais, { id, texto, feito: false }]);
     setNovaAcaoTexto('');
@@ -64,6 +69,20 @@ export default function DetalhesObra() {
     >
     <View style={[styles.container, areaSegura, areaSegura]}>
       <Text style={styles.titulo}>Detalhes da obra</Text>
+      {ehProprietario && obra.doBanco && (
+        <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 8 }}>
+          <TouchableOpacity style={[styles.contratarBotao, { flex: 1 }]} onPress={() => navigation.navigate('NovaObra', { obra })}>
+            <Text style={styles.contratarTexto}>Editar obra</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.contratarBotao, { flex: 1, backgroundColor: '#C62828' }]} onPress={() => Alert.alert('Excluir obra', 'Deseja realmente excluir esta obra? Essa ação não poderá ser desfeita.', [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Excluir', style: 'destructive', onPress: async () => { try { await api.excluirObra(obra.id, usuario.idUsuario); navigation.navigate('Gerenciar'); } catch (e) { alert(e.message); } } },
+          ])}>
+            <Text style={styles.contratarTexto}>Excluir obra</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      {!ehProprietario && <Text style={{ color: '#777', textAlign: 'center', marginBottom: 8 }}>Você está visualizando esta obra como profissional da equipe.</Text>}
  
       <ScrollView style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
         <View style={styles.resumoCard}>
@@ -179,9 +198,9 @@ export default function DetalhesObra() {
           <Text style={styles.infoLinha}>Autônomos: {obra.profissionais.map((p) => p.nome).join(', ')}</Text>
         )}
  
-        <TouchableOpacity style={styles.contratarBotao} onPress={() => navigation.navigate('Atribuir Funcionários', { obra })}>
+        {ehProprietario && <TouchableOpacity style={styles.contratarBotao} onPress={() => navigation.navigate('Atribuir Funcionários', { obra })}>
           <Text style={styles.contratarTexto}>Atribuir funcionários</Text>
-        </TouchableOpacity>
+        </TouchableOpacity>}
 
         <Text style={styles.tituloSecao}>Próximas Ações</Text>
         <View style={styles.infoCard}>
@@ -190,6 +209,7 @@ export default function DetalhesObra() {
               <Checkbox
                 value={acao.feito}
                 onValueChange={() => alternarAcao(acao.id)}
+                disabled={!ehProprietario}
                 color={acao.feito ? '#277D2C' : undefined}
               />
               <Text style={styles.infoLinha}> {acao.texto}</Text>
@@ -197,7 +217,7 @@ export default function DetalhesObra() {
           ))}
  
           {/* Adicionar nova tarefa na checklist */}
-          <View style={styles.novaAcaoRow}>
+          {ehProprietario && <View style={styles.novaAcaoRow}>
             <TextInput
               style={styles.novaAcaoInput}
               placeholder="Escreva uma nova tarefa..."
@@ -210,7 +230,7 @@ export default function DetalhesObra() {
             <TouchableOpacity style={styles.novaAcaoBotao} onPress={adicionarAcao}>
               <Text style={styles.novaAcaoBotaoTexto}>+</Text>
             </TouchableOpacity>
-          </View>
+          </View>}
         </View>
  
       </ScrollView>

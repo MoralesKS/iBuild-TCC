@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useAppNavigation } from '../src/Functions';
-import { api } from '../src/api';
+import { api, useUsuario } from '../src/api';
 import BarraInferior from '../src/BarraInferior';
 import { useAreaSegura } from '../src/responsivo';
 
@@ -11,6 +11,7 @@ export default function AtribuirFuncionarios() {
   const navigation = useNavigation();
   const route = useRoute();
   const { gerenciar } = useAppNavigation();
+  const { usuario } = useUsuario();
 
   const [obra, setObra] = useState(route.params?.obra || null);
   const [profissionais, setProfissionais] = useState([]);
@@ -27,9 +28,9 @@ export default function AtribuirFuncionarios() {
         .then((l) => setProfissionais(l || []))
         .catch((e) => console.log(e.message));
       if (obra?.doBanco) {
-        api.obra(obra.id).then(setObra).catch(() => {});
+        api.obra(obra.id, usuario?.idUsuario).then(setObra).catch(() => {});
       }
-    }, [obra?.id])
+    }, [obra?.id, usuario?.idUsuario])
   );
 
   function voltar() {
@@ -43,8 +44,8 @@ export default function AtribuirFuncionarios() {
     setOcupado(p.idProfissional);
     try {
       const atualizada = naObra(p)
-        ? await api.removerProfissional(obra.id, p.idProfissional)
-        : await api.adicionarProfissional(obra.id, p.idProfissional, p.categoria);
+        ? await api.removerProfissional(obra.id, p.idProfissional, usuario?.idUsuario)
+        : await api.adicionarProfissional(obra.id, p.idProfissional, p.categoria, usuario?.idUsuario);
       setObra(atualizada);
     } catch (e) {
       alert(e.message);

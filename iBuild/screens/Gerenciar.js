@@ -13,17 +13,22 @@ export default function Gerenciar() {
 
   const [textoBusca, setTextoBusca] = useState('');
   const [obrasDb, setObrasDb] = useState([]);
+  const [obrasEquipe, setObrasEquipe] = useState([]);
 
   const carregarObras = useCallback(() => {
     if (!usuario) return;
     api.obras(usuario.idUsuario)
       .then((l) => setObrasDb(l || []))
       .catch((e) => console.log(e.message));
+    api.obrasParticipando(usuario.idUsuario)
+      .then((l) => setObrasEquipe(l || []))
+      .catch((e) => console.log(e.message));
   }, [usuario]);
   useFocusEffect(carregarObras);
 
   // obras do banco + as de exemplo que já existiam
-  const obras = [...obrasDb, ...(MOSTRAR_EXEMPLOS ? (obrasExemplo || []) : [])];
+  const idsProprias = new Set(obrasDb.map((o) => String(o.id)));
+  const obras = [...obrasDb, ...obrasEquipe.filter((o) => !idsProprias.has(String(o.id))), ...(MOSTRAR_EXEMPLOS ? (obrasExemplo || []) : [])];
 
   const totalObras = obras.length;
   const obrasAndamento = obras.filter((obra) => obra.status === 'andamento').length;
@@ -92,7 +97,7 @@ export default function Gerenciar() {
           <Text style={styles.verDetalhesTexto}>+ Nova obra</Text>
         </TouchableOpacity>
 
-        {obrasDb.length === 0 && usuario && (
+        {obrasDb.length === 0 && obrasEquipe.length === 0 && usuario && (
           <TouchableOpacity style={styles.verDetalhesBotao} onPress={criarObrasExemplo}>
             <Text style={styles.verDetalhesTexto}>Criar obras de exemplo no banco</Text>
           </TouchableOpacity>
@@ -109,6 +114,7 @@ export default function Gerenciar() {
               <View style={{ marginLeft: '10%', width: '60%' }}>
                 <Text style={styles.obraNome}>{obra.nome}</Text>
                 <Text style={styles.obraSub}>{obra.construtora}</Text>
+                {obra.idProprietario && String(obra.idProprietario) !== String(usuario?.idUsuario) && <Text style={{ color: '#277D2C', fontSize: 11, marginTop: 3 }}>Obra compartilhada com você</Text>}
                 <View style={styles.progressoBarraFundo}>
                   <View
                     style={[

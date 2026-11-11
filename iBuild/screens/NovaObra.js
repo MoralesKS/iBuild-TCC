@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRoute } from '@react-navigation/native';
 import {
   Text, View, TextInput, TouchableOpacity, ScrollView,
   KeyboardAvoidingView, Platform, StyleSheet,
@@ -15,6 +16,9 @@ export default function NovaObra() {
   const areaSegura = useAreaSegura();
   const { gerenciar } = useAppNavigation();
   const { usuario } = useUsuario();
+  const route = useRoute();
+  const obraEdicao = route.params?.obra;
+  const editando = !!obraEdicao?.id;
 
   const [nome, setNome] = useState('');
   const [tipo, setTipo] = useState('Residencial');
@@ -27,6 +31,18 @@ export default function NovaObra() {
   const [responsavel, setResponsavel] = useState('');
   const [mestre, setMestre] = useState('');
   const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => {
+    if (!obraEdicao) return;
+    setNome(obraEdicao.nome || '');
+    setTipo(obraEdicao.tipo || 'Residencial');
+    setEndereco(obraEdicao.logradouro || obraEdicao.endereco || '');
+    setCidade(obraEdicao.cidade || '');
+    setOrcamento(String(obraEdicao.orcamentoNumero ?? obraEdicao.orcamento ?? '').replace(/^R\$\s*/, '').replace(/\./g, '').replace(',', '.'));
+    setEntrega(obraEdicao.entrega && obraEdicao.entrega !== '—' ? obraEdicao.entrega : '');
+    setResponsavel(obraEdicao.responsavel === '—' ? '' : (obraEdicao.responsavel || ''));
+    setMestre(obraEdicao.equipe?.mestre === '—' ? '' : (obraEdicao.equipe?.mestre || ''));
+  }, [obraEdicao?.id]);
 
   function aoEscolherData(evento, dataEscolhida) {
     setMostrarCalendario(Platform.OS === 'ios');
@@ -53,18 +69,15 @@ export default function NovaObra() {
 
     setSalvando(true);
     try {
-      await api.criarObra({
+      const dados = {
         id_proprietario: usuario.idUsuario,
-        nome: nome.trim(),
-        tipo,
-        endereco: endereco.trim(),
-        cidade: cidade.trim(),
-        orcamento: valor,
-        entrega: entrega || null,
-        responsavel: responsavel.trim(),
-        mestre: mestre.trim(),
-      });
-      alert('Obra criada!');
+        id_usuario: usuario.idUsuario,
+        nome: nome.trim(), tipo, endereco: endereco.trim(), cidade: cidade.trim(),
+        orcamento: valor, entrega: entrega || null, responsavel: responsavel.trim(), mestre: mestre.trim(),
+      };
+      if (editando) await api.atualizarObra(obraEdicao.id, dados);
+      else await api.criarObra(dados);
+      alert(editando ? 'Obra atualizada!' : 'Obra criada!');
       gerenciar();
     } catch (e) {
       alert('Erro ao criar obra: ' + e.message);
@@ -79,7 +92,7 @@ export default function NovaObra() {
         <TouchableOpacity onPress={gerenciar}>
           <Text style={styles.seta}>{'<'}</Text>
         </TouchableOpacity>
-        <Text style={styles.titulo}>Nova obra</Text>
+        <Text style={styles.titulo}>{editando ? 'Editar obra' : 'Nova obra'}</Text>
 
         <ScrollView
           style={{ paddingHorizontal: 16 }}
@@ -190,7 +203,7 @@ export default function NovaObra() {
                 onPress={criarObra}
                 disabled={salvando}
               >
-                <Text style={styles.salvarTexto}>{salvando ? 'Criando...' : 'Criar obra'}</Text>
+                <Text style={styles.salvarTexto}>{salvando ? 'Salvando...' : editando ? 'Salvar alterações' : 'Criar obra'}</Text>
               </TouchableOpacity>
             </View>
           </View>

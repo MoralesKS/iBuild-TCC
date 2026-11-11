@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Text, View, TouchableOpacity, ScrollView, FlatList, Image, Linking, StyleSheet } from 'react-native';
-import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import { useEffect, useState } from 'react';
+import { Text, View, TouchableOpacity, ScrollView, FlatList, Image, Linking, StyleSheet, Alert } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAppNavigation, produtos } from '../src/Functions';
 import { useCarrinho } from '../src/CarrinhoItens';
 import { api, useUsuario } from '../src/api';
@@ -9,6 +9,7 @@ import FotoProduto from '../src/FotoProduto';
 import BarraInferior from '../src/BarraInferior';
 import { garantirConversa } from './Chat1';
 import { useAreaSegura } from '../src/responsivo';
+import { verificarFavorito, alternarFavorito as alternarFavoritoStorage } from '../src/Favoritos';
 
 export default function Produto() {
   const areaSegura = useAreaSegura();
@@ -19,27 +20,36 @@ export default function Produto() {
   const { usuario } = useUsuario();
   const { larguraUtil } = useLayout();
 
-  // route.params.produto vem do navigation.navigate('Produto', { produto }).
-  // O "|| produtos[0]" é só um plano B pra tela não quebrar se abrir sem clique.
-  const [produto, setProduto] = useState(route.params?.produto || produtos[0]);
+  // O produto selecionado pela navegação é a fonte da verdade.
+  const produtoRecebido = route.params?.produto;
+  const [produto, setProduto] = useState(produtoRecebido || produtos[0]);
   const [fotoIndex, setFotoIndex] = useState(0);
+  const [favorito, setFavorito] = useState(false);
 
-  // Chegou um produto novo pela navegação (ex.: depois de editar): usa ele
   useEffect(() => {
-    if (route.params?.produto) {
-      setProduto(route.params.produto);
+    let ativo = true;
+    if (produtoRecebido) {
+      setProduto(produtoRecebido);
       setFotoIndex(0);
-    }
-  }, [route.params?.produto]);
-
-  // Produto do banco: busca a versão mais recente sempre que a tela ganha foco
-  useFocusEffect(
-    useCallback(() => {
-      if (produto.idAnuncio) {
-        api.produto(produto.idAnuncio).then(setProduto).catch((e) => console.log(e.message));
+      if (produtoRecebido.idAnuncio) {
+        api.produto(produtoRecebido.idAnuncio)
+          .then((atualizado) => { if (ativo) setProduto(atualizado); })
+          .catch((e) => console.log(e.message));
       }
-    }, [produto.idAnuncio])
-  );
+    }
+    return () => { ativo = false; };
+  }, [produtoRecebido?.id, produtoRecebido?.idAnuncio]);
+
+  useEffect(() => {
+    let ativo = true;
+    verificarFavorito(usuario?.idUsuario, produto).then((valor) => { if (ativo) setFavorito(valor); });
+    return () => { ativo = false; };
+  }, [usuario?.idUsuario, produto?.id]);
+
+  async function alternarFavorito() {
+    const novoValor = await alternarFavoritoStorage(usuario?.idUsuario, produto);
+    setFavorito(novoValor);
+  }
 
   // Só quem publicou o anúncio vê o botão de editar
   const ehDono = !!usuario && !!produto.idVendedor && produto.idVendedor === usuario.idUsuario;
@@ -120,6 +130,10 @@ export default function Produto() {
           )}
         </View>
 
+        <TouchableOpacity style={styles.favoritoBotao} onPress={alternarFavorito}>
+          <Text style={styles.favoritoTexto}>{favorito ? '♥ Remover dos favoritos' : '♡ Adicionar aos favoritos'}</Text>
+        </TouchableOpacity>
+
         {/* Nome e tipo */}
         <View style={styles.tituloRow}>
           <Text style={styles.nomeProduto}>{produto.nome}</Text>
@@ -184,12 +198,27 @@ export default function Produto() {
         {/* Botões de ação */}
         <View style={styles.botoesRow}>
           {ehDono ? (
+            <>
             <TouchableOpacity
               style={styles.editarBotao}
               onPress={() => navigation.navigate('EditarAnuncio', { produto })}
             >
               <Text style={styles.comprarTexto}>Editar anúncio</Text>
             </TouchableOpacity>
+            {produto.idAnuncio && (
+              <TouchableOpacity style={styles.removerBotao} onPress={() => {
+                Alert.alert('Remover produto', 'Deseja retirar este produto do catálogo?', [
+                  { text: 'Cancelar', style: 'cancel' },
+                  { text: 'Remover', style: 'destructive', onPress: async () => {
+                    try { await api.excluirAnuncio(produto.idAnuncio, usuario.idUsuario); navigation.navigate('Home'); }
+                    catch (e) { alert(e.message); }
+                  } },
+                ]);
+              }}>
+                <Text style={styles.removerTexto}>Remover do catálogo</Text>
+              </TouchableOpacity>
+            )}
+            </>
           ) : (
             <>
               <TouchableOpacity style={styles.chatBotao} onPress={chamarNoChat}>
@@ -210,6 +239,10 @@ export default function Produto() {
 }
 
 const styles = StyleSheet.create({
+  favoritoBotao: { alignSelf: 'flex-end', paddingVertical: 8, paddingHorizontal: 12, marginTop: 6 },
+  favoritoTexto: { color: '#277D2C', fontWeight: 'bold', fontSize: 13 },
+  removerBotao: { flex: 1, borderWidth: 1, borderColor: '#C62828', borderRadius: 8, padding: 10, alignItems: 'center', marginTop: 8 },
+  removerTexto: { color: '#C62828', fontWeight: 'bold' },
   contadorFotos: {
     position: 'absolute',
     top: 10,

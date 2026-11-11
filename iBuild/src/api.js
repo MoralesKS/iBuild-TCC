@@ -98,7 +98,10 @@ const profissionalApp = (p) => ({
 const obraApp = (o) => ({
   ...o,
   doBanco: true,
+  idProprietario: o.idProprietario,
+  logradouro: o.logradouro || o.endereco,
   imagem: IMG_OBRA,
+  orcamentoNumero: Number(o.orcamento || 0),
   orcamento: dinheiro(o.orcamento),
   equipe: { ...o.equipe, horasTrabalhadas: `${o.equipe.horasTrabalhadas}h` },
 });
@@ -133,22 +136,26 @@ export const api = {
   produto: (id) => req('GET', `/anuncios/${id}`).then(produtoApp),
   anunciar: (dados) => req('POST', '/anuncios', dados),
   atualizarAnuncio: (id, dados) => req('PATCH', `/anuncios/${id}`, dados).then(produtoApp),
+  excluirAnuncio: (id, usuario) => req('DELETE', `/anuncios/${id}`, { id_usuario: usuario }),
   fazerPedido: (idComprador, itens) => req('POST', '/pedidos', { id_comprador: idComprador, itens }),
 
   lojas: () => req('GET', '/lojas').then((l) => l.map(lojaApp)),
   profissionais: () => req('GET', '/profissionais').then((l) => l.map(profissionalApp)),
 
   obras: (usuario) => req('GET', `/obras?usuario=${usuario}`).then((l) => l.map(obraApp)),
-  obra: (id) => req('GET', `/obras/${id}`).then(obraApp),
+  obrasParticipando: (usuario) => req('GET', `/obras/participando?usuario=${usuario}`).then((l) => l.map(obraApp)),
+  obra: (id, usuario) => req('GET', `/obras/${id}?usuario=${usuario || ''}`).then(obraApp),
   criarObra: (dados) => req('POST', '/obras', dados),
+  atualizarObra: (id, dados) => req('PATCH', `/obras/${id}`, dados).then(obraApp),
+  excluirObra: (id, usuario) => req('DELETE', `/obras/${id}?usuario=${usuario}`),
   criarObrasExemplo: (usuario) => req('POST', `/obras/exemplo/${usuario}`),
-  marcarTarefa: (id, feito) => req('PATCH', `/tarefas/${id}`, { feito }),
-  novaTarefa: (idObra, texto) => req('POST', `/obras/${idObra}/tarefas`, { texto }),
-  adicionarProfissional: (idObra, idProfissional, funcao) =>
-    req('POST', `/obras/${idObra}/profissionais`, { id_profissional: idProfissional, funcao }).then(obraApp),
+  marcarTarefa: (id, feito, usuario) => req('PATCH', `/tarefas/${id}`, { feito, id_usuario: usuario }),
+  novaTarefa: (idObra, texto, usuario) => req('POST', `/obras/${idObra}/tarefas`, { texto, id_usuario: usuario }),
+  adicionarProfissional: (idObra, idProfissional, funcao, usuario) =>
+    req('POST', `/obras/${idObra}/profissionais`, { id_profissional: idProfissional, funcao, id_usuario: usuario }).then(obraApp),
 
-  removerProfissional: (idObra, idProfissional) =>
-    req('DELETE', `/obras/${idObra}/profissionais/${idProfissional}`).then(obraApp),
+  removerProfissional: (idObra, idProfissional, usuario) =>
+    req('DELETE', `/obras/${idObra}/profissionais/${idProfissional}`, { id_usuario: usuario }).then(obraApp),
 
   notificacoes: (usuario) => req('GET', `/notificacoes?usuario=${usuario}`).then((l) => l.map(notificacaoApp)),
   lerNotificacoes: (usuario) => req('POST', '/notificacoes/lidas', { usuario }),

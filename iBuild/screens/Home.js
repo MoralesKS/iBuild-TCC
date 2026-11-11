@@ -77,7 +77,7 @@ export default function Home() {
         </View>
 
         <View style={styles.acoesRapidasRow}>
-          <TouchableOpacity style={styles.acaoRapida}>
+          <TouchableOpacity style={styles.acaoRapida} onPress={() => navigation.navigate('Perfil')}>
             <Image
               style={styles.botaoAcaoRapida}
               source={require('../assets/icones/favorito.png')}

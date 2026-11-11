@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react';
+import { listarFavoritos, alternarFavorito } from '../src/Favoritos';
 import { Text, View, TouchableOpacity, ScrollView, Image, Alert, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
-import { useAppNavigation, produtos } from '../src/Functions';
+import { useAppNavigation } from '../src/Functions';
 import { api, sair, useUsuario } from '../src/api';
 import FotoProduto from '../src/FotoProduto';
 import BarraInferior from '../src/BarraInferior';
@@ -46,11 +47,10 @@ export default function Perfil() {
   const [itensAVenda, setItensAVenda] = useState([]);
   const [minhasObras, setMinhasObras] = useState([]);
   const [escolhendoObra, setEscolhendoObra] = useState(false);
+  const [favoritos, setFavoritos] = useState([]);
 
   const usuario = ehProprio ? usuarioLogado : exemplo ? perfilDoExemplo(exemplo) : outro;
 
-  // Favoritos ainda são os dados de exemplo (não existe tabela de favoritos no banco)
-  const favoritos = [...(produtos || [])].reverse();
 
   useFocusEffect(
     useCallback(() => {
@@ -59,6 +59,7 @@ export default function Perfil() {
         setOutro((atual) => (atual && atual.idUsuario === idParam ? atual : null));
         api.usuario(idParam).then(setOutro).catch((e) => console.log(e.message));
       }
+      if (ehProprio && id) listarFavoritos(id).then(setFavoritos);
       if (id) {
         api.produtos(id).then((l) => setItensAVenda(l || [])).catch(() => {});
       } else {
@@ -88,7 +89,7 @@ export default function Perfil() {
 
   async function adicionarNaObra(obra) {
     try {
-      await api.adicionarProfissional(obra.id, usuario.idProfissional, usuario.profissao);
+      await api.adicionarProfissional(obra.id, usuario.idProfissional, usuario.profissao, usuarioLogado?.idUsuario);
       alert(`${usuario.nome} foi adicionado à obra ${obra.nome}`);
       setEscolhendoObra(false);
     } catch (e) {
@@ -115,22 +116,28 @@ export default function Perfil() {
   }
 
   // Função simples (não um componente) pra não repetir o mesmo JSX nas duas listas
-  function renderizarLista(lista) {
+  function renderizarLista(lista, permiteRemover = false) {
     if (lista.length === 0) {
       return <Text style={styles.listaVazia}>Nada por aqui ainda.</Text>;
     }
     return (
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         {lista.map((produto) => (
-          <TouchableOpacity
-            key={produto.id}
-            style={styles.produtoCard}
-            onPress={() => abrirProduto(produto)}
-          >
-            <FotoProduto style={styles.produtoImagem} source={produto.imagem} />
-            <Text style={styles.produtoNome} numberOfLines={1}>{produto.nome}</Text>
-            <Text style={styles.produtoPreco}>{produto.preco} / un.</Text>
-          </TouchableOpacity>
+          <View key={produto.id} style={styles.produtoCard}>
+            <TouchableOpacity onPress={() => abrirProduto(produto)}>
+              <FotoProduto style={styles.produtoImagem} source={produto.imagem} />
+              <Text style={styles.produtoNome} numberOfLines={1}>{produto.nome}</Text>
+              <Text style={styles.produtoPreco}>{produto.preco} / un.</Text>
+            </TouchableOpacity>
+            {permiteRemover && (
+              <TouchableOpacity onPress={async () => {
+                await alternarFavorito(usuarioLogado?.idUsuario, produto);
+                setFavoritos((listaAtual) => listaAtual.filter((item) => String(item.id) !== String(produto.id)));
+              }}>
+                <Text style={{ color: '#C62828', fontSize: 11, marginTop: 6 }}>♥ Remover dos favoritos</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         ))}
       </ScrollView>
     );
@@ -323,7 +330,7 @@ export default function Perfil() {
             <View style={styles.secaoHeader}>
               <Text style={styles.secaoTitulo}>Favoritos</Text>
             </View>
-            {renderizarLista(favoritos)}
+            {renderizarLista(favoritos, true)}
           </>
         )}
 

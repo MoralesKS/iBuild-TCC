@@ -474,6 +474,16 @@ app.patch('/anuncios/:id', h(async (req, res) => {
   res.json(anuncio);
 }));
 
+// Retira o anúncio do catálogo sem apagar o histórico de pedidos.
+app.delete('/anuncios/:id', h(async (req, res) => {
+  const idUsuario = Number(req.body?.id_usuario);
+  const [anuncio] = await q("SELECT id_anuncio, id_vendedor FROM anuncios WHERE id_anuncio = ? AND status <> 'removido'", [req.params.id]);
+  if (!anuncio) return res.status(404).json({ erro: 'Produto não encontrado.' });
+  if (!idUsuario || idUsuario !== Number(anuncio.id_vendedor)) return res.status(403).json({ erro: 'Somente o vendedor pode remover este produto.' });
+  await q("UPDATE anuncios SET status = 'removido' WHERE id_anuncio = ?", [req.params.id]);
+  res.json({ ok: true });
+}));
+
 /* ================================================================== */
 /* PEDIDOS (Carrinho -> "Fazer pedido")                                */
 /* ================================================================== */
@@ -572,7 +582,7 @@ const STATUS_APP = { planejamento: 'andamento', em_andamento: 'andamento', pausa
 async function montarObras(where, params) {
   // "where" só recebe condições fixas do código ('o.id_proprietario = ?' ou 'o.id_obra = ?')
   const obras = await q(
-    `SELECT o.*, COALESCE(u.razao_social, u.nome) AS construtora,
+    `SELECT o.*, e.cidade AS cidade, e.logradouro AS logradouro, COALESCE(u.razao_social, u.nome) AS construtora,
             CONCAT_WS(', ', NULLIF(CONCAT_WS(' ', e.logradouro, e.numero), ''), e.bairro, e.cidade) AS endereco_txt
        FROM obras o
        JOIN usuarios u ON u.id_usuario = o.id_proprietario
@@ -597,10 +607,10 @@ async function montarObras(where, params) {
     const eq = equipe.filter((x) => x.id_obra === o.id_obra);
     const pendente = t.find((x) => x.status !== 'concluida');
     return {
-      id: o.id_obra, nome: o.nome, construtora: o.construtora,
+      id: o.id_obra, idProprietario: o.id_proprietario, nome: o.nome, construtora: o.construtora,
       status: STATUS_APP[o.status] || 'andamento',
       entrega: fmtData(o.data_previsao_fim),
-      tipo: o.tipo || '—', endereco: o.endereco_txt || '—',
+      tipo: o.tipo || '—', endereco: o.endereco_txt || '—', logradouro: o.logradouro || '', cidade: o.cidade || '',
       responsavel: o.responsavel_tecnico || '—', orcamento: o.orcamento_previsto,
       etapas: { fundacao: o.etapa_fundacao, estrutura: o.etapa_estrutura, acabamento: o.etapa_acabamento },
       equipe: {
@@ -638,9 +648,25 @@ app.get('/obras', h(async (req, res) => {
   res.json(await montarObras('o.id_proprietario = ?', [req.query.usuario]));
 }));
 
+app.get('/obras/participando', h(async (req, res) => {
+  const usuario = Number(req.query.usuario);
+  if (!usuario) return res.status(400).json({ erro: 'Informe ?usuario=' });
+  res.json(await montarObras(
+    'o.id_obra IN (SELECT op.id_obra FROM obra_profissionais op JOIN profissionais p ON p.id_profissional = op.id_profissional WHERE p.id_usuario = ?)',
+    [usuario]
+  ));
+}));
+
 app.get('/obras/:id', h(async (req, res) => {
   const [obra] = await montarObras('o.id_obra = ?', [req.params.id]);
   if (!obra) return res.status(404).json({ erro: 'Obra não encontrada' });
+  const usuario = Number(req.query.usuario);
+  if (!usuario) return res.status(400).json({ erro: 'Usuário não informado.' });
+  const [acesso] = await q(
+    'SELECT o.id_proprietario FROM obras o WHERE o.id_obra = ? AND (o.id_proprietario = ? OR EXISTS (SELECT 1 FROM obra_profissionais op JOIN profissionais p ON p.id_profissional = op.id_profissional WHERE op.id_obra = o.id_obra AND p.id_usuario = ?))',
+    [req.params.id, usuario, usuario]
+  );
+  if (!acesso) return res.status(403).json({ erro: 'Você não tem acesso a esta obra.' });
   res.json(obra);
 }));
 
@@ -654,6 +680,42 @@ app.post('/obras', h(async (req, res) => {
   } finally {
     conn.release();
   }
+}));
+
+app.patch('/obras/:id', h(async (req, res) => {
+  const b = req.body;
+  const [obra] = await q('SELECT id_obra, id_proprietario, id_endereco FROM obras WHERE id_obra = ?', [req.params.id]);
+  if (!obra) return res.status(404).json({ erro: 'Obra não encontrada.' });
+  if (Number(b.id_usuario) !== Number(obra.id_proprietario)) return res.status(403).json({ erro: 'Somente quem criou a obra pode editá-la.' });
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.query('UPDATE obras SET nome = ?, tipo = ?, responsavel_tecnico = ?, mestre_obras = ?, orcamento_previsto = ?, data_previsao_fim = ? WHERE id_obra = ?',
+      [String(b.nome || '').trim(), b.tipo || null, b.responsavel || null, b.mestre || null, Number(b.orcamento || 0), dataBR(b.entrega), obra.id_obra]);
+    await conn.query('UPDATE enderecos SET logradouro = ?, cidade = ? WHERE id_endereco = ?',
+      [String(b.endereco || '').trim(), b.cidade || null, obra.id_endereco]);
+    await conn.commit();
+  } catch (e) { await conn.rollback(); throw e; }
+  finally { conn.release(); }
+  res.json((await montarObras('o.id_obra = ?', [obra.id_obra]))[0]);
+}));
+
+app.delete('/obras/:id', h(async (req, res) => {
+  const usuario = Number(req.query.usuario);
+  const [obra] = await q('SELECT id_obra, id_proprietario, id_endereco FROM obras WHERE id_obra = ?', [req.params.id]);
+  if (!obra) return res.status(404).json({ erro: 'Obra não encontrada.' });
+  if (!usuario || usuario !== Number(obra.id_proprietario)) return res.status(403).json({ erro: 'Somente quem criou a obra pode excluí-la.' });
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.query('DELETE FROM obra_profissionais WHERE id_obra = ?', [obra.id_obra]);
+    await conn.query('DELETE FROM tarefas_obra WHERE id_obra = ?', [obra.id_obra]);
+    await conn.query('DELETE FROM obras WHERE id_obra = ?', [obra.id_obra]);
+    if (obra.id_endereco) await conn.query('DELETE FROM enderecos WHERE id_endereco = ?', [obra.id_endereco]);
+    await conn.commit();
+  } catch (e) { await conn.rollback(); throw e; }
+  finally { conn.release(); }
+  res.json({ ok: true });
 }));
 
 // Cria 2 obras de exemplo para o usuário (para testar a tela Gerenciar)
@@ -685,12 +747,18 @@ app.post('/obras/exemplo/:idUsuario', h(async (req, res) => {
 }));
 
 app.patch('/tarefas/:id', h(async (req, res) => {
+  const [tarefa] = await q('SELECT o.id_proprietario FROM tarefas_obra t JOIN obras o ON o.id_obra = t.id_obra WHERE t.id_tarefa = ?', [req.params.id]);
+  if (!tarefa) return res.status(404).json({ erro: 'Tarefa não encontrada.' });
+  if (Number(req.body.id_usuario) !== Number(tarefa.id_proprietario)) return res.status(403).json({ erro: 'Somente o responsável pela obra pode alterar tarefas.' });
   const feito = !!req.body.feito;
   await q('UPDATE tarefas_obra SET status = ?, progresso = ? WHERE id_tarefa = ?', [feito ? 'concluida' : 'pendente', feito ? 100 : 0, req.params.id]);
   res.json({ ok: true });
 }));
 
 app.post('/obras/:id/tarefas', h(async (req, res) => {
+  const [obra] = await q('SELECT id_proprietario FROM obras WHERE id_obra = ?', [req.params.id]);
+  if (!obra) return res.status(404).json({ erro: 'Obra não encontrada.' });
+  if (Number(req.body.id_usuario) !== Number(obra.id_proprietario)) return res.status(403).json({ erro: 'Somente o responsável pela obra pode adicionar tarefas.' });
   const texto = (req.body.texto || '').trim();
   if (!texto) return res.status(400).json({ erro: 'Texto vazio' });
   const [r] = await pool.query("INSERT INTO tarefas_obra (id_obra, titulo, status, progresso) VALUES (?,?, 'pendente', 0)", [req.params.id, texto]);
@@ -699,9 +767,10 @@ app.post('/obras/:id/tarefas', h(async (req, res) => {
 
 // Adiciona um autônomo a uma obra
 app.post('/obras/:id/profissionais', h(async (req, res) => {
-  const { id_profissional, funcao } = req.body;
+  const { id_profissional, funcao, id_usuario } = req.body;
   const [obra] = await q('SELECT id_obra, nome, id_proprietario FROM obras WHERE id_obra = ?', [req.params.id]);
   if (!obra) return res.status(404).json({ erro: 'Obra não encontrada' });
+  if (Number(id_usuario) !== Number(obra.id_proprietario)) return res.status(403).json({ erro: 'Somente quem criou a obra pode gerenciar a equipe.' });
   const [prof] = await q('SELECT p.id_profissional, p.id_usuario, u.nome FROM profissionais p JOIN usuarios u ON u.id_usuario = p.id_usuario WHERE p.id_profissional = ?', [id_profissional]);
   if (!prof) return res.status(404).json({ erro: 'Profissional não encontrado' });
 
@@ -715,6 +784,9 @@ app.post('/obras/:id/profissionais', h(async (req, res) => {
 
 // Remove um autônomo da obra
 app.delete('/obras/:id/profissionais/:idProf', h(async (req, res) => {
+  const [obraAtual] = await q('SELECT id_proprietario FROM obras WHERE id_obra = ?', [req.params.id]);
+  if (!obraAtual) return res.status(404).json({ erro: 'Obra não encontrada' });
+  if (Number(req.body?.id_usuario) !== Number(obraAtual.id_proprietario)) return res.status(403).json({ erro: 'Somente quem criou a obra pode gerenciar a equipe.' });
   await q('DELETE FROM obra_profissionais WHERE id_obra = ? AND id_profissional = ?', [req.params.id, req.params.idProf]);
   const [obra] = await montarObras('o.id_obra = ?', [req.params.id]);
   if (!obra) return res.status(404).json({ erro: 'Obra não encontrada' });
