@@ -1,10 +1,16 @@
-import { useEffect, useState } from 'react';
+import BottomBar from '../componentes/BottomBar';
+import { useCallback, useEffect, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, Image, Linking, ActivityIndicator, StyleSheet } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { useAppNavigation, lojas, abrirNoGoogleMaps } from '../src/Functions';
+import { useFocusEffect } from '@react-navigation/native';
+import { useAppNavigation, lojas as lojasExemplo, abrirNoGoogleMaps } from '../src/Functions';
+import { api, distanciaKm, MOSTRAR_EXEMPLOS } from '../src/api';
+import FotoProduto from '../src/FotoProduto';
+import { useAreaSegura } from '../src/responsivo';
 
 export default function Mapa() {
+  const areaSegura = useAreaSegura();
   const { home, contratar, gerenciar, carrinho, perfil, chat } = useAppNavigation();
   const [carregando, setCarregando] = useState(true);
   const [permissaoNegada, setPermissaoNegada] = useState(false);
@@ -13,15 +19,31 @@ export default function Mapa() {
     latitude: -23.5505,
     longitude: -46.6333,
   });
-
   const [textoBusca, setTextoBusca] = useState('');
+  const [lojasDb, setLojasDb] = useState([]);
+  const [lojaSelecionada, setLojaSelecionada] = useState(
+    MOSTRAR_EXEMPLOS && lojasExemplo ? lojasExemplo[5] || null : null
+  );
 
-  const [lojaSelecionada, setLojaSelecionada] = useState(lojas[5]);
+  useFocusEffect(
+    useCallback(() => {
+      api.lojas()
+        .then((l) => setLojasDb(l || []))
+        .catch((e) => console.log(e.message));
+    }, [])
+  );
 
-  // Só as lojas que batem com a busca aparecem como marcador no mapa.
-  // A busca continua funcionando mesmo se a loja selecionada for filtrada
-  // pra fora da lista — o card dela continua aparecendo embaixo até o
-  // usuário escolher outra ou limpar a busca.
+  // Depois de editar o card da loja, atualiza o card que já estava aberto
+  useEffect(() => {
+    setLojaSelecionada((sel) => (sel ? lojasDb.find((l) => l.id === sel.id) || sel : sel));
+  }, [lojasDb]);
+
+  // lojas do banco (com distância calculada) + as de exemplo que já existiam
+  const lojas = [
+    ...lojasDb.map((l) => ({ ...l, distancia: distanciaKm(minhaLocalizacao, l).toFixed(1) })),
+    ...(MOSTRAR_EXEMPLOS ? (lojasExemplo || []) : []),
+  ];
+
   const lojasFiltradas = lojas.filter((loja) => {
     const texto = textoBusca.trim().toLowerCase();
     return (
@@ -45,7 +67,6 @@ export default function Mapa() {
         const posicao = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
-
         setMinhaLocalizacao({
           latitude: posicao.coords.latitude,
           longitude: posicao.coords.longitude,
@@ -63,7 +84,7 @@ export default function Mapa() {
 
   if (carregando) {
     return (
-      <View style={[styles.container, styles.centralizado]}>
+      <View style={[styles.container, areaSegura, styles.centralizado]}>
         <ActivityIndicator size="large" color="#277D2C" />
       </View>
     );
@@ -71,7 +92,7 @@ export default function Mapa() {
 
   if (permissaoNegada) {
     return (
-      <View style={[styles.container, styles.centralizado, { padding: 24 }]}>
+      <View style={[styles.container, areaSegura, styles.centralizado, { padding: 24 }]}>
         <Text style={styles.permissaoTexto}>
           Precisamos da sua localização para mostrar as lojas mais próximas no mapa.
         </Text>
@@ -83,7 +104,7 @@ export default function Mapa() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, areaSegura]}>
       <View style={styles.buscaWrapper}>
         <TextInput
           style={styles.busca}
@@ -146,7 +167,7 @@ export default function Mapa() {
       {/* CARD DA LOJA SELECIONADA */}
       {lojaSelecionada && (
         <View style={styles.lojaCard}>
-          <Image style={styles.lojaImagem} source={lojaSelecionada.imagem} />
+          <FotoProduto style={styles.lojaImagem} source={lojaSelecionada.imagem} />
           <View style={styles.lojaInfoRow}>
             <View style={styles.lojaInfo}>
               <Text style={styles.lojaNome}>{lojaSelecionada.nome}</Text>
@@ -154,6 +175,9 @@ export default function Mapa() {
                 {lojaSelecionada.avaliacao} ({lojaSelecionada.numAvaliacoes} avaliações)
               </Text>
               <Text style={styles.lojaEndereco}>{lojaSelecionada.endereco}</Text>
+              {!!lojaSelecionada.sobre && (
+                <Text style={styles.lojaSobre} numberOfLines={2}>{lojaSelecionada.sobre}</Text>
+              )}
               <Text style={styles.lojaDistancia}>{lojaSelecionada.distancia} km de distância</Text>
             </View>
             <TouchableOpacity
@@ -167,31 +191,7 @@ export default function Mapa() {
       )}
 
       {/* BOTTOM TAB BAR */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerItem} onPress={home}>
-          <Image style={styles.footerIcone} source={require('../assets/Home.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
-          <Image style={styles.footerIcone} source={require('../assets/gerenciar.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem}>
-          <Image style={styles.footerIcone1} source={require('../assets/Bussola.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={contratar}>
-          <Image style={styles.footerIcone} source={require('../assets/Trabalho.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={chat}>
-          <Image style={styles.footerIcone} source={require('../assets/Chat.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={perfil}>
-          <Image style={styles.footerIcone} source={require('../assets/Perfil.png')}/>
-        </TouchableOpacity>
-      </View>
+      <BottomBar ativa="mapa" />
     </View>
   );
 }
@@ -309,6 +309,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#828282',
   },
+  lojaSobre: {
+    fontSize: 12,
+    color: '#000000',
+    marginTop: 2,
+  },
   lojaDistancia: {
     fontSize: 12,
     color: '#828282',
@@ -324,30 +329,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 12,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 60,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-  },
-  footerItem: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 42,
-    width: 72,
-  },
-  footerIcone: {
-    height: 23,
-    width: 23,
-    tintColor: '#9C9C9C',
-  },
-  footerIcone1: {
-    height: 23,
-    width: 23,
-    tintColor: '#277D2C',
   },
 });

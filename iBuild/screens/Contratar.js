@@ -1,34 +1,55 @@
-import { useState } from 'react';
+import BottomBar from '../componentes/BottomBar';
+import { useCallback, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
-import { useAppNavigation, profissionais, categoriasProfissionais } from '../src/Functions';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useAppNavigation, profissionais as profissionaisExemplo, categoriasProfissionais } from '../src/Functions';
+import { api, MOSTRAR_EXEMPLOS } from '../src/api';
+import { useAreaSegura } from '../src/responsivo';
 
 export default function Contratar() {
+  const areaSegura = useAreaSegura();
+  const navigation = useNavigation();
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
- 
-  // null representa o filtro "Todos" (nenhuma categoria específica selecionada)
+
   const [categoriaAtiva, setCategoriaAtiva] = useState(null);
   const [textoBusca, setTextoBusca] = useState('');
- 
-  // Filtra a lista por categoria E pelo texto digitado na busca ao mesmo tempo.
-  // Os dois filtros são independentes: um profissional só aparece se passar
-  // NAS DUAS condições (categoria certa E nome/profissão batendo com a busca).
+  const [profissionaisDb, setProfissionaisDb] = useState([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      api.profissionais()
+        .then((l) => setProfissionaisDb(l || []))
+        .catch((e) => console.log(e.message));
+    }, [])
+  );
+
+  // autônomos do banco + os de exemplo que já existiam
+  const profissionais = [...profissionaisDb, ...(MOSTRAR_EXEMPLOS ? (profissionaisExemplo || []) : [])];
+
   const profissionaisFiltrados = profissionais.filter((profissional) => {
     const passaCategoria = categoriaAtiva === null || profissional.categoria === categoriaAtiva;
- 
     const textoNormalizado = textoBusca.trim().toLowerCase();
     const passaBusca =
       textoNormalizado === '' ||
       profissional.nome.toLowerCase().includes(textoNormalizado) ||
       profissional.categoria.toLowerCase().includes(textoNormalizado);
- 
     return passaCategoria && passaBusca;
   });
- 
+
+  // Abre o perfil do autônomo (do banco ou de exemplo)
+  function abrirPerfil(profissional) {
+    if (profissional.idUsuario) {
+      navigation.navigate('PerfilAutonomo', { usuarioId: profissional.idUsuario });
+    } else {
+      navigation.navigate('PerfilAutonomo', { profissional });
+    }
+  }
+
   return (
-    <View style={styles.container}>
- 
+    <View style={[styles.container, areaSegura]}>
+
       <Text style={styles.titulo}>Contratar Ajudantes</Text>
- 
+
       <TextInput
         style={styles.searchInput}
         placeholder="Buscar por profissão ou nome..."
@@ -36,7 +57,7 @@ export default function Contratar() {
         value={textoBusca}
         onChangeText={setTextoBusca}
       />
- 
+
       <ScrollView style={{ paddingHorizontal: 16 }}>
         <View style={styles.linhaFiltros}>
           {categoriasProfissionais.map((item) => (
@@ -47,12 +68,17 @@ export default function Contratar() {
             </TouchableOpacity>
           ))}
         </View>
- 
+
         {profissionaisFiltrados.length === 0 ? (
           <Text style={styles.semResultados}>Nenhum profissional encontrado.</Text>
         ) : (
           profissionaisFiltrados.map((profissional) => (
-            <View key={profissional.id} style={styles.card}>
+            <TouchableOpacity
+              key={profissional.id}
+              style={styles.card}
+              activeOpacity={0.7}
+              onPress={() => abrirPerfil(profissional)}
+            >
               <Image style={styles.avatar} source={profissional.imagem} />
               <View style={styles.cardInfo}>
                 <Text style={styles.nome}>{profissional.nome}</Text>
@@ -63,45 +89,26 @@ export default function Contratar() {
                   {profissional.cidade} - {profissional.experiencia}
                 </Text>
               </View>
-              <TouchableOpacity style={styles.verPerfilBotao} onPress={chat}>
+              <View style={styles.verPerfilBotao}>
                 <Text style={styles.verPerfilTexto}>Ver perfil</Text>
-              </TouchableOpacity>
-            </View>
+              </View>
+            </TouchableOpacity>
           ))
         )}
       </ScrollView>
- 
+
       {/* BOTTOM TAB BAR */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerItem} onPress={home}>
-          <Image style={styles.footerIcone} source={require('../assets/Home.png')}/>
-        </TouchableOpacity>
- 
-        <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
-          <Image style={styles.footerIcone} source={require('../assets/gerenciar.png')}/>
-        </TouchableOpacity>
- 
-        <TouchableOpacity style={styles.footerItem} onPress={mapa}>
-          <Image style={styles.footerIcone} source={require('../assets/Bussola.png')}/>
-        </TouchableOpacity>
- 
-        <TouchableOpacity style={styles.footerItem} onPress={contratar}>
-          <Image style={styles.footerIcone1} source={require('../assets/Trabalho.png')}/>
-        </TouchableOpacity>
- 
-        <TouchableOpacity style={styles.footerItem} onPress={chat}>
-          <Image style={styles.footerIcone} source={require('../assets/Chat.png')}/>
-        </TouchableOpacity>
- 
-        <TouchableOpacity style={styles.footerItem} onPress={perfil}>
-          <Image style={styles.footerIcone} source={require('../assets/Perfil.png')}/>
-        </TouchableOpacity>
-      </View>
+      <BottomBar ativa="contratar" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  semResultados: {
+    marginTop: 16,
+    textAlign: 'center',
+    color: '#828282',
+  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -122,6 +129,8 @@ const styles = StyleSheet.create({
   },
   linhaFiltros: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    rowGap: 6,
     marginTop: 16,
     marginBottom: 8,
   },
@@ -174,30 +183,5 @@ const styles = StyleSheet.create({
     color: '#F57C00',
     fontSize: 12,
     fontWeight: 'bold',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 60,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-  },
-  footerItem: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 42,
-    width: 72,
-  },
-  footerIcone: {
-    height: 23,
-    width: 23,
-    tintColor: '#9C9C9C',
-  },
-  footerIcone1: {
-    height: 23,
-    width: 23,
-    tintColor: '#277D2C',
   },
 });

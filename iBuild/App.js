@@ -1,24 +1,12 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { useEffect, useState } from 'react';
 import Route from './Route';
 import { NavigationContainer } from '@react-navigation/native';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './firebase.config';
+import { UsuarioProvider, useUsuario } from './src/api';
 
-export default function App() {
-  const [usuario, setUsuario] = useState(null);
-  const [carregando, setCarregando] = useState(true);
+function AppRoutes() {
+  const { usuarioFirebase } = useUsuario();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUsuario(user);
-      setCarregando(false);
-    });
-
-    return unsubscribe;
-  }, []);
-
-  if (carregando) {
+  if (usuarioFirebase === undefined) {
     return (
       <View style={styles.loading}>
         <Text style={styles.loadingText}>
@@ -29,9 +17,17 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <Route usuario={usuario} />
+    <NavigationContainer key={usuarioFirebase?.uid ?? 'sem-sessao'}>
+      <Route autenticado={Boolean(usuarioFirebase)} />
     </NavigationContainer>
+  );
+}
+
+export default function App() {
+  return (
+    <UsuarioProvider>
+      <AppRoutes />
+    </UsuarioProvider>
   );
 }
 

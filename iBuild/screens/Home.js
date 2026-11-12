@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import BottomBar from '../componentes/BottomBar';
+import { useCallback, useState } from 'react';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { api, MOSTRAR_EXEMPLOS } from '../src/api';
+import FotoProduto from '../src/FotoProduto';
+import { useAppNavigation, categorias, produtos as produtosExemplo } from '../src/Functions';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { signOut } from 'firebase/auth';
-import { auth } from '../firebase.config';
-import { useAppNavigation, categorias, produtos } from '../src/Functions';
+import { useAreaSegura } from '../src/responsivo';
 
 export default function Home() {
+  const areaSegura = useAreaSegura();
   const navigation = useNavigation();
   const { mapa, contratar, gerenciar, perfil, chat, carrinho } = useAppNavigation();
 
@@ -13,12 +16,11 @@ export default function Home() {
   const [categoriaSelecionada, setCategoriaSelecionada] = useState(null);
   const [textoBusca, setTextoBusca] = useState('');
 
-  // BOTÃO TEMPORÁRIO DE LOGOUT - remover quando a tela final estiver pronta
-  function sairDaConta() {
-    signOut(auth).catch((error) => {
-      alert(error.message);
-    });
-  }
+  const [produtosDb, setProdutosDb] = useState([]);
+  useFocusEffect(useCallback(() => {
+  api.produtos().then(setProdutosDb).catch((e) => console.log(e.message));
+  }, []));
+  const produtos = [...produtosDb, ...(MOSTRAR_EXEMPLOS ? produtosExemplo : [])];
 
   function abrirProduto(produto) {
     navigation.navigate('Produto', { produto });
@@ -47,7 +49,7 @@ export default function Home() {
   });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, areaSegura]}>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
@@ -67,62 +69,23 @@ export default function Home() {
             />
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => alert('Tela em construção, aguardando orçamento!')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Notificação')}>
             <Image
               style={styles.botaoHeader}
               source={require('../assets/icones/notificacao-1.png')}
             />
           </TouchableOpacity>
-
-          {/* BOTÃO TEMPORÁRIO DE LOGOUT - remover quando a tela final estiver pronta */}
-          <TouchableOpacity
-            onPress={sairDaConta}
-            style={{
-              backgroundColor: '#F57C00',
-              paddingHorizontal: 10,
-              paddingVertical: 8,
-              borderRadius: 8,
-            }}
-          >
-            <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 12 }}>
-              Sair
-            </Text>
-          </TouchableOpacity>
         </View>
 
-        <View style={styles.acoesRapidasRow}>
-          <TouchableOpacity style={styles.acaoRapida}>
-            <Image
-              style={styles.botaoAcaoRapida}
-              source={require('../assets/icones/favorito.png')}
-            />
-            <Text style={styles.acaoRapidaTexto}>Favoritos</Text>
-          </TouchableOpacity>
 
-          <TouchableOpacity style={styles.acaoRapida}>
-            <Image
-              style={styles.botaoAcaoRapida}
-              source={require('../assets/icones/historico.png')}
-            />
-            <Text style={styles.acaoRapidaTexto}>Histórico</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.acaoRapida}>
-            <Image
-              style={styles.botaoAcaoRapida}
-              source={require('../assets/icones/verificados.png')}
-            />
-            <Text style={styles.acaoRapidaTexto}>Verificados</Text>
-          </TouchableOpacity>
-        </View>
 
         <View style={styles.banner}>
           <Text style={styles.bannerAnuncio}>Anúncio</Text>
           <Text style={styles.bannerTitulo}>
-            O MIX DE{'\\n'}
-            PRODUTOS{'\\n'}
-            IDEAL PARA SEU{'\\n'}
-            MATERIAL DE{'\\n'}
+            O MIX DE{'\n'}
+            PRODUTOS{'\n'}
+            IDEAL PARA SEU{'\n'}
+            MATERIAL DE{'\n'}
             CONSTRUÇÃO
           </Text>
         </View>
@@ -174,10 +137,7 @@ export default function Home() {
                 style={styles.produtoCard}
                 onPress={() => abrirProduto(produto)}
               >
-                <Image
-                  style={styles.produtoImagem}
-                  source={produto.imagem}
-                />
+                <FotoProduto style={styles.produtoImagem} source={produto.imagem} />
 
                 <Text style={styles.produtoMarca}>
                   {produto.vendedor}
@@ -194,134 +154,10 @@ export default function Home() {
             ))}
           </ScrollView>
         )}
-
-        {produtosFiltrados.length === 0 ? (
-          <Text style={styles.semResultados}>
-            Nenhum produto encontrado nessa categoria.
-          </Text>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {produtosFiltrados.map((produto) => (
-              <TouchableOpacity
-                key={produto.id}
-                style={styles.produtoCard}
-                onPress={() => abrirProduto(produto)}
-              >
-                <Image
-                  style={styles.produtoImagem}
-                  source={produto.imagem}
-                />
-
-                <Text style={styles.produtoMarca}>
-                  {produto.vendedor}
-                </Text>
-
-                <Text style={styles.produtoNome}>
-                  {produto.nome}
-                </Text>
-
-                <Text style={styles.produtoPreco}>
-                  {produto.preco}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
-
-        {produtosFiltrados.length === 0 ? (
-          <Text style={styles.semResultados}>
-            Nenhum produto encontrado nessa categoria.
-          </Text>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {produtosFiltrados.map((produto) => (
-              <TouchableOpacity
-                key={produto.id}
-                style={styles.produtoCard}
-                onPress={() => abrirProduto(produto)}
-              >
-                <Image
-                  style={styles.produtoImagem}
-                  source={produto.imagem}
-                />
-
-                <Text style={styles.produtoMarca}>
-                  {produto.vendedor}
-                </Text>
-
-                <Text style={styles.produtoNome}>
-                  {produto.nome}
-                </Text>
-
-                <Text style={styles.produtoPreco}>
-                  {produto.preco}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
-
       </ScrollView>
 
       {/* BOTTOM TAB BAR */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerItem}>
-          <Image
-            style={styles.footerIcone1}
-            source={require('../assets/Home.png')}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.footerItem}
-          onPress={gerenciar}
-        >
-          <Image
-            style={styles.footerIcone}
-            source={require('../assets/gerenciar.png')}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.footerItem}
-          onPress={mapa}
-        >
-          <Image
-            style={styles.footerIcone}
-            source={require('../assets/Bussola.png')}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.footerItem}
-          onPress={contratar}
-        >
-          <Image
-            style={styles.footerIcone}
-            source={require('../assets/Trabalho.png')}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.footerItem}
-          onPress={chat}
-        >
-          <Image
-            style={styles.footerIcone}
-            source={require('../assets/Chat.png')}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.footerItem}
-          onPress={perfil}
-        >
-          <Image
-            style={styles.footerIcone}
-            source={require('../assets/Perfil.png')}
-          />
-        </TouchableOpacity>
-      </View>
+      <BottomBar ativa="home" />
 
     </View>
   );
@@ -336,7 +172,7 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
     paddingHorizontal: 16,
-    marginTop: '10%',
+    marginTop: 0,
   },
   busca: {
     backgroundColor: '#F5F5F5',
@@ -357,29 +193,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 16,
   },
-  acaoRapida: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    width: 104,
-    height: 32,
-    borderColor: 'gray',
-    borderRadius: 8,
-    justifyContent: 'center',
-  },
-  botaoAcaoRapida: {
-    width: 18,
-    height: 18,
-  },
-  acaoRapidaTexto: {
-    fontSize: 13,
-    color: '#000000',
-    marginLeft: 4,
-  },
   banner: {
     backgroundColor: '#F57C00',
     borderRadius: 12,
-    height: 120,
+    minHeight: 120,
     marginTop: 16,
     padding: 16,
     justifyContent: 'center',
@@ -451,30 +268,10 @@ const styles = StyleSheet.create({
     color: '#000000',
     marginTop: 2,
   },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 60,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-  },
-  footerItem: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 42,
-    width: 72,
-  },
-  footerIcone: {
-    height: 23,
-    width: 23,
-    tintColor: '#9C9C9C',
-  },
-  footerIcone1: {
-    height: 23,
-    width: 23,
-    tintColor: '#277D2C',
+  categoriaItemAtiva: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#277D2C',
+    paddingBottom: 4,
   },
   semResultados: {
     margin: 8,

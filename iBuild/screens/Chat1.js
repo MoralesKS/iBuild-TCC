@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import {
   FlatList,
   Image,
@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import BottomBar from "../componentes/BottomBar";
 
 /* ================================================================== */
 /* DADOS: edite aqui as conversas, mensagens e respostas do bot        */
@@ -291,8 +292,26 @@ const REGRAS = [
 /* ================================================================== */
 /* FUNÇÕES AUXILIARES (usadas também pelo Chat2.js)                    */
 /* ================================================================== */
-export const buscarConversa = (id) =>
-  CONVERSAS.find((c) => c.id === id) || CONVERSAS[0];
+const ConversasContext = createContext(null);
+
+export function ConversasProvider({ children }) {
+  const conversas = useRef(null);
+  if (!conversas.current) {
+    conversas.current = CONVERSAS.map((conversa) => ({
+      ...conversa,
+      mensagens: [...conversa.mensagens],
+    }));
+  }
+  return (
+    <ConversasContext.Provider value={conversas.current}>
+      {children}
+    </ConversasContext.Provider>
+  );
+}
+
+export function useConversas() {
+  return useContext(ConversasContext);
+}
 
 export function gerarResposta(conversa, textoUsuario) {
   const t = textoUsuario
@@ -305,6 +324,32 @@ export function gerarResposta(conversa, textoUsuario) {
     ),
   );
   return regra ? regra.resposta : conversa.padrao;
+}
+
+// Cria (se ainda não existir) uma conversa com uma pessoa do app e devolve o id dela.
+// Usado pelos botões "Chamar no chat" (perfil do autônomo, página do produto).
+// As respostas são automáticas, por palavra-chave (veja REGRAS acima).
+export function garantirConversa(conversas, { id, nome, status, saudacao, padrao, cor }) {
+  const existente = conversas.find((c) => c.id === id);
+  if (existente) return existente.id;
+
+  const agora = new Date();
+  const hora = agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  conversas.unshift({
+    id,
+    nome,
+    cor: cor || "#277D2C",
+    tempo: "agora",
+    status: status || "Online",
+    grupos: ["seguindo"],
+    naoLida: false,
+    data: `${agora.toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })}, ${hora}`,
+    padrao: padrao || "Recebi sua mensagem! Já te respondo.",
+    mensagens: [
+      { id: `${id}-0`, autor: "outro", texto: saudacao || "Olá! Como posso ajudar?", hora },
+    ],
+  });
+  return id;
 }
 
 // Foto (se existir) ou círculo colorido com as iniciais
@@ -344,6 +389,7 @@ const VERDE = "#2f8f3a";
 const FILTROS = ["Geral", "Seguidores", "Seguindo", "Bloqueados"];
 
 export default function Chat1({ navigation }) {
+  const conversas = useConversas();
   const [filtro, setFiltro] = useState("Geral");
   const [, atualizar] = useState(0);
 
@@ -353,7 +399,7 @@ export default function Chat1({ navigation }) {
     [navigation],
   );
 
-  const lista = CONVERSAS.filter((c) =>
+  const lista = conversas.filter((c) =>
     filtro === "Geral"
       ? !c.grupos.includes("bloqueados")
       : c.grupos.includes(filtro.toLowerCase()),
@@ -361,12 +407,17 @@ export default function Chat1({ navigation }) {
 
   const previa = (c) => {
     const u = c.mensagens[c.mensagens.length - 1];
+    if (!u) return "Nenhuma mensagem ainda";
     return (u.autor === "eu" ? "Você: " : "") + u.texto;
   };
 
   return (
     <SafeAreaView style={styles.tela} edges={["top"]}>
+      <Pressable accessibilityRole="button" onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate("Home")}>
+        <Text style={{ marginHorizontal: 16, marginTop: 8 }}>‹ Voltar</Text>
+      </Pressable>
       <Text style={styles.titulo}>Conversas</Text>
+      <Text style={{ marginHorizontal: 16, marginBottom: 8 }}>Conversas de demonstração</Text>
 
       <View>
         <ScrollView
@@ -394,6 +445,7 @@ export default function Chat1({ navigation }) {
       </View>
 
       <FlatList
+        style={styles.lista}
         data={lista}
         keyExtractor={(c) => c.id}
         contentContainerStyle={{ paddingTop: 8, paddingBottom: 24 }}
@@ -440,12 +492,14 @@ export default function Chat1({ navigation }) {
           </Pressable>
         )}
       />
+      <BottomBar ativa="chat" />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: "#fff" },
+  lista: { flex: 1 },
   titulo: {
     fontSize: 26,
     fontWeight: "700",

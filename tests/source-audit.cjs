@@ -1,0 +1,6 @@
+const fs=require('fs'),path=require('path'),assert=require('assert');
+const base=path.resolve(__dirname,'../iBuild');const parser=require(base+'/node_modules/@babel/parser'),traverse=require(base+'/node_modules/@babel/traverse').default;
+const files=[];for(const d of ['', 'screens','src','componentes'])for(const n of fs.readdirSync(path.join(base,d)))if(n.endsWith('.js'))files.push(path.join(base,d,n));
+const globals=new Set(['console','process','require','module','alert','setTimeout','clearTimeout','fetch','AbortController','URL','window','document','navigator','__DEV__','React']);let warnings=[];
+for(const file of files){const source=fs.readFileSync(file,'utf8');assert(!/^(<<<<<<<|=======|>>>>>>>)/m.test(source),file+' conflict');const ast=parser.parse(source,{sourceType:'unambiguous',plugins:['jsx']});traverse(ast,{ReferencedIdentifier(p){const n=p.node.name;if(!p.scope.hasBinding(n)&&!globals.has(n))warnings.push(path.relative(base,file)+': '+n);},CallExpression(p){if(p.node.callee.name==='require'&&p.node.arguments[0]?.type==='StringLiteral'){const v=p.node.arguments[0].value;if(v.startsWith('.'))assert(fs.existsSync(path.resolve(path.dirname(file),v)),file+' missing '+v);}}});}
+console.log('Parsed '+files.length+' files; all required assets resolve.');if(warnings.length){console.log([...new Set(warnings)].join('\n'));process.exitCode=1}
