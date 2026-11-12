@@ -1,34 +1,29 @@
 import { useCallback, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { useAppNavigation, obras as obrasExemplo, calcularProgresso } from '../src/Functions';
+import { obras as obrasExemplo, calcularProgresso } from '../src/Functions';
 import { api, useUsuario, MOSTRAR_EXEMPLOS } from '../src/api';
 import { useAreaSegura } from '../src/responsivo';
+import BarraInferior from '../src/BarraInferior';
 
 export default function Gerenciar() {
   const areaSegura = useAreaSegura();
   const navigation = useNavigation();
-  const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
   const { usuario } = useUsuario();
 
   const [textoBusca, setTextoBusca] = useState('');
   const [obrasDb, setObrasDb] = useState([]);
-  const [obrasEquipe, setObrasEquipe] = useState([]);
 
   const carregarObras = useCallback(() => {
     if (!usuario) return;
     api.obras(usuario.idUsuario)
       .then((l) => setObrasDb(l || []))
       .catch((e) => console.log(e.message));
-    api.obrasParticipando(usuario.idUsuario)
-      .then((l) => setObrasEquipe(l || []))
-      .catch((e) => console.log(e.message));
   }, [usuario]);
   useFocusEffect(carregarObras);
 
   // obras do banco + as de exemplo que já existiam
-  const idsProprias = new Set(obrasDb.map((o) => String(o.id)));
-  const obras = [...obrasDb, ...obrasEquipe.filter((o) => !idsProprias.has(String(o.id))), ...(MOSTRAR_EXEMPLOS ? (obrasExemplo || []) : [])];
+  const obras = [...obrasDb, ...(MOSTRAR_EXEMPLOS ? (obrasExemplo || []) : [])];
 
   const totalObras = obras.length;
   const obrasAndamento = obras.filter((obra) => obra.status === 'andamento').length;
@@ -97,7 +92,7 @@ export default function Gerenciar() {
           <Text style={styles.verDetalhesTexto}>+ Nova obra</Text>
         </TouchableOpacity>
 
-        {obrasDb.length === 0 && obrasEquipe.length === 0 && usuario && (
+        {obrasDb.length === 0 && usuario && (
           <TouchableOpacity style={styles.verDetalhesBotao} onPress={criarObrasExemplo}>
             <Text style={styles.verDetalhesTexto}>Criar obras de exemplo no banco</Text>
           </TouchableOpacity>
@@ -114,7 +109,6 @@ export default function Gerenciar() {
               <View style={{ marginLeft: '10%', width: '60%' }}>
                 <Text style={styles.obraNome}>{obra.nome}</Text>
                 <Text style={styles.obraSub}>{obra.construtora}</Text>
-                {obra.idProprietario && String(obra.idProprietario) !== String(usuario?.idUsuario) && <Text style={{ color: '#277D2C', fontSize: 11, marginTop: 3 }}>Obra compartilhada com você</Text>}
                 <View style={styles.progressoBarraFundo}>
                   <View
                     style={[
@@ -137,31 +131,7 @@ export default function Gerenciar() {
       </ScrollView>
 
       {/* BOTTOM TAB BAR */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerItem} onPress={home}>
-          <Image style={styles.footerIcone} source={require('../assets/Home.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
-          <Image style={styles.footerIcone1} source={require('../assets/gerenciar.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={mapa}>
-          <Image style={styles.footerIcone} source={require('../assets/Bussola.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={contratar}>
-          <Image style={styles.footerIcone} source={require('../assets/Trabalho.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={chat}>
-          <Image style={styles.footerIcone} source={require('../assets/Chat.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={perfil}>
-          <Image style={styles.footerIcone} source={require('../assets/Perfil.png')}/>
-        </TouchableOpacity>
-      </View>
+      <BarraInferior ativo="gerenciar" />
     </View>
   );
 }
@@ -273,30 +243,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 13,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 60,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-  },
-  footerItem: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 42,
-    width: 72,
-  },
-  footerIcone: {
-    height: 23,
-    width: 23,
-    tintColor: '#9C9C9C',
-  },
-  footerIcone1: {
-    height: 23,
-    width: 23,
-    tintColor: '#277D2C',
   },
 });

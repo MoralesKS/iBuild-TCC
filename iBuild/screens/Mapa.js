@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Text, View, TextInput, TouchableOpacity, Image, Linking, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text, View, TextInput, TouchableOpacity, Linking, ActivityIndicator, StyleSheet } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useFocusEffect } from '@react-navigation/native';
-import { useAppNavigation, lojas as lojasExemplo, abrirNoGoogleMaps } from '../src/Functions';
+import { lojas as lojasExemplo, abrirNoGoogleMaps } from '../src/Functions';
 import { api, distanciaKm, MOSTRAR_EXEMPLOS } from '../src/api';
 import FotoProduto from '../src/FotoProduto';
 import { useAreaSegura } from '../src/responsivo';
+import BarraInferior from '../src/BarraInferior';
 
 export default function Mapa() {
   const areaSegura = useAreaSegura();
-  const { home, contratar, gerenciar, carrinho, perfil, chat } = useAppNavigation();
   const [carregando, setCarregando] = useState(true);
   const [permissaoNegada, setPermissaoNegada] = useState(false);
   const [erroLocalizacao, setErroLocalizacao] = useState(false);
@@ -190,31 +190,7 @@ export default function Mapa() {
       )}
 
       {/* BOTTOM TAB BAR */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerItem} onPress={home}>
-          <Image style={styles.footerIcone} source={require('../assets/Home.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
-          <Image style={styles.footerIcone} source={require('../assets/gerenciar.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem}>
-          <Image style={styles.footerIcone1} source={require('../assets/Bussola.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={contratar}>
-          <Image style={styles.footerIcone} source={require('../assets/Trabalho.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={chat}>
-          <Image style={styles.footerIcone} source={require('../assets/Chat.png')}/>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem} onPress={perfil}>
-          <Image style={styles.footerIcone} source={require('../assets/Perfil.png')}/>
-        </TouchableOpacity>
-      </View>
+      <BarraInferior ativo="mapa" />
     </View>
   );
 }
@@ -352,30 +328,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 12,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 60,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-  },
-  footerItem: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 42,
-    width: 72,
-  },
-  footerIcone: {
-    height: 23,
-    width: 23,
-    tintColor: '#9C9C9C',
-  },
-  footerIcone1: {
-    height: 23,
-    width: 23,
-    tintColor: '#277D2C',
   },
 });

@@ -5,11 +5,12 @@ import FotoProduto from '../src/FotoProduto';
 import { useAppNavigation, categorias, produtos as produtosExemplo } from '../src/Functions';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { useAreaSegura } from '../src/responsivo';
+import BarraInferior from '../src/BarraInferior';
 
 export default function Home() {
   const areaSegura = useAreaSegura();
   const navigation = useNavigation();
-  const { mapa, contratar, gerenciar, perfil, chat, carrinho } = useAppNavigation();
+  const { carrinho } = useAppNavigation();
 
   // null = nenhuma categoria selecionada (mostra todos os produtos)
   const [categoriaSelecionada, setCategoriaSelecionada] = useState(null);
@@ -48,7 +49,7 @@ export default function Home() {
   });
 
   return (
-    <View style={[styles.container, areaSegura, areaSegura]}>
+    <View style={[styles.container, areaSegura]}>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
@@ -73,32 +74,6 @@ export default function Home() {
               style={styles.botaoHeader}
               source={require('../assets/icones/notificacao-1.png')}
             />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.acoesRapidasRow}>
-          <TouchableOpacity style={styles.acaoRapida} onPress={() => navigation.navigate('Perfil')}>
-            <Image
-              style={styles.botaoAcaoRapida}
-              source={require('../assets/icones/favorito.png')}
-            />
-            <Text style={styles.acaoRapidaTexto}>Favoritos</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.acaoRapida}>
-            <Image
-              style={styles.botaoAcaoRapida}
-              source={require('../assets/icones/historico.png')}
-            />
-            <Text style={styles.acaoRapidaTexto}>Histórico</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.acaoRapida}>
-            <Image
-              style={styles.botaoAcaoRapida}
-              source={require('../assets/icones/verificados.png')}
-            />
-            <Text style={styles.acaoRapidaTexto}>Verificados</Text>
           </TouchableOpacity>
         </View>
 
@@ -180,64 +155,7 @@ export default function Home() {
       </ScrollView>
 
       {/* BOTTOM TAB BAR */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerItem}>
-          <Image
-            style={styles.footerIcone1}
-            source={require('../assets/Home.png')}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.footerItem}
-          onPress={gerenciar}
-        >
-          <Image
-            style={styles.footerIcone}
-            source={require('../assets/gerenciar.png')}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.footerItem}
-          onPress={mapa}
-        >
-          <Image
-            style={styles.footerIcone}
-            source={require('../assets/Bussola.png')}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.footerItem}
-          onPress={contratar}
-        >
-          <Image
-            style={styles.footerIcone}
-            source={require('../assets/Trabalho.png')}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.footerItem}
-          onPress={chat}
-        >
-          <Image
-            style={styles.footerIcone}
-            source={require('../assets/Chat.png')}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.footerItem}
-          onPress={perfil}
-        >
-          <Image
-            style={styles.footerIcone}
-            source={require('../assets/Perfil.png')}
-          />
-        </TouchableOpacity>
-      </View>
+      <BarraInferior ativo="home" />
 
     </View>
   );
@@ -267,30 +185,6 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     marginTop: 10,
-  },
-  acoesRapidasRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16,
-  },
-  acaoRapida: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    width: '31%',
-    height: 32,
-    borderColor: 'gray',
-    borderRadius: 8,
-    justifyContent: 'center',
-  },
-  botaoAcaoRapida: {
-    width: 18,
-    height: 18,
-  },
-  acaoRapidaTexto: {
-    fontSize: 13,
-    color: '#000000',
-    marginLeft: 4,
   },
   banner: {
     backgroundColor: '#F57C00',
@@ -366,31 +260,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#000000',
     marginTop: 2,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 60,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-  },
-  footerItem: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 42,
-    width: 72,
-  },
-  footerIcone: {
-    height: 23,
-    width: 23,
-    tintColor: '#9C9C9C',
-  },
-  footerIcone1: {
-    height: 23,
-    width: 23,
-    tintColor: '#277D2C',
   },
   categoriaItemAtiva: {
     borderBottomWidth: 2,

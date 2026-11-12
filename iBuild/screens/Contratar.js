@@ -1,14 +1,14 @@
 import { useCallback, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { useAppNavigation, profissionais as profissionaisExemplo, categoriasProfissionais } from '../src/Functions';
+import { profissionais as profissionaisExemplo, categoriasProfissionais } from '../src/Functions';
 import { api, MOSTRAR_EXEMPLOS } from '../src/api';
 import { useAreaSegura } from '../src/responsivo';
+import BarraInferior from '../src/BarraInferior';
 
 export default function Contratar() {
   const areaSegura = useAreaSegura();
   const navigation = useNavigation();
-  const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
 
   const [categoriaAtiva, setCategoriaAtiva] = useState(null);
   const [textoBusca, setTextoBusca] = useState('');
@@ -97,31 +97,7 @@ export default function Contratar() {
       </ScrollView>
  
       {/* BOTTOM TAB BAR */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerItem} onPress={home}>
-          <Image style={styles.footerIcone} source={require('../assets/Home.png')}/>
-        </TouchableOpacity>
- 
-        <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
-          <Image style={styles.footerIcone} source={require('../assets/gerenciar.png')}/>
-        </TouchableOpacity>
- 
-        <TouchableOpacity style={styles.footerItem} onPress={mapa}>
-          <Image style={styles.footerIcone} source={require('../assets/Bussola.png')}/>
-        </TouchableOpacity>
- 
-        <TouchableOpacity style={styles.footerItem} onPress={contratar}>
-          <Image style={styles.footerIcone1} source={require('../assets/Trabalho.png')}/>
-        </TouchableOpacity>
- 
-        <TouchableOpacity style={styles.footerItem} onPress={chat}>
-          <Image style={styles.footerIcone} source={require('../assets/Chat.png')}/>
-        </TouchableOpacity>
- 
-        <TouchableOpacity style={styles.footerItem} onPress={perfil}>
-          <Image style={styles.footerIcone} source={require('../assets/Perfil.png')}/>
-        </TouchableOpacity>
-      </View>
+      <BarraInferior ativo="contratar" />
     </View>
   );
 }
@@ -206,30 +182,5 @@ const styles = StyleSheet.create({
     color: '#F57C00',
     fontSize: 12,
     fontWeight: 'bold',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 60,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-  },
-  footerItem: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 42,
-    width: 72,
-  },
-  footerIcone: {
-    height: 23,
-    width: 23,
-    tintColor: '#9C9C9C',
-  },
-  footerIcone1: {
-    height: 23,
-    width: 23,
-    tintColor: '#277D2C',
   },
 });

@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import BarraInferior from "../src/BarraInferior";
 
 /* ================================================================== */
 /* DADOS: edite aqui as conversas, mensagens e respostas do bot        */
@@ -391,7 +392,7 @@ export default function Chat1({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.tela} edges={["top"]}>
+    <SafeAreaView style={styles.tela} edges={["top", "bottom"]}>
       <Text style={styles.titulo}>Conversas</Text>
 
       <View>
@@ -466,6 +467,7 @@ export default function Chat1({ navigation }) {
           </Pressable>
         )}
       />
+      <BarraInferior ativo="chat" />
     </SafeAreaView>
   );
 }

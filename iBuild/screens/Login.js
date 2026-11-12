@@ -177,38 +177,6 @@ export default function Login() {
 
             <View style={styles.espacamento} />
 
-            <View style={styles.divisor}>
-              <View style={styles.linha} />
-              <Text style={styles.ou}>Ou</Text>
-              <View style={styles.linha} />
-            </View>
-
-            <View style={styles.espacamento} />
-
-            <TouchableOpacity style={styles.continuar2}>
-              <Image
-                style={styles.socialIcon}
-                source={require('../assets/Google.png')}
-                resizeMode="contain"
-              />
-              <Text style={styles.socialText}>
-                Continuar com o Google
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.continuar2}>
-              <Image
-                style={styles.socialIcon}
-                source={require('../assets/Apple.png')}
-                resizeMode="contain"
-              />
-              <Text style={styles.socialText}>
-                Continuar com a Apple
-              </Text>
-            </TouchableOpacity>
-
-            <View style={styles.espacamento} />
-
             <Text style={styles.termos}>
               Ao clicar em continuar, você concorda com os nossos{' '}
               {'\n'}
@@ -358,48 +326,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  divisor: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 
-  linha: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E0E0E0',
-  },
 
-  ou: {
-    color: '#E0E0E0',
-    fontSize: 14,
-    marginHorizontal: 10,
-  },
 
-  continuar2: {
-    backgroundColor: '#EEEEEE',
-    minHeight: 44,
-    width: '100%',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-  },
 
-  socialIcon: {
-    width: 28,
-    height: 28,
-    marginRight: 8,
-  },
 
-  socialText: {
-    fontWeight: '500',
-    fontSize: 14,
-    color: '#000000',
-  },
 
   espacamento: {
     height: 20,

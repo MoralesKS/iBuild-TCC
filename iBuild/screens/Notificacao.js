@@ -1,9 +1,10 @@
 import { useCallback, useState } from 'react';
-import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
+import { Text, View, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { useAppNavigation } from '../src/Functions';
+
 import { api, useUsuario } from '../src/api';
 import { useAreaSegura } from '../src/responsivo';
+import BarraInferior from '../src/BarraInferior';
 
 const FILTROS = [
   { label: 'Todas', tipo: null },
@@ -14,7 +15,6 @@ const FILTROS = [
 
 export default function Notificacoes() {
   const areaSegura = useAreaSegura();
-  const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
   const { usuario } = useUsuario();
 
   const [lista, setLista] = useState([]);
@@ -42,7 +42,7 @@ export default function Notificacoes() {
   });
 
   return (
-    <View style={[styles.container, areaSegura, areaSegura]}>
+    <View style={[styles.container, areaSegura]}>
       <Text style={styles.titulo}>Notificações</Text>
       <Text style={styles.subtitulo}>Acompanhe compras, recibos e atualizações de obra</Text>
 
@@ -75,26 +75,7 @@ export default function Notificacoes() {
       </ScrollView>
 
       {/* BOTTOM TAB BAR */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerItem} onPress={home}>
-          <Image style={styles.footerIcone1} source={require('../assets/Home.png')}/>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={gerenciar}>
-          <Image style={styles.footerIcone} source={require('../assets/gerenciar.png')}/>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={mapa}>
-          <Image style={styles.footerIcone} source={require('../assets/Bussola.png')}/>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={contratar}>
-          <Image style={styles.footerIcone} source={require('../assets/Trabalho.png')}/>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={chat}>
-          <Image style={styles.footerIcone} source={require('../assets/Chat.png')}/>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem} onPress={perfil}>
-          <Image style={styles.footerIcone} source={require('../assets/Perfil.png')}/>
-        </TouchableOpacity>
-      </View>
+      <BarraInferior ativo="home" />
     </View>
   );
 }
@@ -159,30 +140,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#828282',
     marginTop: 2,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 60,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-  },
-  footerItem: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 42,
-    width: 72,
-  },
-  footerIcone: {
-    height: 23,
-    width: 23,
-    tintColor: '#9C9C9C',
-  },
-  footerIcone1: {
-    height: 23,
-    width: 23,
-    tintColor: '#277D2C',
   },
 });
