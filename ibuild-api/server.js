@@ -854,5 +854,14 @@ if (require.main === module) {
   pool.query('SELECT firebase_uid, versao_documentos, foto_loja FROM usuarios LIMIT 0')
     .then(() => pool.query('SELECT localizacao, contato FROM anuncios LIMIT 0'))
     .then(() => console.log('MySQL conectado; colunas principais verificadas.'))
-    .catch(e => console.error('Banco indisponível ou desatualizado. Confira .env e sql/01-inicializar.sql ou sql/02-migrar-existente.sql:', e.message));
+    .catch(e => {
+      console.error('Falha na checagem do MySQL:', {
+        codigo: e.code,
+        mensagem: e.message,
+        detalhes: e.errors?.map(item => ({
+          codigo: item.code,
+          mensagem: item.message,
+        })),
+      });
+    });
 }
