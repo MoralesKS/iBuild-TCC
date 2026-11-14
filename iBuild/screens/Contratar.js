@@ -1,13 +1,17 @@
+import Avatar from '../componentes/Avatar';
 import BottomBar from '../componentes/BottomBar';
 import { useCallback, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { useAppNavigation, profissionais as profissionaisExemplo, categoriasProfissionais } from '../src/Functions';
-import { api, MOSTRAR_EXEMPLOS } from '../src/api';
+import { useAppNavigation, categoriasProfissionais } from '../src/Functions';
+import { api } from '../src/api';
 import { useAreaSegura } from '../src/responsivo';
 
 export default function Contratar() {
   const areaSegura = useAreaSegura();
+  const [erroLista, setErroLista] = useState('');
+  const [carregandoLista, setCarregandoLista] = useState(true);
+  const [tentativa, setTentativa] = useState(0);
   const navigation = useNavigation();
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
 
@@ -15,16 +19,17 @@ export default function Contratar() {
   const [textoBusca, setTextoBusca] = useState('');
   const [profissionaisDb, setProfissionaisDb] = useState([]);
 
-  useFocusEffect(
-    useCallback(() => {
-      api.profissionais()
-        .then((l) => setProfissionaisDb(l || []))
-        .catch((e) => console.log(e.message));
-    }, [])
-  );
+  useFocusEffect(useCallback(() => {
+    let ativo = true;
+    setErroLista(''); setCarregandoLista(true);
+    api.profissionais().then(l => { if (ativo) setProfissionaisDb(l || []); })
+      .catch(e => { if (ativo) { setProfissionaisDb([]); setErroLista(e.message); } })
+      .finally(() => { if (ativo) setCarregandoLista(false); });
+    return () => { ativo = false; };
+  }, [tentativa]));
 
-  // autônomos do banco + os de exemplo que já existiam
-  const profissionais = [...profissionaisDb, ...(MOSTRAR_EXEMPLOS ? (profissionaisExemplo || []) : [])];
+  // Profissionais retornados pela API.
+  const profissionais = profissionaisDb;
 
   const profissionaisFiltrados = profissionais.filter((profissional) => {
     const passaCategoria = categoriaAtiva === null || profissional.categoria === categoriaAtiva;
@@ -36,13 +41,9 @@ export default function Contratar() {
     return passaCategoria && passaBusca;
   });
 
-  // Abre o perfil do autônomo (do banco ou de exemplo)
+  // Abre o perfil público pelo ID do usuário.
   function abrirPerfil(profissional) {
-    if (profissional.idUsuario) {
-      navigation.navigate('PerfilAutonomo', { usuarioId: profissional.idUsuario });
-    } else {
-      navigation.navigate('PerfilAutonomo', { profissional });
-    }
+    navigation.push('PerfilAutonomo', { usuarioId: profissional.idUsuario });
   }
 
   return (
@@ -58,6 +59,9 @@ export default function Contratar() {
         onChangeText={setTextoBusca}
       />
 
+
+      {carregandoLista && <Text>Carregando…</Text>}
+      {!!erroLista && <View><Text>{erroLista}</Text><TouchableOpacity onPress={() => setTentativa(t => t + 1)}><Text>Tentar novamente</Text></TouchableOpacity></View>}
       <ScrollView style={{ paddingHorizontal: 16 }}>
         <View style={styles.linhaFiltros}>
           {categoriasProfissionais.map((item) => (
@@ -79,7 +83,7 @@ export default function Contratar() {
               activeOpacity={0.7}
               onPress={() => abrirPerfil(profissional)}
             >
-              <Image style={styles.avatar} source={profissional.imagem} />
+              <Avatar style={styles.avatar} source={profissional.imagem} />
               <View style={styles.cardInfo}>
                 <Text style={styles.nome}>{profissional.nome}</Text>
                 <Text style={styles.profissao}>

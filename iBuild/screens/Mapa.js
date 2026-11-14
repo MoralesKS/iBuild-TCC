@@ -3,14 +3,18 @@ import { useCallback, useEffect, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, Image, Linking, ActivityIndicator, StyleSheet } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { useFocusEffect } from '@react-navigation/native';
-import { useAppNavigation, lojas as lojasExemplo, abrirNoGoogleMaps } from '../src/Functions';
-import { api, distanciaKm, MOSTRAR_EXEMPLOS } from '../src/api';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useAppNavigation, abrirNoGoogleMaps } from '../src/Functions';
+import { api, distanciaKm } from '../src/api';
 import FotoProduto from '../src/FotoProduto';
 import { useAreaSegura } from '../src/responsivo';
 
 export default function Mapa() {
+  const navigation = useNavigation();
   const areaSegura = useAreaSegura();
+  const [erroLista, setErroLista] = useState('');
+  const [carregandoLista, setCarregandoLista] = useState(true);
+  const [tentativa, setTentativa] = useState(0);
   const { home, contratar, gerenciar, carrinho, perfil, chat } = useAppNavigation();
   const [carregando, setCarregando] = useState(true);
   const [permissaoNegada, setPermissaoNegada] = useState(false);
@@ -21,27 +25,25 @@ export default function Mapa() {
   });
   const [textoBusca, setTextoBusca] = useState('');
   const [lojasDb, setLojasDb] = useState([]);
-  const [lojaSelecionada, setLojaSelecionada] = useState(
-    MOSTRAR_EXEMPLOS && lojasExemplo ? lojasExemplo[5] || null : null
-  );
+  const [lojaSelecionada, setLojaSelecionada] = useState(null);
 
-  useFocusEffect(
-    useCallback(() => {
-      api.lojas()
-        .then((l) => setLojasDb(l || []))
-        .catch((e) => console.log(e.message));
-    }, [])
-  );
+  useFocusEffect(useCallback(() => {
+    let ativo = true;
+    setErroLista(''); setCarregandoLista(true);
+    api.lojas().then(l => { if (ativo) setLojasDb(l || []); })
+      .catch(e => { if (ativo) { setLojasDb([]); setErroLista(e.message); } })
+      .finally(() => { if (ativo) setCarregandoLista(false); });
+    return () => { ativo = false; };
+  }, [tentativa]));
 
   // Depois de editar o card da loja, atualiza o card que já estava aberto
   useEffect(() => {
-    setLojaSelecionada((sel) => (sel ? lojasDb.find((l) => l.id === sel.id) || sel : sel));
+    setLojaSelecionada((sel) => (sel ? lojasDb.map(l=>({...l,distancia:distanciaKm(minhaLocalizacao,l).toFixed(1)})).find((l) => l.id === sel.id) || null : sel));
   }, [lojasDb]);
 
-  // lojas do banco (com distância calculada) + as de exemplo que já existiam
+  // Lojas reais com distância calculada.
   const lojas = [
     ...lojasDb.map((l) => ({ ...l, distancia: distanciaKm(minhaLocalizacao, l).toFixed(1) })),
-    ...(MOSTRAR_EXEMPLOS ? (lojasExemplo || []) : []),
   ];
 
   const lojasFiltradas = lojas.filter((loja) => {
@@ -121,6 +123,10 @@ export default function Mapa() {
         </Text>
       )}
 
+
+      {carregandoLista && <Text>Carregando…</Text>}
+      {!!erroLista && <View><Text>{erroLista}</Text><TouchableOpacity onPress={() => setTentativa(t => t + 1)}><Text>Tentar novamente</Text></TouchableOpacity></View>}
+      {!carregandoLista && !erroLista && lojasFiltradas.length === 0 && <Text>Nenhuma loja encontrada.</Text>}
       {/* FILTRAR / CLASSIFICAR */}
       <View style={styles.filtrosRow}>
         <TouchableOpacity style={styles.filtroBotao}>
@@ -167,6 +173,7 @@ export default function Mapa() {
       {/* CARD DA LOJA SELECIONADA */}
       {lojaSelecionada && (
         <View style={styles.lojaCard}>
+          <TouchableOpacity style={styles.selecionarBotao} onPress={() => navigation.push('PerfilAutonomo', { usuarioId: lojaSelecionada.idUsuario })}><Text style={styles.selecionarTexto}>Ver perfil da loja</Text></TouchableOpacity>
           <FotoProduto style={styles.lojaImagem} source={lojaSelecionada.imagem} />
           <View style={styles.lojaInfoRow}>
             <View style={styles.lojaInfo}>

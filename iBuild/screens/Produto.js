@@ -1,7 +1,9 @@
+import Avaliacao from '../componentes/Avaliacao';
+import { voltar } from '../src/navegacao';
 import { useEffect, useState } from 'react';
 import { Text, View, TouchableOpacity, ScrollView, FlatList, Image, Linking, StyleSheet, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useAppNavigation, produtos } from '../src/Functions';
+import { useAppNavigation } from '../src/Functions';
 import { useCarrinho } from '../src/CarrinhoItens';
 import { api, useUsuario } from '../src/api';
 import { useLayout } from '../src/responsivo';
@@ -23,26 +25,30 @@ export default function Produto() {
 
   // O produto selecionado pela navegação é a fonte da verdade.
   const produtoRecebido = route.params?.produto;
-  const [produto, setProduto] = useState(produtoRecebido || produtos[0]);
+  const [produto, setProduto] = useState(produtoRecebido || null);
+  const [erroProduto, setErroProduto] = useState('');
+  const [tentativa,setTentativa] = useState(0);
   const [fotoIndex, setFotoIndex] = useState(0);
   const [favorito, setFavorito] = useState(false);
 
   useEffect(() => {
     let ativo = true;
     if (produtoRecebido) {
+      setErroProduto('');
       setProduto(produtoRecebido);
       setFotoIndex(0);
       if (produtoRecebido.idAnuncio) {
         api.produto(produtoRecebido.idAnuncio)
           .then((atualizado) => { if (ativo) setProduto(atualizado); })
-          .catch((e) => console.log(e.message));
+          .catch((e) => { if (ativo) {setProduto(null);setErroProduto(e.message);} });
       }
     }
     return () => { ativo = false; };
-  }, [produtoRecebido?.id, produtoRecebido?.idAnuncio]);
+  }, [produtoRecebido?.id, produtoRecebido?.idAnuncio, tentativa]);
 
   useEffect(() => {
     let ativo = true;
+    if (!produto) return;
     verificarFavorito(usuario?.idUsuario, produto).then((valor) => { if (ativo) setFavorito(valor); });
     return () => { ativo = false; };
   }, [usuario?.idUsuario, produto?.id]);
@@ -52,6 +58,7 @@ export default function Produto() {
     setFavorito(novoValor);
   }
 
+  if (!produto) return <View style={[styles.container,areaSegura]}><Text>{erroProduto || 'Produto indisponível.'}</Text><TouchableOpacity onPress={()=>setTentativa(t=>t+1)}><Text>Tentar novamente</Text></TouchableOpacity><TouchableOpacity onPress={()=>voltar(navigation)}><Text>Voltar</Text></TouchableOpacity></View>;
   // Só quem publicou o anúncio vê o botão de editar
   const ehDono = !!usuario && !!produto.idVendedor && produto.idVendedor === usuario.idUsuario;
 
@@ -88,7 +95,7 @@ export default function Produto() {
     <View style={[styles.container, areaSegura]}>
 
       {/* Cabeçalho */}
-      <TouchableOpacity onPress={home}>
+      <TouchableOpacity onPress={() => voltar(navigation)}>
         <Text style={styles.seta}>{'<'}</Text>
       </TouchableOpacity>
 
@@ -148,7 +155,8 @@ export default function Produto() {
         </Text>
 
         {/* Vendedor */}
-        <TouchableOpacity style={styles.vendedorCard} onPress={() => navigation.navigate('PerfilAutonomo', produto.idVendedor ? { usuarioId: produto.idVendedor } : { profissional: { nome: produto.vendedor, categoria: 'Vendedor de exemplo', cidade: produto.local } })}>
+        <Avaliacao tipo="produto" id={produto.idAnuncio} dono={produto.idVendedor} onAtualizar={r=>setProduto(p=>({...p,avaliacao:r.media,numAvaliacoes:r.quantidade}))} />
+        <TouchableOpacity style={styles.vendedorCard} onPress={() => navigation.push('PerfilAutonomo', { usuarioId: produto.idVendedor })}>
           <View style={[styles.vendedorIcone, {justifyContent: 'center', alignItems: 'center'}]}>
             <Image style={{height: 25, width: 25, tintColor: '#000000'}} source={require('../assets/empresas.png')}/>
           </View>

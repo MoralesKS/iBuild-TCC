@@ -1,14 +1,17 @@
 import BottomBar from '../componentes/BottomBar';
 import { useCallback, useState } from 'react';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { api, MOSTRAR_EXEMPLOS } from '../src/api';
+import { api } from '../src/api';
 import FotoProduto from '../src/FotoProduto';
-import { useAppNavigation, categorias, produtos as produtosExemplo } from '../src/Functions';
+import { useAppNavigation, categorias } from '../src/Functions';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { useAreaSegura } from '../src/responsivo';
 
 export default function Home() {
   const areaSegura = useAreaSegura();
+  const [erroLista, setErroLista] = useState('');
+  const [carregandoLista, setCarregandoLista] = useState(true);
+  const [tentativa, setTentativa] = useState(0);
   const navigation = useNavigation();
   const { mapa, contratar, gerenciar, perfil, chat, carrinho } = useAppNavigation();
 
@@ -18,9 +21,14 @@ export default function Home() {
 
   const [produtosDb, setProdutosDb] = useState([]);
   useFocusEffect(useCallback(() => {
-  api.produtos().then(setProdutosDb).catch((e) => console.log(e.message));
-  }, []));
-  const produtos = [...produtosDb, ...(MOSTRAR_EXEMPLOS ? produtosExemplo : [])];
+    let ativo = true;
+    setErroLista(''); setCarregandoLista(true);
+    api.produtos().then(l => { if (ativo) setProdutosDb(l || []); })
+      .catch(e => { if (ativo) { setProdutosDb([]); setErroLista(e.message); } })
+      .finally(() => { if (ativo) setCarregandoLista(false); });
+    return () => { ativo = false; };
+  }, [tentativa]));
+  const produtos = produtosDb;
 
   function abrirProduto(produto) {
     navigation.navigate('Produto', { produto });
@@ -51,6 +59,9 @@ export default function Home() {
   return (
     <View style={[styles.container, areaSegura]}>
 
+
+      {carregandoLista && <Text>Carregando…</Text>}
+      {!!erroLista && <View><Text>{erroLista}</Text><TouchableOpacity onPress={() => setTentativa(t => t + 1)}><Text>Tentar novamente</Text></TouchableOpacity></View>}
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
         <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>

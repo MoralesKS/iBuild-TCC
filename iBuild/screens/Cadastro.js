@@ -1,3 +1,5 @@
+import Logo from '../componentes/Logo';
+import { voltar as voltarTela } from '../src/navegacao';
 import {
   StyleSheet,
   Text,
@@ -32,7 +34,7 @@ export default function Cadastro() {
   }
 
   function login() {
-    navigation.navigate('Login');
+    voltarTela(navigation, 'Login');
   }
 
   return (
@@ -47,15 +49,7 @@ export default function Cadastro() {
       >
         <View style={[styles.container, { width: contentWidth + 32 }]}>
           <View style={styles.logoView}>
-            <Image
-              source={require('../assets/IBuild.jpg')}
-              style={{
-                width: logoWidth,
-                height: logoHeight,
-                borderRadius: 8,
-              }}
-              resizeMode="contain"
-            />
+            <Logo />
           </View>
 
           <View style={[styles.textView, { width: contentWidth }]}>
@@ -186,12 +180,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
 
-  logoView: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
+  logoView: { alignItems: 'center', justifyContent: 'center', width: '100%', marginVertical: 16 },
 
   textView: {
     alignItems: 'center',

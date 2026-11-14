@@ -1,3 +1,4 @@
+import { voltar as voltarTela } from '../src/navegacao';
 import { useEffect, useState } from 'react';
 import {
   Text, View, TextInput, TouchableOpacity, ScrollView,
@@ -183,7 +184,7 @@ export default function Configuracoes() {
     return (
       <View style={[styles.container, areaSegura]}>
         <Text style={styles.titulo}>Configurações</Text>
-        <Text style={styles.carregando}>{erroPerfil || "Carregando perfil…"}</Text><TouchableOpacity onPress={() => navigation.goBack()}><Text>Voltar</Text></TouchableOpacity><TouchableOpacity onPress={recarregarUsuario}><Text>Tentar novamente</Text></TouchableOpacity>
+        <Text style={styles.carregando}>{erroPerfil || "Carregando perfil…"}</Text><TouchableOpacity onPress={() => voltarTela(navigation, 'Home')}><Text>Voltar</Text></TouchableOpacity><TouchableOpacity onPress={recarregarUsuario}><Text>Tentar novamente</Text></TouchableOpacity>
       </View>
     );
   }
@@ -201,7 +202,7 @@ export default function Configuracoes() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={[styles.container, areaSegura]}>
-        <TouchableOpacity onPress={perfil}>
+        <TouchableOpacity onPress={() => voltarTela(navigation, 'Perfil')}>
           <Text style={styles.seta}>{'<'}</Text>
         </TouchableOpacity>
         <Text style={styles.titulo}>Configurações</Text>

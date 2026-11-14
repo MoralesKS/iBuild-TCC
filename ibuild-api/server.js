@@ -9,6 +9,8 @@ const firebaseAuth = getAuth(initializeApp({
   projectId: process.env.FIREBASE_PROJECT_ID || 'configure-seu-projeto',
 }));
 
+const { createHash } = require('crypto');
+const { ETAPAS, progressoEtapas, validarPedido } = require('./lib/regras');
 const fs = require('fs');
 const path = require('path');
 
@@ -34,6 +36,7 @@ app.use((req, res, next) => { console.log(new Date().toLocaleTimeString(), req.m
 const PASTA_UPLOADS = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
 fs.mkdirSync(PASTA_UPLOADS, { recursive: true });
 app.use('/uploads', express.static(PASTA_UPLOADS));
+app.use('/demo-assets', express.static(path.join(__dirname,'demo-assets')));
 
 /* ---------- utilidades ---------- */
 const q = async (sql, params = [], conn = pool) => (await conn.query(sql, params))[0];
@@ -56,7 +59,7 @@ const notificar = (conn, idUsuario, tipo, titulo, mensagem) =>
   );
 
 // versao: o app confere se a API do PC está atualizada (sem isso, ele avisa)
-const VERSAO_API = 3;
+const VERSAO_API = 4;
 app.get('/', (req, res) => res.json({ ok: true, api: 'iBuild', versao: VERSAO_API }));
 
 /* ================================================================== */
@@ -96,7 +99,7 @@ async function carregarUsuario(campo, valor, privado = false) {
             (SELECT COALESCE(ROUND(AVG(a.nota), 1), 0) FROM avaliacoes a WHERE a.id_avaliado = u.id_usuario AND a.status = 'ativo') AS nota_media
        FROM usuarios u
        LEFT JOIN profissionais p ON p.id_usuario = u.id_usuario
-      WHERE u.${campo} = ?`,
+      WHERE u.${campo} = ? AND u.status = 'ativo'`,
     [valor]
   );
   if (!u || (campo === 'firebase_uid' && u.firebase_uid !== valor)) return null;
@@ -240,7 +243,7 @@ app.use(async (req, res, next) => {
   if (publicRead) return next();
   autenticarUsuario(req, res, async () => {
     try {
-      const [u] = await q('SELECT id_usuario FROM usuarios WHERE firebase_uid = ?', [req.conta.uid]);
+      const [u] = await q("SELECT id_usuario FROM usuarios WHERE firebase_uid = ? AND status = 'ativo'", [req.conta.uid]);
       if (!u) return res.status(403).json({ erro: 'Perfil não encontrado.' });
       req.usuarioId = u.id_usuario;
       req.body = req.body || {};
@@ -409,11 +412,13 @@ async function montarAnuncios(where, params) {
   const rows = await q(
     `SELECT a.id_anuncio, a.titulo, c.nome AS categoria, u.id_usuario AS id_vendedor,
             COALESCE(u.razao_social, u.nome) AS vendedor, u.cidade, u.telefone, a.localizacao, a.contato,
-            a.descricao, a.preco_unitario, a.unidade, a.quantidade, a.estado_material, a.disponibilidade
+            a.descricao, a.preco_unitario, a.unidade, a.quantidade, a.estado_material, a.disponibilidade,
+            (SELECT COALESCE(ROUND(AVG(av.nota),1),0) FROM avaliacoes av WHERE av.id_anuncio=a.id_anuncio AND av.status='ativo') AS avaliacao,
+            (SELECT COUNT(*) FROM avaliacoes av WHERE av.id_anuncio=a.id_anuncio AND av.status='ativo') AS num_avaliacoes
        FROM anuncios a
        JOIN categorias_materiais c ON c.id_categoria = a.id_categoria
        JOIN usuarios u ON u.id_usuario = a.id_vendedor
-      WHERE ${where}
+      WHERE (${where}) AND u.status='ativo'
       ORDER BY a.data_publicacao DESC, a.id_anuncio DESC`,
     params
   );
@@ -429,7 +434,7 @@ async function montarAnuncios(where, params) {
       id: r.id_anuncio, nome: r.titulo, tipo: r.categoria, idVendedor: r.id_vendedor, vendedor: r.vendedor,
       localizacao: r.localizacao || r.cidade || '', contato: r.contato || r.telefone || '',
       descricao: r.descricao || '', preco: r.preco_unitario, unidade: r.unidade, quantidade: r.quantidade,
-      estado: r.estado_material, disponibilidade: r.disponibilidade,
+      estado: r.estado_material, disponibilidade: r.disponibilidade, avaliacao: r.avaliacao, numAvaliacoes: r.num_avaliacoes,
       capa: capa ? { id: capa.id_foto, url: capa.url_foto } : null,
       fotos: f.filter((x) => !x.principal).map((x) => ({ id: x.id_foto, url: x.url_foto })),
     };
@@ -570,7 +575,87 @@ app.delete('/anuncios/:id', h(async (req, res) => {
 /* ================================================================== */
 /* PEDIDOS (Carrinho -> "Fazer pedido")                                */
 /* ================================================================== */
-app.post('/pedidos', (req, res) => res.status(501).json({ erro: 'Checkout demonstrativo: nenhum pagamento ou pedido é registrado.' }));
+// O histórico legado de pedidos não é reclassificado como cobrança real.
+app.post('/pedidos', h(async (req, res) => {
+  let dados;
+  try { dados = validarPedido(req.body); } catch(e) { return res.status(400).json({erro:e.message}); }
+  const hash = createHash('sha256').update(JSON.stringify(dados)).digest('hex');
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    // Serializa retries do comprador e a criação das notificações na mesma transação.
+    await q('SELECT id_usuario FROM usuarios WHERE id_usuario=? FOR UPDATE', [req.usuarioId], conn);
+    const [anterior] = await q('SELECT * FROM pedidos_app WHERE id_comprador=? AND chave=?', [req.usuarioId,req.body.chave], conn);
+    if (anterior) {
+      await conn.rollback();
+      if (anterior.conteudo_hash!==hash) return res.status(409).json({erro:'A tentativa anterior tem outros itens. Consulte as notificações antes de criar outro pedido.'});
+      return res.json({id:anterior.id_pedido,total:anterior.total,status:anterior.status,repetido:true});
+    }
+    const anuncios = await q('SELECT * FROM anuncios WHERE id_anuncio IN (?) ORDER BY id_anuncio FOR UPDATE', [dados.itens.map(i=>i.id_anuncio)], conn);
+    let subtotalCentavos=0;
+    const vendedores = new Set();
+    for (const i of dados.itens) {
+      const a=anuncios.find(a=>Number(a.id_anuncio)===i.id_anuncio);
+      if (!a || a.status!=='ativo' || a.status_curadoria!=='aprovado' || (dados.recebimento==='entrega' && a.disponibilidade!=='entrega') || Number(a.quantidade)<i.quantidade || Number(a.id_vendedor)===Number(req.usuarioId)) {
+        await conn.rollback(); return res.status(409).json({erro:'Um produto está indisponível, sem estoque suficiente, não oferece entrega ou pertence a você. Revise o carrinho.'});
+      }
+      subtotalCentavos += Math.round(Number(a.preco_unitario)*100)*i.quantidade;
+      vendedores.add(Number(a.id_vendedor));
+    }
+    if (!Number.isSafeInteger(subtotalCentavos) || subtotalCentavos<=0 || subtotalCentavos>999999999999) {await conn.rollback();return res.status(400).json({erro:'Valor do pedido inválido.'});}
+    const frete=dados.recebimento==='entrega'?1290:0; // tarifa fixa de demonstração, explicitamente informada no app
+    const desconto=dados.cupom ? Math.round(subtotalCentavos*0.10) : 0;
+    const total=(subtotalCentavos+frete-desconto)/100;
+    const p=await q("INSERT INTO pedidos_app (id_comprador,chave,conteudo_hash,endereco,metodo,cupom,subtotal,frete,desconto,total,status) VALUES (?,?,?,?,?,?,?,?,?,?,'pendente_pagamento')", [req.usuarioId,req.body.chave,hash,dados.endereco,dados.metodo,dados.cupom||null,subtotalCentavos/100,frete/100,desconto/100,total],conn);
+    for(const i of dados.itens) {
+      const a=anuncios.find(a=>Number(a.id_anuncio)===i.id_anuncio);
+      await q('INSERT INTO itens_pedido_app (id_pedido,id_anuncio,id_vendedor,titulo,quantidade,preco_unitario) VALUES (?,?,?,?,?,?)',[p.insertId,a.id_anuncio,a.id_vendedor,a.titulo,i.quantidade,a.preco_unitario],conn);
+      await q('UPDATE anuncios SET quantidade=quantidade-? WHERE id_anuncio=?',[i.quantidade,i.id_anuncio],conn);
+    }
+    await notificar(conn,req.usuarioId,'compra','Pedido registrado',`Pedido #${p.insertId} • R$ ${total.toFixed(2)} • pendente de pagamento. Nenhuma cobrança realizada.`);
+    for(const vendedor of vendedores) await notificar(conn,vendedor,'compra','Novo pedido recebido',`Pedido #${p.insertId}: há produtos seus reservados. Aguardando pagamento; nenhuma cobrança realizada.`);
+    await conn.commit();
+    res.status(201).json({id:p.insertId,total,status:'pendente_pagamento'});
+  } catch(e) {await conn.rollback();throw e;} finally {conn.release();}
+}));
+app.get('/pedidos/:id', h(async(req,res)=>{
+  const [pedido]=await q('SELECT id_pedido,subtotal,frete,desconto,total,status,endereco,metodo,data_criacao FROM pedidos_app WHERE id_pedido=? AND id_comprador=?',[req.params.id,req.usuarioId]);
+  if(!pedido) return res.status(404).json({erro:'Pedido não encontrado.'});
+  pedido.itens=await q('SELECT id_anuncio,titulo,quantidade,preco_unitario FROM itens_pedido_app WHERE id_pedido=?',[req.params.id]);
+  res.json(pedido);
+}));
+
+async function alvoAvaliacao(tipo, id) {
+  if (!Number.isSafeInteger(Number(id)) || Number(id)<1) return null;
+  if (tipo==='produto') {
+    const [a]=await q("SELECT id_vendedor FROM anuncios WHERE id_anuncio=? AND status='ativo'",[id]);
+    return a ? {dono:a.id_vendedor,coluna:'id_anuncio'} : null;
+  }
+  if (tipo==='perfil') {
+    const u=await carregarUsuario('id_usuario',id);
+    return u ? {dono:u.idUsuario,coluna:'id_avaliado'} : null;
+  }
+  return null;
+}
+async function resumoAvaliacao(coluna,id,usuario) {
+  const [r]=await q(`SELECT COALESCE(ROUND(AVG(nota),1),0) media, COUNT(*) quantidade FROM avaliacoes WHERE ${coluna}=? AND status='ativo'`,[id]);
+  const [minha]=await q(`SELECT nota,comentario FROM avaliacoes WHERE ${coluna}=? AND id_avaliador=? AND status='ativo'`,[id,usuario]);
+  return {...r,minha:minha||null};
+}
+app.get('/avaliacoes/:tipo/:id',h(async(req,res)=>{
+  const alvo=await alvoAvaliacao(req.params.tipo,req.params.id);
+  if(!alvo) return res.status(404).json({erro:'Alvo não encontrado.'});
+  res.json(await resumoAvaliacao(alvo.coluna,req.params.id,req.usuarioId));
+}));
+app.put('/avaliacoes/:tipo/:id',h(async(req,res)=>{
+  const {nota,comentario=''}=req.body;
+  if(!Number.isInteger(nota)||nota<1||nota>5||typeof comentario!=='string'||comentario.length>1000) return res.status(400).json({erro:'Selecione uma nota de 1 a 5 e comentário de até 1000 caracteres.'});
+  const alvo=await alvoAvaliacao(req.params.tipo,req.params.id);
+  if(!alvo) return res.status(404).json({erro:'Alvo não encontrado.'});
+  if(Number(alvo.dono)===Number(req.usuarioId)) return res.status(403).json({erro:'Você não pode avaliar seu próprio perfil ou produto.'});
+  await q(`INSERT INTO avaliacoes (${alvo.coluna},id_avaliador,nota,comentario) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE nota=VALUES(nota),comentario=VALUES(comentario)`,[req.params.id,req.usuarioId,nota,comentario.trim()||null]);
+  res.json(await resumoAvaliacao(alvo.coluna,req.params.id,req.usuarioId));
+}));
 
 /* ================================================================== */
 /* LOJAS (Mapa) e PROFISSIONAIS (Contratar)                            */
@@ -594,7 +679,8 @@ app.get('/lojas', h(async (req, res) => {
 
 app.get('/profissionais', h(async (req, res) => {
   const rows = await q(
-    `SELECT p.id_profissional, u.id_usuario, u.nome, u.cidade, p.profissao, p.experiencia_anos, p.media_avaliacoes,
+    `SELECT p.id_profissional, u.id_usuario, u.nome, u.cidade, u.foto_perfil, p.profissao, p.experiencia_anos,
+            (SELECT COALESCE(ROUND(AVG(a.nota),1),0) FROM avaliacoes a WHERE a.id_avaliado=u.id_usuario AND a.status='ativo') AS media_avaliacoes,
             (SELECT es.nome FROM profissional_especialidade pe
                JOIN especialidades es ON es.id_especialidade = pe.id_especialidade
               WHERE pe.id_profissional = p.id_profissional LIMIT 1) AS categoria
@@ -606,7 +692,7 @@ app.get('/profissionais', h(async (req, res) => {
   res.json(rows.map((r) => ({
     id: r.id_profissional, idUsuario: r.id_usuario, nome: r.nome, categoria: r.categoria || 'Outros',
     profissao: r.profissao, avaliacao: r.media_avaliacoes, cidade: r.cidade || '—',
-    experiencia: `${r.experiencia_anos || 0} anos`,
+    experiencia: `${r.experiencia_anos || 0} anos`, foto: r.foto_perfil || null,
   })));
 }));
 
@@ -629,7 +715,7 @@ async function montarObras(where, params) {
   );
   if (!obras.length) return [];
   const ids = obras.map((o) => o.id_obra);
-  const tarefas = await q('SELECT id_tarefa, id_obra, titulo, status FROM tarefas_obra WHERE id_obra IN (?) ORDER BY id_tarefa', [ids]);
+  const tarefas = await q('SELECT id_tarefa, id_obra, titulo, status, etapa FROM tarefas_obra WHERE id_obra IN (?) ORDER BY id_tarefa', [ids]);
   const equipe = await q(
     `SELECT op.id_obra, p.id_profissional, u.id_usuario, u.nome, op.funcao
        FROM obra_profissionais op
@@ -648,12 +734,12 @@ async function montarObras(where, params) {
       entrega: fmtData(o.data_previsao_fim),
       tipo: o.tipo || '—', endereco: o.endereco_txt || '—', logradouro: o.logradouro || '', cidade: o.cidade || '',
       responsavel: o.responsavel_tecnico || '—', orcamento: o.orcamento_previsto,
-      etapas: { fundacao: o.etapa_fundacao, estrutura: o.etapa_estrutura, acabamento: o.etapa_acabamento },
+      etapas: progressoEtapas(o, t),
       equipe: {
         mestre: o.mestre_obras || '—', funcionariosAtivos: eq.length,
         horasTrabalhadas: o.horas_trabalhadas, proximaAcao: pendente ? pendente.titulo : 'Nenhuma',
       },
-      proximasAcoes: t.map((x) => ({ id: x.id_tarefa, texto: x.titulo, feito: x.status === 'concluida' })),
+      proximasAcoes: t.map((x) => ({ id: x.id_tarefa, texto: x.titulo, etapa: x.etapa, feito: x.status === 'concluida' })),
       profissionais: eq.map((x) => ({ id: x.id_profissional, idUsuario: x.id_usuario, nome: x.nome, funcao: x.funcao })),
     };
   });
@@ -711,9 +797,11 @@ app.post('/obras', h(async (req, res) => {
   if (!b.id_proprietario || !b.nome) return res.status(400).json({ erro: 'Dados incompletos' });
   const conn = await pool.getConnection();
   try {
+    await conn.beginTransaction();
     const id = await criarObra(conn, { ...b, entrega: dataBR(b.entrega) });
+    await conn.commit();
     res.status(201).json({ id });
-  } finally {
+  } catch(e) { await conn.rollback(); throw e; } finally {
     conn.release();
   }
 }));
@@ -754,51 +842,34 @@ app.delete('/obras/:id', h(async (req, res) => {
   res.json({ ok: true });
 }));
 
-// Cria 2 obras de exemplo para o usuário (para testar a tela Gerenciar)
-app.post('/obras/exemplo/:idUsuario', h(async (req, res) => {
-  const dono = req.params.idUsuario;
+// A etapa é explícita: tarefas históricas permanecem sem vínculo até revisão do dono.
+app.patch('/tarefas/:id', h(async (req, res) => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    await criarObra(conn, {
-      id_proprietario: dono, nome: 'Residencial Aurora', tipo: 'Residencial', endereco: 'Rua das Flores, 120', cidade: 'São Paulo',
-      responsavel: 'Eng. Marina Duarte', mestre: 'João Batista', horas: 320, orcamento: 450000, entrega: '2027-03-15',
-      etapas: [100, 70, 20],
-      tarefas: [['Concretar laje do 2º andar', 1], ['Instalar tubulação hidráulica', 0], ['Comprar cerâmica do piso', 0]],
-    });
-    await criarObra(conn, {
-      id_proprietario: dono, nome: 'Edifício Horizonte', tipo: 'Comercial', endereco: 'Av. Central, 800', cidade: 'São Paulo',
-      responsavel: 'Eng. Paulo Mendes', mestre: 'Carlos Lima', horas: 1200, orcamento: 1200000, entrega: '2026-09-30',
-      status: 'concluida', etapas: [100, 100, 100],
-      tarefas: [['Vistoria final', 1], ['Entrega das chaves', 1]],
-    });
+    const [t] = await q('SELECT t.*, o.id_proprietario FROM tarefas_obra t JOIN obras o ON o.id_obra=t.id_obra WHERE t.id_tarefa=? FOR UPDATE', [req.params.id], conn);
+    if (!t) { await conn.rollback(); return res.status(404).json({erro:'Tarefa não encontrada.'}); }
+    if (Number(t.id_proprietario) !== Number(req.usuarioId)) { await conn.rollback(); return res.status(403).json({erro:'Somente o responsável pode alterar tarefas.'}); }
+    const b = req.body;
+    const etapa = b.etapa === undefined ? t.etapa : b.etapa;
+    const texto = b.texto === undefined ? t.titulo : String(b.texto).trim();
+    if ((etapa !== null && !ETAPAS.includes(etapa)) || !texto || texto.length>255 || (b.feito !== undefined && typeof b.feito !== 'boolean')) {
+      await conn.rollback(); return res.status(400).json({erro:'Tarefa ou etapa inválida.'});
+    }
+    const feito = b.feito === undefined ? t.status === 'concluida' : b.feito;
+    await q('UPDATE tarefas_obra SET titulo=?, etapa=?, status=?, progresso=? WHERE id_tarefa=?', [texto, etapa, feito?'concluida':'pendente', feito?100:0, t.id_tarefa], conn);
     await conn.commit();
-  } catch (e) {
-    await conn.rollback();
-    throw e;
-  } finally {
-    conn.release();
-  }
-  res.status(201).json({ ok: true });
+    res.json({ok:true});
+  } catch(e) { await conn.rollback(); throw e; } finally {conn.release();}
 }));
-
-app.patch('/tarefas/:id', h(async (req, res) => {
-  const [tarefa] = await q('SELECT o.id_proprietario FROM tarefas_obra t JOIN obras o ON o.id_obra = t.id_obra WHERE t.id_tarefa = ?', [req.params.id]);
-  if (!tarefa) return res.status(404).json({ erro: 'Tarefa não encontrada.' });
-  if (Number(req.body.id_usuario) !== Number(tarefa.id_proprietario)) return res.status(403).json({ erro: 'Somente o responsável pela obra pode alterar tarefas.' });
-  const feito = !!req.body.feito;
-  await q('UPDATE tarefas_obra SET status = ?, progresso = ? WHERE id_tarefa = ?', [feito ? 'concluida' : 'pendente', feito ? 100 : 0, req.params.id]);
-  res.json({ ok: true });
-}));
-
 app.post('/obras/:id/tarefas', h(async (req, res) => {
-  const [obra] = await q('SELECT id_proprietario FROM obras WHERE id_obra = ?', [req.params.id]);
-  if (!obra) return res.status(404).json({ erro: 'Obra não encontrada.' });
-  if (Number(req.body.id_usuario) !== Number(obra.id_proprietario)) return res.status(403).json({ erro: 'Somente o responsável pela obra pode adicionar tarefas.' });
-  const texto = (req.body.texto || '').trim();
-  if (!texto) return res.status(400).json({ erro: 'Texto vazio' });
-  const [r] = await pool.query("INSERT INTO tarefas_obra (id_obra, titulo, status, progresso) VALUES (?,?, 'pendente', 0)", [req.params.id, texto]);
-  res.status(201).json({ id: r.insertId });
+  const [obra] = await q('SELECT id_proprietario FROM obras WHERE id_obra=?', [req.params.id]);
+  if (!obra) return res.status(404).json({erro:'Obra não encontrada.'});
+  if (Number(obra.id_proprietario)!==Number(req.usuarioId)) return res.status(403).json({erro:'Somente o responsável pode adicionar tarefas.'});
+  const texto=String(req.body.texto || '').trim();
+  if (!texto || texto.length>255 || !ETAPAS.includes(req.body.etapa)) return res.status(400).json({erro:'Informe a tarefa e sua etapa.'});
+  const r=await q("INSERT INTO tarefas_obra (id_obra,titulo,etapa,status,progresso) VALUES (?,?,?,'pendente',0)", [req.params.id,texto,req.body.etapa]);
+  res.status(201).json({id:r.insertId});
 }));
 
 // Adiciona um autônomo a uma obra

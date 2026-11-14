@@ -1,0 +1,11 @@
+{
+  "name": "ibuild-tcc",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "npm test --prefix iBuild",
+    "test:api": "npm test --prefix ibuild-api",
+    "test:sql": "node tests/schema-integration.cjs"
+  },
+  "engines": { "node": ">=22.13.0" }
+}

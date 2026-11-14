@@ -1,5 +1,6 @@
+import { voltar as voltarTela } from '../src/navegacao';
 import { useEffect, useState } from 'react';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import {
   Text, View, TextInput, TouchableOpacity, ScrollView,
   KeyboardAvoidingView, Platform, StyleSheet,
@@ -13,6 +14,7 @@ import { useAreaSegura } from '../src/responsivo';
 const TIPOS = ['Residencial', 'Comercial', 'Reforma', 'Industrial'];
 
 export default function NovaObra() {
+  const navigation = useNavigation();
   const areaSegura = useAreaSegura();
   const { gerenciar } = useAppNavigation();
   const { usuario } = useUsuario();
@@ -38,7 +40,7 @@ export default function NovaObra() {
     setTipo(obraEdicao.tipo || 'Residencial');
     setEndereco(obraEdicao.logradouro || obraEdicao.endereco || '');
     setCidade(obraEdicao.cidade || '');
-    setOrcamento(String(obraEdicao.orcamentoNumero ?? obraEdicao.orcamento ?? '').replace(/^R\$\s*/, '').replace(/\./g, '').replace(',', '.'));
+    setOrcamento(obraEdicao.orcamentoNumero != null ? String(obraEdicao.orcamentoNumero).replace('.', ',') : String(obraEdicao.orcamento || '').replace(/^R\$\s*/, ''));
     setEntrega(obraEdicao.entrega && obraEdicao.entrega !== '—' ? obraEdicao.entrega : '');
     setResponsavel(obraEdicao.responsavel === '—' ? '' : (obraEdicao.responsavel || ''));
     setMestre(obraEdicao.equipe?.mestre === '—' ? '' : (obraEdicao.equipe?.mestre || ''));
@@ -65,7 +67,9 @@ export default function NovaObra() {
     }
 
     // aceita "450000", "450.000" ou "450.000,50"
+    if (salvando) return;
     const valor = Number(orcamento.replace(/\./g, '').replace(',', '.')) || 0;
+    if (valor < 0) return alert('Informe um orçamento válido.');
 
     setSalvando(true);
     try {
@@ -89,7 +93,7 @@ export default function NovaObra() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={[styles.container, areaSegura]}>
-        <TouchableOpacity onPress={gerenciar}>
+        <TouchableOpacity onPress={() => voltarTela(navigation, 'Gerenciar')}>
           <Text style={styles.seta}>{'<'}</Text>
         </TouchableOpacity>
         <Text style={styles.titulo}>{editando ? 'Editar obra' : 'Nova obra'}</Text>
@@ -195,7 +199,7 @@ export default function NovaObra() {
             />
 
             <View style={styles.botoesRow}>
-              <TouchableOpacity style={styles.cancelarBotao} onPress={gerenciar}>
+              <TouchableOpacity style={styles.cancelarBotao} onPress={() => voltarTela(navigation, 'Gerenciar')}>
                 <Text style={styles.cancelarTexto}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity

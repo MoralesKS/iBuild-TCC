@@ -40,12 +40,19 @@ export function CarrinhoProvider({ children }) {
     setItens((itensAtuais) => itensAtuais.map((item) => item.id === id ? { ...item, quantidade } : item));
   }
 
+  function confirmarItens(comprados) {
+    setItens(atuais=>atuais.map(item=>{
+      const comprado=comprados.find(c=>String(c.id_anuncio)===String(item.idAnuncio));
+      return comprado?{...item,quantidade:item.quantidade-comprado.quantidade}:item;
+    }).filter(item=>item.quantidade>0));
+  }
+
   function limparCarrinho() {
     setItens([]);
   }
 
   return (
-    <CarrinhoContext.Provider value={{ itens, adicionarAoCarrinho, removerDoCarrinho, atualizarQuantidade, limparCarrinho }}>
+    <CarrinhoContext.Provider value={{ itens, adicionarAoCarrinho, removerDoCarrinho, atualizarQuantidade, limparCarrinho, confirmarItens }}>
       {children}
     </CarrinhoContext.Provider>
   );

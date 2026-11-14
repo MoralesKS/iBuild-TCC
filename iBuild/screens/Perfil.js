@@ -1,3 +1,6 @@
+import { voltar as voltarTela } from '../src/navegacao';
+import Avaliacao from '../componentes/Avaliacao';
+import Avatar from '../componentes/Avatar';
 import { useCallback, useState } from 'react';
 import { listarFavoritos, alternarFavorito } from '../src/Favoritos';
 import { Text, View, TouchableOpacity, ScrollView, Image, Alert, StyleSheet, Modal, TextInput } from 'react-native';
@@ -9,25 +12,6 @@ import BarraInferior from '../src/BarraInferior';
 import { garantirConversa, useConversas } from './Chat1';
 import { useAreaSegura } from '../src/responsivo';
 
-// Autônomos de exemplo (do Functions.js) não existem no banco: monta um perfil só de leitura
-function perfilDoExemplo(p) {
-  return {
-    idUsuario: null,
-    idProfissional: null,
-    tipoPerfil: 'autonomo',
-    exemplo: true,
-    nome: p.nome,
-    profissao: p.categoria,
-    email: '',
-    telefone: '',
-    cidade: p.cidade || '',
-    bio: p.experiencia ? `Experiência: ${p.experiencia}.` : '',
-    foto: p.imagem,
-    avaliacoes: 0,
-    notaMedia: p.avaliacao ?? 0,
-  };
-}
-
 export default function Perfil() {
   const conversas = useConversas();
   const areaSegura = useAreaSegura();
@@ -35,16 +19,12 @@ export default function Perfil() {
   const route = useRoute();
   const { contratar, anunciar } = useAppNavigation();
   const { usuario: usuarioLogado, usuarioFirebase, erroPerfil, recarregarUsuario, sessao } = useUsuario();
-  const [edicao, setEdicao] = useState(sessao.perfil || null);
-  const [rascunho, setRascunho] = useState(null);
   const [erroOutro, setErroOutro] = useState(null);
 
   // Rota "Perfil" = meu perfil. Rota "PerfilAutonomo" = perfil de outra pessoa:
   //   { usuarioId }    -> usuário do banco
-  //   { profissional } -> autônomo de exemplo
   const idParam = route.params?.usuarioId;
-  const exemplo = route.params?.profissional;
-  const visitando = !!(idParam || exemplo);
+  const visitando = !!idParam;
   const ehProprio = !visitando || (!!idParam && idParam === usuarioLogado?.idUsuario);
 
   const [outro, setOutro] = useState(null);
@@ -54,7 +34,7 @@ export default function Perfil() {
   const [favoritos, setFavoritos] = useState([]);
 
   const base = usuarioLogado || (usuarioFirebase ? { nome: usuarioFirebase.displayName || usuarioFirebase.email?.split('@')[0], email: usuarioFirebase.email, telefone: '', foto: require('../assets/Perfil.png'), profissao: 'Perfil básico', avaliacoes: 0, notaMedia: 0 } : null);
-  const usuario = ehProprio ? (base && { ...base, ...edicao }) : exemplo ? perfilDoExemplo(exemplo) : outro;
+  const usuario = ehProprio ? base : outro;
 
 
   useFocusEffect(
@@ -77,7 +57,7 @@ export default function Perfil() {
   );
 
   function abrirProduto(produto) {
-    navigation.navigate('Produto', { produto });
+    navigation.push('Produto', { produto });
   }
 
   // Abre (ou cria) a conversa com esta pessoa
@@ -151,7 +131,7 @@ export default function Perfil() {
     return (
       <View style={[styles.container, areaSegura]}>
         <Text style={styles.titulo}>Perfil</Text>
-        <Text style={styles.listaVazia}>{erroOutro || 'Carregando perfil…'}</Text><TouchableOpacity onPress={() => navigation.goBack()}><Text>Voltar</Text></TouchableOpacity>
+        <Text style={styles.listaVazia}>{erroOutro || 'Carregando perfil…'}</Text><TouchableOpacity onPress={() => voltarTela(navigation, 'Home')}><Text>Voltar</Text></TouchableOpacity>
         <BarraInferior ativo="perfil" />
       </View>
     );
@@ -164,7 +144,7 @@ export default function Perfil() {
 
       <View style={styles.headerRow}>
         {!ehProprio && (
-          <TouchableOpacity style={styles.botaoVoltar} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.botaoVoltar} onPress={() => voltarTela(navigation, 'Home')}>
             <Text style={styles.setaVoltar}>{'<'}</Text>
           </TouchableOpacity>
         )}
@@ -182,7 +162,6 @@ export default function Perfil() {
       <ScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
 
         {ehProprio && erroPerfil && <TouchableOpacity onPress={recarregarUsuario}><Text>Servidor indisponível. Exibindo dados básicos. Tentar novamente</Text></TouchableOpacity>}
-        {ehProprio && <TouchableOpacity style={styles.chatBotao} onPress={() => setRascunho({ nome: usuario.nome || '', telefone: usuario.telefone || '' })}><Text>Editar perfil nesta sessão</Text></TouchableOpacity>}
         {/* Foto e dados principais */}
         <View style={styles.perfilRow}>
           <TouchableOpacity
@@ -190,7 +169,7 @@ export default function Perfil() {
             disabled={!ehProprio}
             onPress={() => navigation.navigate('Configuracoes')}
           >
-            <FotoProduto style={styles.avatar} source={usuario.foto} />
+            <Avatar style={styles.avatar} source={usuario.foto} />
             {ehProprio && (
               <View style={styles.editarBadge}>
                 <Text style={styles.editarTexto}>✎</Text>
@@ -255,6 +234,7 @@ export default function Perfil() {
           </View>
         </View>
 
+        {!!usuario.idUsuario && <Avaliacao tipo="perfil" id={usuario.idUsuario} dono={usuario.idUsuario} onAtualizar={r=>{ if(!ehProprio) setOutro(u=>({...u,notaMedia:r.media,avaliacoes:r.quantidade})); }} />}
         {/* Perfil de outra pessoa: chat */}
         {!ehProprio && (
           <TouchableOpacity style={styles.chatBotao} onPress={chamarNoChat}>
@@ -316,10 +296,6 @@ export default function Perfil() {
           </View>
         )}
 
-        {!!usuario.exemplo && (
-          <Text style={styles.listaVazia}>Profissional de exemplo: só aparecem aqui os dados básicos dele.</Text>
-        )}
-
         {(ehProprio || itensAVenda.length > 0) && (
           <>
             <View style={styles.divisor} />
@@ -350,19 +326,6 @@ export default function Perfil() {
       </ScrollView>
 
       <BarraInferior ativo="perfil" />
-      <Modal visible={Boolean(rascunho)} transparent onRequestClose={() => setRascunho(null)}>
-        <View style={{ flex: 1, justifyContent: 'center', backgroundColor: '#0008', padding: 24 }}><View style={{ backgroundColor: '#fff', padding: 20, borderRadius: 12 }}>
-          <Text>Edição temporária — somente nesta sessão</Text>
-          <TextInput accessibilityLabel="Nome" value={rascunho?.nome} onChangeText={nome => setRascunho(r => ({ ...r, nome }))} style={{ borderBottomWidth: 1, padding: 12 }} />
-          <TextInput accessibilityLabel="Telefone" keyboardType="phone-pad" value={rascunho?.telefone} onChangeText={telefone => setRascunho(r => ({ ...r, telefone }))} style={{ borderBottomWidth: 1, padding: 12 }} />
-          <TouchableOpacity style={styles.chatBotao} onPress={() => {
-            if ((rascunho.nome || '').trim().length < 3 || !/[A-Za-zÀ-ÿ]/.test(rascunho.nome)) return Alert.alert('Nome inválido');
-            if (rascunho.telefone && !/^\d{10,11}$/.test(rascunho.telefone.replace(/\D/g, ''))) return Alert.alert('Telefone inválido', 'Informe DDD e telefone.');
-            sessao.perfil = { ...rascunho, nome: rascunho.nome.trim() }; setEdicao(sessao.perfil); setRascunho(null);
-          }}><Text>Salvar nesta sessão</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.chatBotao} onPress={() => setRascunho(null)}><Text>Cancelar</Text></TouchableOpacity>
-        </View></View>
-      </Modal>
     </View>
   );
 }

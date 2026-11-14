@@ -1,3 +1,4 @@
+import { voltar as voltarTela } from '../src/navegacao';
 import { useCallback, useEffect, useState } from 'react';
 import {
   Text, View, TextInput, TouchableOpacity, ScrollView, Image,
@@ -195,7 +196,7 @@ export default function Anunciar() {
           {editando && (
             <TouchableOpacity
               style={styles.botaoVoltar}
-              onPress={() => navigation.navigate('Produto', { produto: produtoEdicao })}
+              onPress={() => voltarTela(navigation, 'Perfil')}
             >
               <Text style={styles.setaVoltar}>{'<'}</Text>
             </TouchableOpacity>
@@ -396,7 +397,7 @@ export default function Anunciar() {
               <View style={styles.botoesRow}>
                 <TouchableOpacity
                   style={styles.cancelarBotao}
-                  onPress={() => navigation.navigate('Produto', { produto: produtoEdicao })}
+                  onPress={() => voltarTela(navigation, 'Perfil')}
                 >
                   <Text style={styles.cancelarTexto}>Cancelar</Text>
                 </TouchableOpacity>

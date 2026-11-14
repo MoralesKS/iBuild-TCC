@@ -1,3 +1,5 @@
+import Logo from '../componentes/Logo';
+import { voltar as voltarTela } from '../src/navegacao';
 import {
   StyleSheet,
   Text,
@@ -143,7 +145,6 @@ export default function CadastroAutonomos() {
       userPass === "" ||
       confirmePass === "" ||
       userNome.trim() === "" ||
-      userCPF.trim() === "" ||
       userTelefone.trim() === "" ||
       userProfissao.trim() === ""
     ) {
@@ -156,7 +157,7 @@ export default function CadastroAutonomos() {
       return;
     }
 
-    if (!cpfValido) {
+    if (userCPF.trim() && !cpfValido) {
       alert("Informe um CPF válido");
       return;
     }
@@ -192,7 +193,7 @@ export default function CadastroAutonomos() {
       {
         tipo_perfil: "autonomo",
         nome: userNome.trim(),
-        cpf: userCPF,
+        cpf: userCPF.trim() || null,
         telefone: userTelefone,
         profissao: userProfissao.trim(),
       },
@@ -205,9 +206,7 @@ export default function CadastroAutonomos() {
       .catch((error) => alert(error.message));
   }
 
-  function voltar() {
-    navigation.navigate("Cadastro");
-  }
+  function voltar() { voltarTela(navigation, 'Cadastro'); }
 
   function formatarTelefone(texto) {
     let numeros = texto.replace(/\D/g, "");
@@ -259,15 +258,7 @@ export default function CadastroAutonomos() {
         >
           <View style={[styles.container, { width: contentWidth + 32 }]}>
             <View style={styles.logoView}>
-              <Image
-                source={require("../assets/IBuild.jpg")}
-                style={{
-                  width: logoWidth,
-                  height: logoHeight,
-                  borderRadius: 8,
-                }}
-                resizeMode="contain"
-              />
+              <Logo />
             </View>
 
             <View style={[styles.textView, { width: contentWidth }]}>
@@ -290,7 +281,7 @@ export default function CadastroAutonomos() {
                 style={[styles.textInput, { width: inputWidth }]}
                 value={userCPF}
                 onChangeText={(t) => setUserCPF(formatarCPF(t))}
-                placeholder="CPF: XXX.XXX.XXX-XX"
+                placeholder="CPF (opcional): XXX.XXX.XXX-XX"
                 placeholderTextColor="#828282"
                 keyboardType="numeric"
                 maxLength={14}
@@ -431,12 +422,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
 
-  logoView: {
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 24,
-  },
+  logoView: { alignItems: 'center', justifyContent: 'center', width: '100%', marginVertical: 16 },
 
   textView: {
     alignItems: "center",

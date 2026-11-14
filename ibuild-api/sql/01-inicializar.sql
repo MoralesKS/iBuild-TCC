@@ -73,18 +73,6 @@ CREATE TABLE IF NOT EXISTS `enderecos` (
   CONSTRAINT fk_enderecos_id_usuario FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `avaliacoes` (
-  `id_avaliacao` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `id_avaliado` BIGINT UNSIGNED NOT NULL,
-  `id_avaliador` BIGINT UNSIGNED NULL,
-  `nota` DECIMAL(3,2) NOT NULL,
-  `comentario` TEXT NULL,
-  `status` VARCHAR(30) NOT NULL DEFAULT 'ativo',
-  `data_criacao` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_avaliacoes_id_avaliado FOREIGN KEY (`id_avaliado`) REFERENCES `usuarios` (`id_usuario`),
-  CONSTRAINT fk_avaliacoes_id_avaliador FOREIGN KEY (`id_avaliador`) REFERENCES `usuarios` (`id_usuario`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS `anuncios` (
   `id_anuncio` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `id_vendedor` BIGINT UNSIGNED NOT NULL,
@@ -104,6 +92,26 @@ CREATE TABLE IF NOT EXISTS `anuncios` (
   `data_publicacao` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_anuncios_id_vendedor FOREIGN KEY (`id_vendedor`) REFERENCES `usuarios` (`id_usuario`),
   CONSTRAINT fk_anuncios_id_categoria FOREIGN KEY (`id_categoria`) REFERENCES `categorias_materiais` (`id_categoria`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `avaliacoes` (
+  `id_avaliacao` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `id_avaliado` BIGINT UNSIGNED NULL,
+  `id_anuncio` BIGINT UNSIGNED NULL,
+  `id_avaliador` BIGINT UNSIGNED NULL,
+  `nota` DECIMAL(3,2) NOT NULL,
+  `comentario` TEXT NULL,
+  `status` VARCHAR(30) NOT NULL DEFAULT 'ativo',
+  `data_criacao` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `perfil_ativo` BIGINT UNSIGNED GENERATED ALWAYS AS (CASE WHEN status='ativo' THEN id_avaliado ELSE NULL END) STORED,
+  `produto_ativo` BIGINT UNSIGNED GENERATED ALWAYS AS (CASE WHEN status='ativo' THEN id_anuncio ELSE NULL END) STORED,
+  UNIQUE KEY uq_avaliacao_perfil (id_avaliador,perfil_ativo),
+  UNIQUE KEY uq_avaliacao_produto (id_avaliador,produto_ativo),
+  CONSTRAINT ck_avaliacao_alvo CHECK ((id_avaliado IS NULL) <> (id_anuncio IS NULL)),
+  CONSTRAINT ck_avaliacao_nota CHECK (nota >= 1 AND nota <= 5),
+  CONSTRAINT fk_avaliacoes_id_avaliado FOREIGN KEY (`id_avaliado`) REFERENCES `usuarios` (`id_usuario`),
+  CONSTRAINT fk_avaliacoes_anuncio FOREIGN KEY (id_anuncio) REFERENCES anuncios(id_anuncio),
+  CONSTRAINT fk_avaliacoes_id_avaliador FOREIGN KEY (`id_avaliador`) REFERENCES `usuarios` (`id_usuario`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `fotos_anuncio` (
@@ -137,6 +145,8 @@ CREATE TABLE IF NOT EXISTS `obras` (
 
 CREATE TABLE IF NOT EXISTS `tarefas_obra` (
   `id_tarefa` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `etapa` VARCHAR(20) NULL,
+  CONSTRAINT ck_tarefa_etapa CHECK (etapa IS NULL OR etapa IN ('fundacao','estrutura','acabamento')),
   `id_obra` BIGINT UNSIGNED NOT NULL,
   `titulo` VARCHAR(255) NOT NULL,
   `status` VARCHAR(30) NOT NULL DEFAULT 'pendente',
@@ -167,3 +177,43 @@ CREATE TABLE IF NOT EXISTS `notificacoes` (
 
 INSERT IGNORE INTO especialidades (nome) VALUES ('Pedreiro'),('Eletricista'),('Encanador'),('Pintor'),('Carpinteiro'),('Marceneiro'),('Outros');
 INSERT IGNORE INTO categorias_materiais (nome) VALUES ('Tijolos e Blocos'),('Cimento'),('Areia'),('Madeira'),('Outros');
+
+
+-- Pedidos desta versão: separados do legado que registrava "pago" sem cobrança.
+CREATE TABLE IF NOT EXISTS pedidos_app (
+ id_pedido BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ id_comprador BIGINT UNSIGNED NOT NULL,
+ chave VARCHAR(80) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+ conteudo_hash CHAR(64) NOT NULL,
+ endereco VARCHAR(500) NOT NULL,
+ metodo VARCHAR(40) NOT NULL,
+ cupom VARCHAR(30) NULL,
+ subtotal DECIMAL(14,2) NOT NULL,
+ frete DECIMAL(14,2) NOT NULL,
+ desconto DECIMAL(14,2) NOT NULL,
+ total DECIMAL(14,2) NOT NULL,
+ status VARCHAR(30) NOT NULL DEFAULT 'pendente_pagamento',
+ data_criacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ UNIQUE KEY uq_pedido_tentativa (id_comprador,chave),
+ FOREIGN KEY (id_comprador) REFERENCES usuarios(id_usuario)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS itens_pedido_app (
+ id_item BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ id_pedido BIGINT UNSIGNED NOT NULL,
+ id_anuncio BIGINT UNSIGNED NOT NULL,
+ id_vendedor BIGINT UNSIGNED NOT NULL,
+ titulo VARCHAR(150) NOT NULL,
+ quantidade DECIMAL(12,2) NOT NULL,
+ preco_unitario DECIMAL(12,2) NOT NULL,
+ UNIQUE KEY uq_item_pedido (id_pedido,id_anuncio),
+ FOREIGN KEY(id_pedido) REFERENCES pedidos_app(id_pedido),
+ FOREIGN KEY(id_anuncio) REFERENCES anuncios(id_anuncio),
+ FOREIGN KEY(id_vendedor) REFERENCES usuarios(id_usuario)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS lotes_demo (
+ lote VARCHAR(80) NOT NULL,
+ entidade VARCHAR(40) NOT NULL,
+ chave VARCHAR(80) NOT NULL,
+ registro_id BIGINT UNSIGNED NOT NULL,
+ PRIMARY KEY(lote,entidade,chave)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

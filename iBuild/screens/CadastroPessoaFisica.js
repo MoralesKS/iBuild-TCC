@@ -1,3 +1,5 @@
+import Logo from '../componentes/Logo';
+import { voltar as voltarTela } from '../src/navegacao';
 import {
   StyleSheet,
   Text,
@@ -74,9 +76,7 @@ export default function CadastroPessoaFisica() {
       .catch((error) => alert(error.message));
   }
 
-  function voltar() {
-    navigation.navigate("Cadastro");
-  }
+  function voltar() { voltarTela(navigation, 'Cadastro'); }
 
   const onChangeDate = (event, selectedDate) => {
     setShowDatePicker(Platform.OS === "ios");
@@ -120,7 +120,7 @@ export default function CadastroPessoaFisica() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.logoView}>
-          <Image source={require("../assets/IBuild.jpg")} style={styles.logo} />
+          <Logo />
         </View>
 
         <View style={styles.textView}>
@@ -268,20 +268,13 @@ const styles = StyleSheet.create({
     padding: 8,
     paddingBottom: 40, // Garante um espaço extra no final da rolagem
   },
-  logoView: {
-    height: 100,
-    width: 258,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 100,
-    marginBottom: 50,
-  },
+  logoView: { alignItems: 'center', justifyContent: 'center', width: '100%', marginVertical: 16 },
   logo: {
     width: 200,
     height: 90,
   },
   textView: {
-    width: 375,
+    width: '100%', maxWidth: 420,
     alignItems: "center",
     marginBottom: 20,
   },

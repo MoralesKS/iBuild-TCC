@@ -1,3 +1,4 @@
+import { voltar as voltarTela } from '../src/navegacao';
 import { useCallback, useEffect, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -34,8 +35,7 @@ export default function AtribuirFuncionarios() {
   );
 
   function voltar() {
-    if (obra) navigation.navigate('DetalhesObra', { obra });
-    else gerenciar();
+    voltarTela(navigation, 'Gerenciar');
   }
 
   const naObra = (p) => !!obra?.profissionais?.some((x) => x.id === p.idProfissional);
@@ -71,7 +71,7 @@ export default function AtribuirFuncionarios() {
           <Text style={styles.avisoTexto}>
             {!obra
               ? 'Abra esta tela pelos detalhes de uma obra.'
-              : 'Esta é uma obra de exemplo. Crie uma obra nova para atribuir funcionários.'}
+              : 'Obra indisponível. Abra uma obra pela sua lista.'}
           </Text>
           <TouchableOpacity style={styles.botaoPrincipal} onPress={() => navigation.navigate('NovaObra')}>
             <Text style={styles.botaoPrincipalTexto}>Criar nova obra</Text>

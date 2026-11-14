@@ -1,4 +1,6 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image} from 'react-native';
+import Logo from '../componentes/Logo';
+import { voltar as voltarTela } from '../src/navegacao';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image, ScrollView, KeyboardAvoidingView, Platform} from 'react-native';
 import { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { sendPasswordResetEmail } from 'firebase/auth';
@@ -36,14 +38,12 @@ export default function RedefinicaoSenha() {
     navigation.navigate('Login');
   }
 
-  function voltar(){
-    navigation.navigate('Login')
-  }
+  function voltar() { voltarTela(navigation, 'Login'); }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView style={{flex:1}} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}><ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.logoView}>
-        <Image source={require('../assets/IBuild.jpg')} style={styles.logo}/>
+        <Logo />
       </View>
 
       <View style={styles.textView}>
@@ -71,26 +71,20 @@ export default function RedefinicaoSenha() {
         </TouchableOpacity>
 
       </View>
-    </View>
+    </ScrollView></KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'space-evenly',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 24,
     paddingVertical: 8,
   },
-  logoView: {
-    height: 130,
-    width: 258,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 24,
-  },
+  logoView: { alignItems: 'center', justifyContent: 'center', width: '100%', marginVertical: 16 },
   logo: {
     height: 130,
     width: 258,
@@ -100,7 +94,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 420,
     alignItems: 'center',
-    marginBottom: '70%'
+    marginBottom: 24
   },
   titulo: {
     color: '#277D2C',
@@ -131,7 +125,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   opcaoTextos: {
-    flex: 1,
+    flexGrow: 1,
   },
   opcaoTitulo: {
     fontWeight: 'bold',

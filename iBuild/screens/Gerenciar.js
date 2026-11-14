@@ -2,8 +2,8 @@ import { useAreaSegura } from '../src/responsivo';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { obras as obrasExemplo, calcularProgresso } from '../src/Functions';
-import { api, useUsuario, MOSTRAR_EXEMPLOS } from '../src/api';
+import { calcularProgresso } from '../src/Functions';
+import { api, useUsuario } from '../src/api';
 import BottomBar from '../componentes/BottomBar';
 
 const FILTROS = [
@@ -27,11 +27,7 @@ export default function Gerenciar() {
   const [filtro, setFiltro] = useState('todas');
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
   const [favoritos, setFavoritos] = useState(sessao.obras?.favoritos || []);
-  const [alteracoes, setAlteracoes] = useState(sessao.obras?.alteracoes || {});
-  const [excluidas, setExcluidas] = useState(sessao.obras?.excluidas || []);
-  const [obraEditando, setObraEditando] = useState(null);
-  const [rascunho, setRascunho] = useState(null);
-  useEffect(() => { sessao.obras = { favoritos, alteracoes, excluidas }; }, [favoritos, alteracoes, excluidas, sessao]);
+  useEffect(() => { sessao.obras = { favoritos }; }, [favoritos, sessao]);
 
   useFocusEffect(useCallback(() => {
     if (!idUsuario) return;
@@ -47,9 +43,7 @@ export default function Gerenciar() {
     return () => { ativo = false; };
   }, [idUsuario, tentativa]));
 
-  const obras = useMemo(() => [...obrasDb, ...(MOSTRAR_EXEMPLOS ? obrasExemplo.map(o => ({ ...o, id: 'demo-' + o.id })) : [])]
-    .filter((obra) => !excluidas.includes(obra.id))
-    .map((obra) => ({ ...obra, ...(alteracoes[obra.id] || {}) })), [obrasDb, excluidas, alteracoes]);
+  const obras = obrasDb;
 
   const obrasFiltradas = obras.filter((obra) => {
     const texto = textoBusca.trim().toLowerCase();
@@ -59,38 +53,23 @@ export default function Gerenciar() {
   });
   const totalFuncionarios = obras.reduce((soma, obra) => soma + (obra.equipe?.funcionariosAtivos || 0), 0);
 
-  function guardarEdicao() {
-    const etapas = {
-      fundacao: limitarPercentual(rascunho.fundacao),
-      estrutura: limitarPercentual(rascunho.estrutura),
-      acabamento: limitarPercentual(rascunho.acabamento),
-    };
-    setAlteracoes((atuais) => ({ ...atuais, [obraEditando.id]: {
-      nome: rascunho.nome.trim() || obraEditando.nome,
-      construtora: rascunho.construtora.trim() || obraEditando.construtora,
-      status: rascunho.status,
-      etapas,
-      equipe: { ...obraEditando.equipe, funcionariosAtivos: Math.max(0, Number(rascunho.funcionarios) || 0) },
-    } }));
-    setObraEditando(null);
-    setRascunho(null);
-  }
-
   function excluirObra(obra) {
-    Alert.alert('Excluir obra', `Remover “${obra.nome}” desta demonstração?`, [
+    Alert.alert('Excluir obra', `Excluir “${obra.nome}”?`, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Excluir', style: 'destructive', onPress: () => setExcluidas((ids) => [...ids, obra.id]) },
+      { text: 'Excluir', style: 'destructive', onPress: async () => {
+        try { await api.excluirObra(obra.id, idUsuario); setTentativa(t => t + 1); }
+        catch(e) { Alert.alert('Não foi possível excluir', e.message); }
+      } },
     ]);
   }
 
   function abrirDetalhesObra(obra) {
-    navigation.navigate('DetalhesObra', { obra, edicaoTemporaria: alteracoes[obra.id] ?? null });
+    navigation.navigate('DetalhesObra', { obra });
   }
 
   return (
     <View style={[styles.container, areaSegura]}>
       <ScrollView style={styles.conteudo} contentContainerStyle={{ paddingBottom: 16 }} keyboardShouldPersistTaps="handled">
-        <Text style={styles.avisoDemo}>Modo de demonstração. Favoritos, edições e exclusões são temporários e ficam apenas nesta sessão.</Text>
         <TextInput style={styles.searchInput} placeholder="Pesquisar obra ou construtora" value={textoBusca} onChangeText={setTextoBusca} />
 
         <TouchableOpacity style={styles.filtro} onPress={() => setMostrarFiltros((aberto) => !aberto)}>
@@ -109,7 +88,7 @@ export default function Gerenciar() {
           <View style={styles.statCard}><Text style={styles.statLabel}>Funcionários</Text><Text style={styles.statValor}>{totalFuncionarios}</Text></View>
         </View>
 
-        <TouchableOpacity style={styles.botaoSalvar} onPress={() => navigation.navigate('NovaObra')}><Text style={styles.botaoSalvarTexto}>+ Nova obra no banco</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.botaoSalvar} onPress={() => navigation.navigate('NovaObra')}><Text style={styles.botaoSalvarTexto}>+ Nova obra</Text></TouchableOpacity>
         <Text style={styles.tituloSecao}>Obras</Text>
         {(carregandoPerfil || (idUsuario && carregandoObras)) ? <Text>Carregando obras…</Text> : null}
         {(erroPerfil || (idUsuario && erroObras)) ? (
@@ -137,9 +116,9 @@ export default function Gerenciar() {
                 <Text style={styles.progressoTexto}>{progresso}% concluída · {obra.status === 'concluida' ? 'Concluída' : 'Em andamento'}</Text>
                 <View style={styles.acoesLinha}>
                   <TouchableOpacity style={styles.acaoSecundaria} onPress={() => abrirDetalhesObra(obra)}><Text>Ver detalhes</Text></TouchableOpacity>
-                <TouchableOpacity style={styles.acaoSecundaria} onPress={() => { setObraEditando(obra); setRascunho({ nome: obra.nome, construtora: obra.construtora || '', status: obra.status, fundacao: String(obra.etapas.fundacao), estrutura: String(obra.etapas.estrutura), acabamento: String(obra.etapas.acabamento), funcionarios: String(obra.equipe?.funcionariosAtivos || 0) }); }}><Text>Editar</Text></TouchableOpacity>
+                {String(obra.idProprietario) === String(idUsuario) && <TouchableOpacity style={styles.acaoSecundaria} onPress={() => navigation.navigate('NovaObra', { obra })}><Text>Editar</Text></TouchableOpacity>}
                   <TouchableOpacity style={styles.acaoIcone} accessibilityLabel={favorita ? 'Remover dos favoritos' : 'Adicionar aos favoritos'} onPress={() => setFavoritos((ids) => favorita ? ids.filter((id) => id !== obra.id) : [...ids, obra.id])}><Text style={{ color: favorita ? '#F57C00' : '#666' }}>{favorita ? '★' : '☆'}</Text></TouchableOpacity>
-                  <TouchableOpacity style={styles.acaoIcone} accessibilityLabel="Excluir obra" onPress={() => excluirObra(obra)}><Text style={{ color: '#C62828' }}>×</Text></TouchableOpacity>
+                  {String(obra.idProprietario) === String(idUsuario) && <TouchableOpacity style={styles.acaoIcone} accessibilityLabel="Excluir obra" onPress={() => excluirObra(obra)}><Text style={{ color: '#C62828' }}>×</Text></TouchableOpacity>}
                 </View>
               </View>
             </View>
@@ -148,21 +127,6 @@ export default function Gerenciar() {
       </ScrollView>
 
       <BottomBar ativa="gerenciar" />
-
-      <Modal visible={Boolean(obraEditando)} transparent animationType="fade" onRequestClose={() => { setObraEditando(null); setRascunho(null); }}>
-        <View style={styles.modalFundo}><ScrollView contentContainerStyle={styles.modalCard}>
-          <Text style={styles.tituloSecao}>Editar obra (temporário)</Text>
-          <TextInput style={styles.campoEdicao} placeholder="Nome da obra" value={rascunho?.nome || ''} onChangeText={(nome) => setRascunho((r) => ({ ...r, nome }))} />
-          <TextInput style={styles.campoEdicao} placeholder="Construtora" value={rascunho?.construtora || ''} onChangeText={(construtora) => setRascunho((r) => ({ ...r, construtora }))} />
-          <Text style={styles.rotuloCampo}>Situação</Text>
-          <View style={styles.acoesLinha}>{[['andamento', 'Em andamento'], ['concluida', 'Concluída']].map(([valor, label]) => <TouchableOpacity key={valor} style={[styles.acaoSecundaria, rascunho?.status === valor && styles.statusSelecionado]} onPress={() => setRascunho((r) => ({ ...r, status: valor }))}><Text>{label}</Text></TouchableOpacity>)}</View>
-          <Text style={styles.rotuloCampo}>Etapas (%)</Text>
-          {['fundacao', 'estrutura', 'acabamento'].map((etapa) => <TextInput key={etapa} style={styles.campoEdicao} keyboardType="numeric" placeholder={etapa} value={rascunho?.[etapa] || ''} onChangeText={(valor) => setRascunho((r) => ({ ...r, [etapa]: valor.replace(/[^0-9]/g, '') }))} />)}
-          <TextInput style={styles.campoEdicao} keyboardType="numeric" placeholder="Funcionários ativos" value={rascunho?.funcionarios || ''} onChangeText={(valor) => setRascunho((r) => ({ ...r, funcionarios: valor.replace(/[^0-9]/g, '') }))} />
-          <TouchableOpacity style={styles.botaoSalvar} onPress={guardarEdicao}><Text style={styles.botaoSalvarTexto}>Salvar nesta sessão</Text></TouchableOpacity>
-          <TouchableOpacity onPress={() => { setObraEditando(null); setRascunho(null); }}><Text style={styles.cancelar}>Cancelar</Text></TouchableOpacity>
-        </ScrollView></View>
-      </Modal>
     </View>
   );
 }

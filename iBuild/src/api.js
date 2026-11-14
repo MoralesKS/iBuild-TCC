@@ -7,14 +7,12 @@ import { VERSAO_DOCUMENTOS } from './documentosLegais';
 
 /* ================================================================== */
 /* CONFIGURAÇÃO                                                        */
-/* Coloque o IP do seu PC no .env:  EXPO_PUBLIC_API_URL=http://192.168.X.X:3000 */
+/* EXPO_PUBLIC_API_URL deve ser a URL HTTPS pública da API. */
 /* ================================================================== */
-export const API_URL = (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000').trim().replace(/\/+$/, '');
+export const API_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://ibuild-tcc-production.up.railway.app').trim().replace(/\/+$/, '');
 console.log('API_URL =', API_URL);
 
-// true  = mostra os dados de exemplo (Functions.js) junto com os do banco
-// false = mostra só o que está no banco
-export const MOSTRAR_EXEMPLOS = true;
+
 
 /* ------------------------------------------------------------------ */
 /* Chamada HTTP                                                        */
@@ -39,7 +37,7 @@ async function req(metodo, caminho, corpo, token) {
   }  catch (e) {
     if (e.status) throw e; // erro vindo da própria API (400, 404, 409...)
     // qualquer outra falha (timeout, cancelado, sem rede) = o celular não alcançou a API
-    throw new Error(`Não consegui falar com a API (${API_URL}). Confira se ela está ligada no PC, se o IP está certo e se o celular está no mesmo Wi-Fi.`);
+    throw new Error(`Não consegui falar com a API (${API_URL}). Confira sua conexão e tente novamente.`);
   } finally {
     clearTimeout(timer);
   }
@@ -55,7 +53,7 @@ const IMG_PERFIL = require('../assets/Perfil.png');
 const IMG_OBRA = require('../assets/gerenciar.png');
 
 // imagem guardada na API (o cabeçalho evita a página de aviso do ngrok)
-const imagemDoServidor = (url) => ({ uri: API_URL + url, headers: { 'ngrok-skip-browser-warning': 'true' } });
+export const imagemDoServidor = (url) => ({ uri: /^https?:\/\//i.test(url) ? url : API_URL + '/' + String(url).replace(/^\/+/, ''), headers: { 'ngrok-skip-browser-warning': 'true' } });
 const urlFoto = (f) => (f ? imagemDoServidor(f.url) : null);
 
 const produtoApp = (a) => ({
@@ -77,12 +75,12 @@ const produtoApp = (a) => ({
   disponibilidade: a.disponibilidade,
   imagem: urlFoto(a.capa),                                            // foto da capa
   fotos: (a.fotos || []).map((f) => ({ id: f.id, imagem: urlFoto(f) })), // fotos extras
-  avaliacao: 0,
-  numAvaliacoes: 0,
+  avaliacao: a.avaliacao || 0,
+  numAvaliacoes: a.numAvaliacoes || 0,
   especificacoes: { material: a.tipo, cor: '—', dimensoes: '—', quantidade: `${a.quantidade} ${a.unidade || 'un.'}` },
 });
 
-const lojaApp = (l) => ({ ...l, id: 'db-' + l.id, imagem: l.foto ? imagemDoServidor(l.foto) : null });
+const lojaApp = (l) => ({ ...l, idUsuario: l.id, id: 'db-' + l.id, imagem: l.foto ? imagemDoServidor(l.foto) : null });
 
 const profissionalApp = (p) => ({
   id: 'db-' + p.id,
@@ -93,7 +91,7 @@ const profissionalApp = (p) => ({
   avaliacao: p.avaliacao,
   cidade: p.cidade,
   experiencia: p.experiencia,
-  imagem: IMG_PERFIL,
+  imagem: p.foto ? imagemDoServidor(p.foto) : IMG_PERFIL,
 });
 
 const obraApp = (o) => ({
@@ -139,7 +137,9 @@ export const api = {
   anunciar: (dados) => req('POST', '/anuncios', dados),
   atualizarAnuncio: (id, dados) => req('PATCH', `/anuncios/${id}`, dados).then(produtoApp),
   excluirAnuncio: (id, usuario) => req('DELETE', `/anuncios/${id}`, { id_usuario: usuario }),
-  fazerPedido: (idComprador, itens) => req('POST', '/pedidos', { id_comprador: idComprador, itens }),
+  fazerPedido: (dados) => req('POST', '/pedidos', dados),
+  avaliacoes: (tipo, id) => req('GET', `/avaliacoes/${tipo}/${id}`),
+  avaliar: (tipo, id, dados) => req('PUT', `/avaliacoes/${tipo}/${id}`, dados),
 
   lojas: () => req('GET', '/lojas').then((l) => l.map(lojaApp)),
   profissionais: () => req('GET', '/profissionais').then((l) => l.map(profissionalApp)),
@@ -150,9 +150,9 @@ export const api = {
   criarObra: (dados) => req('POST', '/obras', dados),
   atualizarObra: (id, dados) => req('PATCH', `/obras/${id}`, dados).then(obraApp),
   excluirObra: (id, usuario) => req('DELETE', `/obras/${id}?usuario=${usuario}`),
-  criarObrasExemplo: (usuario) => req('POST', `/obras/exemplo/${usuario}`),
   marcarTarefa: (id, feito, usuario) => req('PATCH', `/tarefas/${id}`, { feito, id_usuario: usuario }),
-  novaTarefa: (idObra, texto, usuario) => req('POST', `/obras/${idObra}/tarefas`, { texto, id_usuario: usuario }),
+  novaTarefa: (idObra, texto, usuario, etapa) => req('POST', `/obras/${idObra}/tarefas`, { texto, id_usuario: usuario, etapa }),
+  editarTarefa: (id, dados) => req('PATCH', `/tarefas/${id}`, dados),
   adicionarProfissional: (idObra, idProfissional, funcao, usuario) =>
     req('POST', `/obras/${idObra}/profissionais`, { id_profissional: idProfissional, funcao, id_usuario: usuario }).then(obraApp),
 
@@ -366,11 +366,11 @@ export const paraNumero = (texto) => Number(texto.trim().replace(',', '.'));
 /* ------------------------------------------------------------------ */
 /* Versão da API: avisa se o server.js do PC está desatualizado        */
 /* ------------------------------------------------------------------ */
-export const VERSAO_API_MINIMA = 3;
+export const VERSAO_API_MINIMA = 4;
 
 export async function conferirApi() {
   const info = await api.ping();
   if (!info || (info.versao || 0) < VERSAO_API_MINIMA) {
-    throw new Error('A API do PC está desatualizada (sem as novidades de fotos/loja). Substitua o server.js da pasta ibuild-api pelo novo e reinicie com npm start.');
+    throw new Error('O serviço precisa ser atualizado. Tente novamente mais tarde.');
   }
 }

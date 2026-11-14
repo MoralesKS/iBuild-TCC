@@ -1,10 +1,11 @@
+import { voltar } from '../src/navegacao';
 import BottomBar from '../componentes/BottomBar';
 import { Text, View, TouchableOpacity, ScrollView, Image, TextInput, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/native';
 import { api } from '../src/api';
 import Checkbox from 'expo-checkbox';
-import { useAppNavigation, obras, calcularProgresso  } from '../src/Functions';
+import { useAppNavigation, calcularProgresso  } from '../src/Functions';
 import { useUsuario } from '../src/api';
 import { Alert } from 'react-native';
 import { useAreaSegura } from '../src/responsivo';
@@ -12,7 +13,7 @@ import { useAreaSegura } from '../src/responsivo';
 export default function DetalhesObra() {
   const route = useRoute();
   const navigation = useNavigation();
-  if (!route.params?.obra?.id) return <View style={{ flex: 1, justifyContent: 'center', padding: 24 }}><Text>Obra indisponível.</Text><TouchableOpacity onPress={() => navigation.navigate('Gerenciar')}><Text>Voltar às obras</Text></TouchableOpacity></View>;
+  if (!route.params?.obra?.id) return <View style={{ flex: 1, justifyContent: 'center', padding: 24 }}><Text>Obra indisponível.</Text><TouchableOpacity onPress={() => voltar(navigation, 'Gerenciar')}><Text>Voltar às obras</Text></TouchableOpacity></View>;
   return <DetalheDisponivel key={route.params.obra.id} />;
 }
 function normalizarObra(o) {
@@ -24,9 +25,9 @@ function DetalheDisponivel() {
   const navigation = useNavigation();
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
   const { usuario } = useUsuario();
-  // route.params.obra vem do navigation.navigate('DetalhesObra', { obra }); "obras[0]" é só um plano B
+  // A rota contém o ID; a API atualiza os dados ao ganhar foco.
   const [obra, setObra] = useState(normalizarObra(route.params.obra));
-  const ehProprietario = !obra.doBanco || (!!usuario && String(obra.idProprietario) === String(usuario.idUsuario));
+  const ehProprietario = (!!usuario && String(obra.idProprietario) === String(usuario.idUsuario));
   const [erroObra, setErroObra] = useState(null);
   const [tentativa, setTentativa] = useState(0);
 
@@ -37,6 +38,9 @@ function DetalheDisponivel() {
 
   // Campo de texto pra criar uma nova tarefa na checklist
   const [novaAcaoTexto, setNovaAcaoTexto] = useState('');
+  const [etapa, setEtapa] = useState('fundacao');
+  const [editando, setEditando] = useState(null);
+  const [salvando, setSalvando] = useState(false);
 
   // Chegou uma obra nova (ou atualizada) pela navegação: usa ela
   useEffect(() => {
@@ -51,31 +55,32 @@ function DetalheDisponivel() {
   // Obras do banco: busca a versão mais recente toda vez que a tela ganha foco
   useFocusEffect(useCallback(() => {
     let ativo = true;
-    if (obra.doBanco && usuario?.idUsuario) { setErroObra(null); api.obra(obra.id, usuario.idUsuario).then(o => { if (ativo) setObra(normalizarObra({ ...o, ...route.params?.edicaoTemporaria })); }).catch(e => { if (ativo) setErroObra(e); }); }
+    if (obra.doBanco && usuario?.idUsuario) { setErroObra(null); api.obra(obra.id, usuario.idUsuario).then(o => { if (ativo) setObra(normalizarObra(o)); }).catch(e => { if (ativo) setErroObra(e); }); }
     return () => { ativo = false; };
-  }, [obra.id, usuario?.idUsuario, tentativa, route.params?.edicaoTemporaria]));
+  }, [obra.id, usuario?.idUsuario, tentativa]));
 
-  function alternarAcao(id) {
-    if (!ehProprietario) return;
-    const acao = proximasAcoes.find((a) => a.id === id);
-    setProximasAcoes((atuais) => atuais.map((a) => (a.id === id ? { ...a, feito: !a.feito } : a)));
-    // obra do banco: salva a marcação no MySQL
-    if (obra.doBanco && acao && ehProprietario) api.marcarTarefa(id, !acao.feito, usuario?.idUsuario).catch((e) => { setProximasAcoes(obra.proximasAcoes); alert(e.message); });
+  async function recarregar() { setObra(normalizarObra(await api.obra(obra.id, usuario.idUsuario))); }
+  async function alternarAcao(id) {
+    if (!ehProprietario || salvando) return;
+    const acao=proximasAcoes.find(a=>a.id===id);
+    setSalvando(true);
+    try { await api.marcarTarefa(id,!acao.feito,usuario.idUsuario); await recarregar(); }
+    catch(e) { Alert.alert('Não foi possível atualizar',e.message); setTentativa(t=>t+1); }
+    finally {setSalvando(false);}
   }
-
   async function adicionarAcao() {
-    const texto = novaAcaoTexto.trim();
-    if (texto === '') return; // não adiciona tarefa vazia
-    if (!ehProprietario) return;
-    let id = Date.now(); // obra de exemplo: id só local
-    if (obra.doBanco) {
-      try { id = (await api.novaTarefa(obra.id, texto, usuario?.idUsuario)).id; } catch (e) { alert(e.message); return; }
-    }
-    setProximasAcoes((atuais) => [...atuais, { id, texto, feito: false }]);
-    setNovaAcaoTexto('');
+    const texto=novaAcaoTexto.trim();
+    if (!texto || !ehProprietario || salvando) return;
+    setSalvando(true);
+    try {
+      if(editando) await api.editarTarefa(editando,{texto,etapa});
+      else await api.novaTarefa(obra.id,texto,usuario.idUsuario,etapa);
+      setNovaAcaoTexto('');setEditando(null);await recarregar();
+    } catch(e) {Alert.alert('Não foi possível salvar',e.message);setTentativa(t=>t+1);}
+    finally {setSalvando(false);}
   }
 
-  if (erroObra) return <View style={[styles.container, areaSegura]}><Text>{erroObra.status === 404 ? 'Obra indisponível ou removida.' : 'Não foi possível carregar a obra.'}</Text><TouchableOpacity onPress={() => setTentativa(t => t + 1)}><Text>Tentar novamente</Text></TouchableOpacity><TouchableOpacity onPress={() => navigation.navigate('Gerenciar')}><Text>Voltar às obras</Text></TouchableOpacity></View>;
+  if (erroObra) return <View style={[styles.container, areaSegura]}><Text>{erroObra.status === 404 ? 'Obra indisponível ou removida.' : 'Não foi possível carregar a obra.'}</Text><TouchableOpacity onPress={() => setTentativa(t => t + 1)}><Text>Tentar novamente</Text></TouchableOpacity><TouchableOpacity onPress={() => voltar(navigation, 'Gerenciar')}><Text>Voltar às obras</Text></TouchableOpacity></View>;
   const porcentagemTotal = calcularProgresso(obra);
 
   return (
@@ -84,6 +89,7 @@ function DetalheDisponivel() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
     <View style={[styles.container, areaSegura]}>
+      <TouchableOpacity onPress={()=>voltar(navigation, 'Gerenciar')}><Text>‹ Voltar</Text></TouchableOpacity>
       <Text style={styles.titulo}>Detalhes da obra</Text>
       {ehProprietario && obra.doBanco && (
         <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 8 }}>
@@ -206,11 +212,6 @@ function DetalheDisponivel() {
 
         </View>
 
-        <View style={[styles.infoCard, { marginTop: 8 }]}><Text>Próxima Ação</Text><Text style={{ color: '#F57C00', marginTop: 8 }}>{obra.equipe.proximaAcao}</Text></View>
-        {obra.profissionais?.length > 0 && (
-          <Text style={styles.infoLinha}>Autônomos: {obra.profissionais.map((p) => p.nome).join(', ')}</Text>
-        )}
-
         {ehProprietario && <TouchableOpacity style={styles.contratarBotao} onPress={() => navigation.navigate('Atribuir Funcionários', { obra })}>
           <Text style={styles.contratarTexto}>Atribuir funcionários</Text>
         </TouchableOpacity>}
@@ -222,18 +223,20 @@ function DetalheDisponivel() {
               <Checkbox
                 value={acao.feito}
                 onValueChange={() => alternarAcao(acao.id)}
-                disabled={!ehProprietario}
+                disabled={!ehProprietario || salvando}
                 color={acao.feito ? '#277D2C' : undefined}
               />
-              <Text style={styles.infoLinha}> {acao.texto}</Text>
+              <Text style={[styles.infoLinha,{flex:1}]}> {acao.texto} • {acao.etapa || 'Sem etapa'}</Text>
+              {ehProprietario && <TouchableOpacity disabled={salvando} onPress={()=>{setEditando(acao.id);setNovaAcaoTexto(acao.texto);setEtapa(acao.etapa || 'fundacao');}}><Text>Editar</Text></TouchableOpacity>}
             </View>
           ))}
 
+          {ehProprietario && <View><Text>{editando ? 'Editar tarefa' : 'Nova tarefa'} — etapa:</Text><View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>{['fundacao','estrutura','acabamento'].map(e=><TouchableOpacity key={e} disabled={salvando} onPress={()=>setEtapa(e)} style={{padding:8,backgroundColor:e===etapa?'#D7EDD8':'#EEE'}}><Text>{e==='fundacao'?'Fundação':e==='estrutura'?'Estrutura':'Acabamento'}</Text></TouchableOpacity>)}</View>{!!editando && <TouchableOpacity onPress={()=>{setEditando(null);setNovaAcaoTexto('');}}><Text>Cancelar edição</Text></TouchableOpacity>}</View>}
           {/* Adicionar nova tarefa na checklist */}
           {ehProprietario && <View style={styles.novaAcaoRow}>
             <TextInput
               style={styles.novaAcaoInput}
-              placeholder="Escreva uma nova tarefa..."
+              maxLength={255} editable={!salvando} placeholder="Escreva uma nova tarefa..."
               placeholderTextColor="#828282"
               value={novaAcaoTexto}
               onChangeText={setNovaAcaoTexto}
@@ -241,7 +244,7 @@ function DetalheDisponivel() {
               returnKeyType="done"
             />
             <TouchableOpacity style={styles.novaAcaoBotao} onPress={adicionarAcao}>
-              <Text style={styles.novaAcaoBotaoTexto}>+</Text>
+              <Text style={styles.novaAcaoBotaoTexto}>{salvando?'…':editando?'✓':'+'}</Text>
             </TouchableOpacity>
           </View>}
         </View>
