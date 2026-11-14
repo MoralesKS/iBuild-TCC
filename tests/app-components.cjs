@@ -153,6 +153,18 @@ let checks=0;
  respond=async(u,o)=>{if(u.includes('/avaliacoes/')){if(o.method==='PUT'){const b=JSON.parse(o.body);resumo={media:b.nota,quantidade:1,minha:b};}return ok(resumo);}};
  const Rating=load(appRoot+'/componentes/Avaliacao.js').default;await mount(React.createElement(apiModule.UsuarioProvider,null,React.createElement(Rating,{tipo:'produto',id:10,dono:2})));
  await act(async()=>button('Nota 4').props.onPress());await act(async()=>button('Enviar avaliação').props.onPress());assert.equal(resumo.media,4);assert(button('Atualizar avaliação'));checks+=2;await unmount();
+ // A failed read stops loading, and retry restores the evaluation form.
+ let falhaAvaliacoes=true;
+ respond=async(u)=>{
+  if (!u.includes('/avaliacoes/')) return;
+  return falhaAvaliacoes ? {ok:false,status:404,json:async()=>({})} : ok(resumo);
+ };
+ await mount(React.createElement(apiModule.UsuarioProvider,null,React.createElement(Rating,{tipo:'perfil',id:2,dono:2})));
+ assert(tree.root.findAllByType('Text').some(n=>n.props.children==='Avaliações indisponíveis no momento.'));
+ assert(!tree.root.findAllByType('Text').some(n=>n.props.children==='Carregando avaliações…'));
+ assert(!button('Nota 4'));
+ falhaAvaliacoes=false;await act(async()=>button('Tentar novamente').props.onPress());
+ assert(button('Nota 4'));checks+=4;await unmount();
  // Contratar: duas pessoas, foto relativa convertida para HTTPS e avatar padrão.
  let fotoLista='/uploads/foto-v1.png';
  respond=async(u)=>u.endsWith('/profissionais')?ok([{id:11,idUsuario:21,nome:'Com foto',categoria:'Pedreiro',foto:fotoLista},{id:12,idUsuario:22,nome:'Sem foto',categoria:'Eletricista',foto:null}]):undefined;

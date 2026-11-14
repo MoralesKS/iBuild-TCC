@@ -59,7 +59,7 @@ const notificar = (conn, idUsuario, tipo, titulo, mensagem) =>
   );
 
 // versao: o app confere se a API do PC está atualizada (sem isso, ele avisa)
-const VERSAO_API = 4;
+const VERSAO_API = 5;
 app.get('/', (req, res) => res.json({ ok: true, api: 'iBuild', versao: VERSAO_API }));
 
 /* ================================================================== */
@@ -625,14 +625,16 @@ app.get('/pedidos/:id', h(async(req,res)=>{
   res.json(pedido);
 }));
 
-async function alvoAvaliacao(tipo, id) {
+async function alvoAvaliacao(tipo, id, idUsuarioLeitura) {
   if (!Number.isSafeInteger(Number(id)) || Number(id)<1) return null;
   if (tipo==='produto') {
     const [a]=await q("SELECT id_vendedor FROM anuncios WHERE id_anuncio=? AND status='ativo'",[id]);
     return a ? {dono:a.id_vendedor,coluna:'id_anuncio'} : null;
   }
   if (tipo==='perfil') {
-    const u=await carregarUsuario('id_usuario',id);
+    // O usuário pode consultar o próprio resumo mesmo sem um perfil público.
+    const proprio = Number(id) === Number(idUsuarioLeitura);
+    const u=await carregarUsuario('id_usuario',id,proprio);
     return u ? {dono:u.idUsuario,coluna:'id_avaliado'} : null;
   }
   return null;
@@ -643,7 +645,7 @@ async function resumoAvaliacao(coluna,id,usuario) {
   return {...r,minha:minha||null};
 }
 app.get('/avaliacoes/:tipo/:id',h(async(req,res)=>{
-  const alvo=await alvoAvaliacao(req.params.tipo,req.params.id);
+  const alvo=await alvoAvaliacao(req.params.tipo,req.params.id,req.usuarioId);
   if(!alvo) return res.status(404).json({erro:'Alvo não encontrado.'});
   res.json(await resumoAvaliacao(alvo.coluna,req.params.id,req.usuarioId));
 }));
