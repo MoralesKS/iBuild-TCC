@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "8414c1f2-ae95-4efa-a8bf-32fce3b94f90"
+      }
+    },
+    "android": {
+      "package": "com.jocamcunha.ibuildtcc"
+    }
+  }
+}
