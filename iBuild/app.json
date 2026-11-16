@@ -48,6 +48,11 @@
           "photosPermission": "O iBuild precisa acessar suas fotos para você escolher a foto do perfil."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "61a5592f-56b5-4915-b558-21c9343f3a94"
+      }
+    }
   }
 }
