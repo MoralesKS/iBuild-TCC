@@ -1,0 +1,12 @@
+diff --git a/iBuild/screens/Home.js b/iBuild/screens/Home.js
+index 1435c8f..ded9d74 100644
+--- a/iBuild/screens/Home.js
++++ b/iBuild/screens/Home.js
+@@ -206,6 +206,7 @@ const styles = StyleSheet.create({
+   banner: {
+     backgroundColor: '#F57C00',
+     borderRadius: 12,
++    width: '100%',
+     aspectRatio: 1983 / 793,
+     marginTop: 16,
+     overflow: 'hidden',

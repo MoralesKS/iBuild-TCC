@@ -7,5 +7,10 @@
     "test:api": "npm test --prefix ibuild-api",
     "test:sql": "node tests/schema-integration.cjs"
   },
-  "engines": { "node": ">=22.13.0" }
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "dependencies": {
+    "expo": "^58.0.25"
+  }
 }

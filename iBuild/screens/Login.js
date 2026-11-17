@@ -66,7 +66,7 @@ export default function Login() {
                 height: logoHeight,
                 borderRadius: 8,
               }}
-              source={require('../assets/IBuild.jpg')}
+              source={require('../assets/IBuild.png')}
               resizeMode="contain"
             />
           </View>

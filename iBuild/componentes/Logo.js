@@ -1,8 +1,18 @@
 import { Image, useWindowDimensions } from 'react-native';
-const logo = require('../assets/IBuild.jpg');
-const tamanho = Image.resolveAssetSource(logo);
+
+const logo = require('../assets/IBuild.png');
+const proporcaoLogo = 2000 / 550;
+
 export default function Logo() {
-  const {width,height}=useWindowDimensions();
-  const largura=Math.min(width-48,300,Math.max(160,height*0.45));
-  return <Image source={logo} accessibilityLabel="iBuild" resizeMode="contain" style={{width:largura,aspectRatio:tamanho.width/tamanho.height,alignSelf:'center',flexShrink:0}} />;
+  const { width } = useWindowDimensions();
+  const largura = Math.min(width * 0.72, 240);
+
+  return (
+    <Image
+      source={logo}
+      accessibilityLabel="iBuild"
+      resizeMode="contain"
+      style={{ width: largura, height: largura / proporcaoLogo, alignSelf: 'center' }}
+    />
+  );
 }

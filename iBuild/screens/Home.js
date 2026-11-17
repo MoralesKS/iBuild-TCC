@@ -91,14 +91,13 @@ export default function Home() {
 
 
         <View style={styles.banner}>
-          <Text style={styles.bannerAnuncio}>Anúncio</Text>
-          <Text style={styles.bannerTitulo}>
-            O MIX DE{'\n'}
-            PRODUTOS{'\n'}
-            IDEAL PARA SEU{'\n'}
-            MATERIAL DE{'\n'}
-            CONSTRUÇÃO
-          </Text>
+          <Image
+            source={require('../assets/banner-ibuild.png')}
+            style={styles.bannerImagem}
+            resizeMode="contain"
+            accessible
+            accessibilityLabel="iBuild. Sua obra em um só lugar. Materiais, profissionais e gestão."
+          />
         </View>
 
         <View style={styles.secaoHeader}>
@@ -207,20 +206,14 @@ const styles = StyleSheet.create({
   banner: {
     backgroundColor: '#F57C00',
     borderRadius: 12,
-    minHeight: 120,
+    width: '100%',
+    aspectRatio: 1983 / 793,
     marginTop: 16,
-    padding: 16,
-    justifyContent: 'center',
+    overflow: 'hidden',
   },
-  bannerAnuncio: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    marginBottom: 4,
-  },
-  bannerTitulo: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 14,
+  bannerImagem: {
+    width: '100%',
+    height: '100%',
   },
   secaoHeader: {
     flexDirection: 'row',
