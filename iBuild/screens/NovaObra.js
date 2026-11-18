@@ -1,3 +1,4 @@
+import Voltar from '../componentes/Voltar';
 import { voltar as voltarTela } from '../src/navegacao';
 import { useEffect, useState } from 'react';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -93,9 +94,7 @@ export default function NovaObra() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={[styles.container, areaSegura]}>
-        <TouchableOpacity onPress={() => voltarTela(navigation, 'Gerenciar')}>
-          <Text style={styles.seta}>{'<'}</Text>
-        </TouchableOpacity>
+        <Voltar destino="Gerenciar"/>
         <Text style={styles.titulo}>{editando ? 'Editar obra' : 'Nova obra'}</Text>
 
         <ScrollView

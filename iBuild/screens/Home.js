@@ -1,7 +1,8 @@
 import BottomBar from '../componentes/BottomBar';
 import { useCallback, useState } from 'react';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { api } from '../src/api';
+import { listarFavoritos } from '../src/Favoritos';
+import { api, useUsuario } from '../src/api';
 import FotoProduto from '../src/FotoProduto';
 import { useAppNavigation, categorias } from '../src/Functions';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
@@ -28,6 +29,13 @@ export default function Home() {
       .finally(() => { if (ativo) setCarregandoLista(false); });
     return () => { ativo = false; };
   }, [tentativa]));
+  const { usuario } = useUsuario();
+  const [favoritos, setFavoritos] = useState([]);
+  useFocusEffect(useCallback(() => {
+    let ativo = true;
+    listarFavoritos(usuario?.idUsuario).then(lista => { if (ativo) setFavoritos(lista); });
+    return () => { ativo = false; };
+  }, [usuario?.idUsuario]));
   const produtos = produtosDb;
 
   function abrirProduto(produto) {
@@ -164,6 +172,13 @@ export default function Home() {
             ))}
           </ScrollView>
         )}
+        <Text style={styles.secaoTitulo}>Favoritos</Text>
+        {favoritos.length === 0 && <Text style={styles.semResultados}>Os produtos que você favoritar aparecem aqui.</Text>}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {favoritos.map(item => <TouchableOpacity key={item.id} style={styles.produtoCard} onPress={() => abrirProduto(item)}>
+            <FotoProduto style={styles.produtoImagem} source={item.imagem} /><Text style={styles.produtoNome}>{item.nome}</Text>
+          </TouchableOpacity>)}
+        </ScrollView>
       </ScrollView>
 
       {/* BOTTOM TAB BAR */}

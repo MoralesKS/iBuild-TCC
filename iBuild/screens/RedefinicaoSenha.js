@@ -1,5 +1,5 @@
+import Voltar from '../componentes/Voltar';
 import Logo from '../componentes/Logo';
-import { voltar as voltarTela } from '../src/navegacao';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image, ScrollView, KeyboardAvoidingView, Platform} from 'react-native';
 import { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
@@ -38,7 +38,6 @@ export default function RedefinicaoSenha() {
     navigation.navigate('Login');
   }
 
-  function voltar() { voltarTela(navigation, 'Login'); }
 
   return (
     <KeyboardAvoidingView style={{flex:1}} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}><ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
@@ -66,9 +65,7 @@ export default function RedefinicaoSenha() {
             <Text style={{color: '#ffffff'}}>{enviando ? 'Enviando...' : 'Continuar'}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.voltar} onPress={voltar} disabled={enviando}>
-            <Text style={{color: '#F57C00'}}>Voltar</Text>
-        </TouchableOpacity>
+        <Voltar destino="Login"/>
 
       </View>
     </ScrollView></KeyboardAvoidingView>

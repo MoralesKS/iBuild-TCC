@@ -13,8 +13,8 @@ export default function Avaliacao({tipo, id, dono, onAtualizar}) {
   const enviando=useRef(false);
   useFocusEffect(useCallback(() => {
     let ativo=true;
-    setErro('');
-    api.avaliacoes(tipo,id).then(r=>{if(ativo){setResumo(r);setNota(Number(r.minha?.nota || 0));setComentario(r.minha?.comentario || '');}}).catch(e=>{if(ativo)setErro(e.message);});
+    setErro(''); setResumo(null);
+    api.avaliacoes(tipo,id).then(r=>{if(ativo){setResumo(r); onAtualizar?.(r);setNota(Number(r.minha?.nota || 0));setComentario(r.minha?.comentario || '');}}).catch(e=>{if(ativo)setErro(e.message);});
     return ()=>{ativo=false;};
   },[tipo,id,tentativa]));
   async function enviar() {
@@ -25,9 +25,12 @@ export default function Avaliacao({tipo, id, dono, onAtualizar}) {
   }
   return <View style={{padding:12,borderWidth:1,borderColor:'#DDD',borderRadius:8,marginVertical:12}}>
     <Text style={{fontWeight:'bold'}}>{tipo==='produto'?'Avaliações do produto':'Avaliações do perfil'}</Text>
-    <Text>{resumo ? `★ ${resumo.media} • ${resumo.quantidade} avaliações` : 'Carregando avaliações…'}</Text>
+    <Text>{resumo ? `★ ${resumo.media} • ${resumo.quantidade} avaliações` : erro ? 'Avaliações indisponíveis no momento.' : 'Carregando avaliações…'}</Text>
+    {resumo?.lista?.map(item => <View key={item.id} style={{paddingVertical:8}}>
+      <Text>{item.autor} · {item.nota}/5</Text>{!!item.comentario && <Text>{item.comentario}</Text>}
+    </View>)}
     {!!erro && <View><Text accessibilityRole="alert">{erro}</Text><TouchableOpacity onPress={()=>setTentativa(t=>t+1)}><Text>Tentar novamente</Text></TouchableOpacity></View>}
-    {usuario && String(usuario.idUsuario)!==String(dono) && <>
+    {resumo && usuario && String(usuario.idUsuario)!==String(dono) && <>
       <View style={{flexDirection:'row',gap:12,marginVertical:8}}>{[1,2,3,4,5].map(n=><TouchableOpacity key={n} disabled={ocupado} accessibilityLabel={`Nota ${n}`} onPress={()=>setNota(n)}><Text style={{fontSize:28,color:n<=nota?'#F57C00':'#777'}}>{n<=nota?'★':'☆'}</Text></TouchableOpacity>)}</View>
       <TextInput accessibilityLabel="Comentário da avaliação" placeholder="Comentário (opcional)" maxLength={1000} value={comentario} onChangeText={setComentario} editable={!ocupado} multiline style={{borderWidth:1,borderColor:'#DDD',padding:8}} />
       <TouchableOpacity disabled={!nota||ocupado} onPress={enviar} style={{padding:12,backgroundColor:!nota||ocupado?'#AAA':'#277D2C',marginTop:8,borderRadius:8}}><Text style={{color:'white',textAlign:'center'}}>{ocupado?'Salvando…':resumo?.minha?'Atualizar avaliação':'Enviar avaliação'}</Text></TouchableOpacity>

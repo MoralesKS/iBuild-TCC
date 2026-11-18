@@ -77,7 +77,6 @@ const produtoApp = (a) => ({
   fotos: (a.fotos || []).map((f) => ({ id: f.id, imagem: urlFoto(f) })), // fotos extras
   avaliacao: a.avaliacao || 0,
   numAvaliacoes: a.numAvaliacoes || 0,
-  especificacoes: { material: a.tipo, cor: '—', dimensoes: '—', quantidade: `${a.quantidade} ${a.unidade || 'un.'}` },
 });
 
 const lojaApp = (l) => ({ ...l, idUsuario: l.id, id: 'db-' + l.id, imagem: l.foto ? imagemDoServidor(l.foto) : null });
@@ -137,6 +136,11 @@ export const api = {
   anunciar: (dados) => req('POST', '/anuncios', dados),
   atualizarAnuncio: (id, dados) => req('PATCH', `/anuncios/${id}`, dados).then(produtoApp),
   excluirAnuncio: (id, usuario) => req('DELETE', `/anuncios/${id}`, { id_usuario: usuario }),
+  conversas: () => req('GET','/conversas'),
+  mensagens: id => req('GET','/conversas/' + id),
+  enviarMensagem: (id, texto, chave) => req('POST','/conversas/' + id, {texto,chave}),
+  cotarFrete: (anuncios,endereco) => req('POST','/frete',{anuncios,endereco}),
+  pedido: id => req('GET','/pedidos/' + id),
   fazerPedido: (dados) => req('POST', '/pedidos', dados),
   avaliacoes: (tipo, id) => req('GET', `/avaliacoes/${tipo}/${id}`),
   avaliar: (tipo, id, dados) => req('PUT', `/avaliacoes/${tipo}/${id}`, dados),
@@ -213,10 +217,19 @@ export function UsuarioProvider({ children }) {
     cadastrando.current = true;
     let conta;
     try {
+      await req('POST','/cadastro/validar',dados);
       try {
         ({ user: conta } = await createUserWithEmailAndPassword(auth, email, senha));
       } catch (erro) {
-        if (erro.code !== 'auth/email-already-in-use') throw erro;
+        if (erro.code !== 'auth/email-already-in-use') {
+          const motivo = {
+            'auth/invalid-email':'O formato do e-mail é inválido.',
+            'auth/weak-password':'A senha é muito curta. Use pelo menos seis caracteres.',
+            'auth/network-request-failed':'A conexão caiu durante o cadastro. Confira a internet e tente novamente.',
+            'auth/too-many-requests':'Houve muitas tentativas. Aguarde antes de tentar novamente.',
+          };
+          throw new Error(motivo[erro.code] || 'Falha ao cadastrar a conta: ' + (erro.code || erro.message));
+        }
         // Permite repetir um cadastro cujo perfil ainda não foi salvo.
         try {
           ({ user: conta } = await signInWithEmailAndPassword(auth, email, senha));
@@ -304,8 +317,12 @@ export function telefoneValido(texto) {
 /* ------------------------------------------------------------------ */
 /* Fotos: abre a galeria e devolve [{ uri, base64, ext }]              */
 /* ------------------------------------------------------------------ */
-export async function escolherImagens({ multiplo = false, limite = 1, aspecto = [4, 3] } = {}) {
-  const r = await ImagePicker.launchImageLibraryAsync({
+export async function escolherImagens({ camera = false, multiplo = false, limite = 1, aspecto = [4, 3] } = {}) {
+  if (camera && !(await ImagePicker.requestCameraPermissionsAsync()).granted) {
+    throw new Error('Permita o acesso à câmera nas configurações do aparelho para tirar a foto.');
+  }
+  const abrir = camera ? ImagePicker.launchCameraAsync : ImagePicker.launchImageLibraryAsync;
+  const r = await abrir({
     mediaTypes: ['images'],
     allowsMultipleSelection: multiplo,
     selectionLimit: limite,

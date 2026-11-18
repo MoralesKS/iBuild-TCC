@@ -31,9 +31,17 @@ export default function Login() {
   const logoHeight = logoWidth * 0.5;
 
   function userLogin() {
+    if (!userMail.trim()) return alert("Informe o e-mail para entrar.");
+    if (!userPass) return alert("Informe sua senha para entrar.");
     signInWithEmailAndPassword(auth, userMail.trim(), userPass)
       .catch((error) => {
-        alert(error.message);
+        const mensagens = {
+          'auth/invalid-email': 'O formato do e-mail é inválido.',
+          'auth/network-request-failed': 'Falha de conexão ao entrar. Confira a internet e tente novamente.',
+          'auth/too-many-requests': 'Houve muitas tentativas de login. Aguarde antes de tentar novamente.',
+          'auth/user-disabled': 'Esta conta foi desativada.',
+        };
+        alert(mensagens[error.code] || (['auth/invalid-credential','auth/wrong-password','auth/user-not-found'].includes(error.code) ? 'O e-mail ou a senha está incorreto.' : 'Falha ao entrar. Código: ' + error.code));
       });
   }
 
@@ -128,18 +136,6 @@ export default function Login() {
             <View style={styles.alinhar}>
               <TouchableOpacity
                 style={[
-                  styles.continuar,
-                  { width: buttonWidth }
-                ]}
-                onPress={userLogin}
-              >
-                <Text style={styles.continuarText}>
-                  Continuar
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
                   styles.criarConta,
                   { width: buttonWidth }
                 ]}
@@ -147,6 +143,18 @@ export default function Login() {
               >
                 <Text style={styles.criarContaText}>
                   Criar Conta
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.continuar,
+                  { width: buttonWidth }
+                ]}
+                onPress={userLogin}
+              >
+                <Text style={styles.continuarText}>
+                  Entrar
                 </Text>
               </TouchableOpacity>
             </View>

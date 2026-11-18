@@ -1,4 +1,4 @@
-import { voltar as voltarTela } from '../src/navegacao';
+import Voltar from '../componentes/Voltar';
 import { useCallback, useEffect, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -34,9 +34,6 @@ export default function AtribuirFuncionarios() {
     }, [obra?.id, usuario?.idUsuario])
   );
 
-  function voltar() {
-    voltarTela(navigation, 'Gerenciar');
-  }
 
   const naObra = (p) => !!obra?.profissionais?.some((x) => x.id === p.idProfissional);
 
@@ -84,9 +81,7 @@ export default function AtribuirFuncionarios() {
 
   return (
     <View style={[styles.container, areaSegura]}>
-      <TouchableOpacity onPress={voltar}>
-        <Text style={styles.seta}>{'<'}</Text>
-      </TouchableOpacity>
+      <Voltar destino="Gerenciar"/>
       <Text style={styles.titulo}>Atribuir funcionários</Text>
       <Text style={styles.subtitulo}>
         {obra.nome} • {obra.profissionais?.length || 0} na equipe

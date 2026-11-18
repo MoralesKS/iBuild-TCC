@@ -1,5 +1,5 @@
+import Voltar from '../componentes/Voltar';
 import Logo from '../componentes/Logo';
-import { voltar as voltarTela } from '../src/navegacao';
 import {
   StyleSheet,
   Text,
@@ -140,17 +140,15 @@ export default function CadastroAutonomos() {
     const emailValido = validarEmail(userMail);
     const profissaoValida = validarProfissao(userProfissao);
 
-    if (
-      userMail.trim() === "" ||
-      userPass === "" ||
-      confirmePass === "" ||
-      userNome.trim() === "" ||
-      userTelefone.trim() === "" ||
-      userProfissao.trim() === ""
-    ) {
-      alert("Todos os campos devem ser preenchidos");
-      return;
-    }
+    const faltam = Object.entries({
+      'E-mail': userMail,
+      'Senha': userPass,
+      'Confirmação de senha': confirmePass,
+      'Nome': userNome,
+      'Celular': userTelefone,
+      'Profissão': userProfissao,
+    }).filter(([,valor]) => !valor.trim()).map(([campo]) => campo);
+    if (faltam.length) return alert('Preencha: ' + faltam.join(', ') + '.');
 
     if (!nomeValido) {
       alert("Informe seu nome completo corretamente");
@@ -206,7 +204,6 @@ export default function CadastroAutonomos() {
       .catch((error) => alert(error.message));
   }
 
-  function voltar() { voltarTela(navigation, 'Cadastro'); }
 
   function formatarTelefone(texto) {
     let numeros = texto.replace(/\D/g, "");
@@ -366,12 +363,7 @@ export default function CadastroAutonomos() {
               </View>
 
               <View style={[styles.botoesRow, { width: inputWidth }]}>
-                <TouchableOpacity
-                  style={[styles.voltar, { width: buttonWidth }]}
-                  onPress={voltar}
-                >
-                  <Text style={styles.voltarText}>Voltar</Text>
-                </TouchableOpacity>
+                <Voltar destino="Cadastro"/>
 
                 <TouchableOpacity
                   style={[styles.cadastrar, { width: buttonWidth }]}

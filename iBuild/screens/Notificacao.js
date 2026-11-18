@@ -1,7 +1,8 @@
+import Voltar from '../componentes/Voltar';
 import BottomBar from '../componentes/BottomBar';
 import { useCallback, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAppNavigation } from '../src/Functions';
 import { api, useUsuario } from '../src/api';
 import { useAreaSegura } from '../src/responsivo';
@@ -14,6 +15,12 @@ const FILTROS = [
 ];
 
 export default function Notificacoes() {
+  const navigation = useNavigation();
+  const [detalhes,setDetalhes] = useState(null);
+  async function abrirPedido(id) {
+    if (detalhes?.id_pedido === id) return setDetalhes(null);
+    try { setDetalhes(await api.pedido(id)); } catch(e) { alert(e.message); }
+  }
   const areaSegura = useAreaSegura();
   const { home, mapa, contratar, gerenciar, perfil, chat } = useAppNavigation();
   const { usuario } = useUsuario();
@@ -44,7 +51,7 @@ export default function Notificacoes() {
 
   return (
     <View style={[styles.container, areaSegura]}>
-      <Text style={styles.titulo}>Notificações</Text>
+      <Voltar/><Text style={styles.titulo}>Notificações</Text>
       <Text style={styles.subtitulo}>Acompanhe compras, recibos e atualizações de obra</Text>
 
       <TextInput
@@ -67,12 +74,21 @@ export default function Notificacoes() {
         {visiveis.length === 0 && (
           <Text style={styles.notificacaoDescricao}>Nenhuma notificação.</Text>
         )}
-        {visiveis.map((n) => (
+        {visiveis.map((n) => {
+          const pedidoId = n.tipo === 'compra' && Number(n.mensagem?.match(/^Pedido #(\d+)/)?.[1]);
+          return (
           <View key={n.id} style={styles.notificacaoCard}>
             <Text style={[styles.notificacaoTitulo, !n.lida && { color: '#277D2C' }]}>{n.titulo}</Text>
             <Text style={styles.notificacaoDescricao}>{n.mensagem}  •  {n.quando}</Text>
+            {!!pedidoId && <TouchableOpacity style={{paddingVertical:10}} onPress={()=>abrirPedido(pedidoId)}><Text>Detalhes do pedido #{pedidoId}</Text></TouchableOpacity>}
+            {!!pedidoId && detalhes?.id_pedido === pedidoId && <View>
+              {detalhes.itens.map(item=><Text key={item.id_anuncio}>{item.quantidade} × {item.titulo} · R$ {Number(item.preco_unitario).toFixed(2).replace('.',',')} por unidade</Text>)}
+              <Text>{detalhes.endereco}</Text><Text>{detalhes.metodo} · Pendente de pagamento</Text>
+              {detalhes.total != null && <Text>Total do pedido: R$ {Number(detalhes.total).toFixed(2).replace('.',',')}</Text>}
+              {!!detalhes.id_comprador && <TouchableOpacity style={{paddingVertical:10}} onPress={()=>navigation.push('PerfilAutonomo',{usuarioId:detalhes.id_comprador})}><Text>Ver perfil do comprador</Text></TouchableOpacity>}
+            </View>}
           </View>
-        ))}
+        );})}
       </ScrollView>
 
       {/* BOTTOM TAB BAR */}

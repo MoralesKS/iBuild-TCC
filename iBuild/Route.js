@@ -1,5 +1,4 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ConversasProvider } from './screens/Chat1';
 import { CarrinhoProvider } from './src/CarrinhoItens';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -33,7 +32,6 @@ const Drawer = createNativeStackNavigator();
 export default function Route({ autenticado }) {
   return (
     <SafeAreaProvider>
-    <ConversasProvider>
       <CarrinhoProvider>
         <Drawer.Navigator screenOptions={{ headerShown: false }}>
         {!autenticado ? <>
@@ -64,7 +62,6 @@ export default function Route({ autenticado }) {
         </>}
         </Drawer.Navigator>
       </CarrinhoProvider>
-    </ConversasProvider>
     </SafeAreaProvider>
   );
 }

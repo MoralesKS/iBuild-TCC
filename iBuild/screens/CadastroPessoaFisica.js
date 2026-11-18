@@ -1,5 +1,5 @@
+import Voltar from '../componentes/Voltar';
 import Logo from '../componentes/Logo';
-import { voltar as voltarTela } from '../src/navegacao';
 import {
   StyleSheet,
   Text,
@@ -40,18 +40,16 @@ export default function CadastroPessoaFisica() {
   const { cadastrarUsuario } = useUsuario();
 
   function novoUser() {
-    if (
-      userMail === "" ||
-      userPass === "" ||
-      confirmePass === "" ||
-      userNome === "" ||
-      userCPF === "" ||
-      userTelefone === "" ||
-      userData === ""
-    ) {
-      alert("Todos os campos devem ser preenchidos");
-      return;
-    }
+    const faltam = Object.entries({
+      'E-mail': userMail,
+      'Senha': userPass,
+      'Confirmação de senha': confirmePass,
+      'Nome': userNome,
+      'CPF': userCPF,
+      'Celular': userTelefone,
+      'Data de nascimento': userData,
+    }).filter(([,valor]) => !valor.trim()).map(([campo]) => campo);
+    if (faltam.length) return alert('Preencha: ' + faltam.join(', ') + '.');
     if (userPass !== confirmePass) {
       alert("A senha e a confirmação não coincidem");
       return;
@@ -76,7 +74,6 @@ export default function CadastroPessoaFisica() {
       .catch((error) => alert(error.message));
   }
 
-  function voltar() { voltarTela(navigation, 'Cadastro'); }
 
   const onChangeDate = (event, selectedDate) => {
     setShowDatePicker(Platform.OS === "ios");
@@ -239,11 +236,7 @@ export default function CadastroPessoaFisica() {
           </View>
 
           <View style={styles.botoesRow}>
-            <TouchableOpacity style={styles.voltar} onPress={voltar}>
-              <Text style={{ color: "#F57C00", fontWeight: "bold" }}>
-                Voltar
-              </Text>
-            </TouchableOpacity>
+            <Voltar destino="Cadastro"/>
             <TouchableOpacity style={styles.cadastrar} onPress={novoUser}>
               <Text style={{ color: "#FFFFFF", fontWeight: "bold" }}>
                 Cadastrar

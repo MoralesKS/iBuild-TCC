@@ -1,4 +1,4 @@
-import { voltar as voltarTela } from '../src/navegacao';
+import Voltar from '../componentes/Voltar';
 import Avaliacao from '../componentes/Avaliacao';
 import Avatar from '../componentes/Avatar';
 import { useCallback, useState } from 'react';
@@ -9,11 +9,9 @@ import { useAppNavigation } from '../src/Functions';
 import { api, sair, useUsuario } from '../src/api';
 import FotoProduto from '../src/FotoProduto';
 import BarraInferior from '../src/BarraInferior';
-import { garantirConversa, useConversas } from './Chat1';
 import { useAreaSegura } from '../src/responsivo';
 
 export default function Perfil() {
-  const conversas = useConversas();
   const areaSegura = useAreaSegura();
   const navigation = useNavigation();
   const route = useRoute();
@@ -33,6 +31,7 @@ export default function Perfil() {
   const [escolhendoObra, setEscolhendoObra] = useState(false);
   const [favoritos, setFavoritos] = useState([]);
 
+  const [resumoPerfil,setResumoPerfil] = useState(null);
   const base = usuarioLogado || (usuarioFirebase ? { nome: usuarioFirebase.displayName || usuarioFirebase.email?.split('@')[0], email: usuarioFirebase.email, telefone: '', foto: require('../assets/Perfil.png'), profissao: 'Perfil básico', avaliacoes: 0, notaMedia: 0 } : null);
   const usuario = ehProprio ? base : outro;
 
@@ -62,14 +61,7 @@ export default function Perfil() {
 
   // Abre (ou cria) a conversa com esta pessoa
   function chamarNoChat() {
-    const id = garantirConversa(conversas, {
-      id: usuario.idUsuario ? `u-${usuario.idUsuario}` : `ex-${usuario.nome}`,
-      nome: usuario.nome,
-      status: usuario.profissao || 'Online',
-      saudacao: `Olá! Sou ${usuario.nome}${usuario.profissao ? ', ' + usuario.profissao : ''}. Como posso ajudar na sua obra?`,
-      padrao: 'Entendi! Me envie mais detalhes do serviço para eu te passar um orçamento.',
-    });
-    navigation.navigate('Chat 2', { conversaId: id });
+    navigation.navigate('Chat 2', { pessoa: usuario.idUsuario, nome: usuario.nome });
   }
 
   async function adicionarNaObra(obra) {
@@ -131,7 +123,7 @@ export default function Perfil() {
     return (
       <View style={[styles.container, areaSegura]}>
         <Text style={styles.titulo}>Perfil</Text>
-        <Text style={styles.listaVazia}>{erroOutro || 'Carregando perfil…'}</Text><TouchableOpacity onPress={() => voltarTela(navigation, 'Home')}><Text>Voltar</Text></TouchableOpacity>
+        <Text style={styles.listaVazia}>{erroOutro || 'Carregando perfil…'}</Text><Voltar destino="Home"/>
         <BarraInferior ativo="perfil" />
       </View>
     );
@@ -144,9 +136,7 @@ export default function Perfil() {
 
       <View style={styles.headerRow}>
         {!ehProprio && (
-          <TouchableOpacity style={styles.botaoVoltar} onPress={() => voltarTela(navigation, 'Home')}>
-            <Text style={styles.setaVoltar}>{'<'}</Text>
-          </TouchableOpacity>
+          <Voltar destino="Home"/>
         )}
         <Text style={styles.titulo}>{ehProprio ? 'Meu Perfil' : 'Perfil'}</Text>
         {ehProprio && (
@@ -223,18 +213,18 @@ export default function Perfil() {
             </View>
           )}
           <View style={styles.statItem}>
-            <Text style={styles.statValor}>{usuario.avaliacoes}</Text>
+            <Text style={styles.statValor}>{resumoPerfil && resumoPerfil.id === usuario.idUsuario ? resumoPerfil.quantidade : usuario.avaliacoes}</Text>
             <Text style={styles.statLabel}>Avaliações</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statValor}>
-              <Text style={styles.estrela}>★ </Text>{usuario.notaMedia}
+              <Text style={styles.estrela}>★ </Text>{resumoPerfil && resumoPerfil.id === usuario.idUsuario ? resumoPerfil.media : usuario.notaMedia}
             </Text>
             <Text style={styles.statLabel}>Nota média</Text>
           </View>
         </View>
 
-        {!!usuario.idUsuario && <Avaliacao tipo="perfil" id={usuario.idUsuario} dono={usuario.idUsuario} onAtualizar={r=>{ if(!ehProprio) setOutro(u=>({...u,notaMedia:r.media,avaliacoes:r.quantidade})); }} />}
+        {!!usuario.idUsuario && <Avaliacao tipo="perfil" id={usuario.idUsuario} dono={usuario.idUsuario} onAtualizar={r=>setResumoPerfil({...r,id:usuario.idUsuario})} />}
         {/* Perfil de outra pessoa: chat */}
         {!ehProprio && (
           <TouchableOpacity style={styles.chatBotao} onPress={chamarNoChat}>

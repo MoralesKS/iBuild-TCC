@@ -1,4 +1,4 @@
-import { voltar as voltarTela } from '../src/navegacao';
+import Voltar from '../componentes/Voltar';
 import { useEffect, useState } from 'react';
 import {
   Text, View, TextInput, TouchableOpacity, ScrollView,
@@ -63,11 +63,19 @@ export default function Configuracoes() {
     setUf(e.estado || '');
   }, [usuario?.idUsuario]);
 
-  async function trocarFotoPerfil() {
-    const [imagem] = await escolherImagens({ multiplo: false, aspecto: [1, 1] });
+  function escolherFotoPerfil() {
+    Alert.alert('Foto do perfil', 'Como deseja adicionar a foto?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Galeria', onPress: () => trocarFotoPerfil(false) },
+      { text: 'Câmera', onPress: () => trocarFotoPerfil(true) },
+    ]);
+  }
+
+  async function trocarFotoPerfil(camera) {
+    try {
+    const [imagem] = await escolherImagens({ camera, multiplo: false, aspecto: [1, 1] });
     if (!imagem) return;
     setEnviandoFoto(true);
-    try {
       await api.enviarFoto(usuario.idUsuario, imagem.base64, imagem.ext);
       await recarregarUsuario();
     } catch (e) {
@@ -184,7 +192,7 @@ export default function Configuracoes() {
     return (
       <View style={[styles.container, areaSegura]}>
         <Text style={styles.titulo}>Configurações</Text>
-        <Text style={styles.carregando}>{erroPerfil || "Carregando perfil…"}</Text><TouchableOpacity onPress={() => voltarTela(navigation, 'Home')}><Text>Voltar</Text></TouchableOpacity><TouchableOpacity onPress={recarregarUsuario}><Text>Tentar novamente</Text></TouchableOpacity>
+        <Text style={styles.carregando}>{erroPerfil || "Carregando perfil…"}</Text><Voltar destino="Home"/><TouchableOpacity onPress={recarregarUsuario}><Text>Tentar novamente</Text></TouchableOpacity>
       </View>
     );
   }
@@ -202,9 +210,7 @@ export default function Configuracoes() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={[styles.container, areaSegura]}>
-        <TouchableOpacity onPress={() => voltarTela(navigation, 'Perfil')}>
-          <Text style={styles.seta}>{'<'}</Text>
-        </TouchableOpacity>
+        <Voltar destino="Perfil"/>
         <Text style={styles.titulo}>Configurações</Text>
 
         <ScrollView
@@ -214,7 +220,7 @@ export default function Configuracoes() {
         >
           {/* Foto do perfil */}
           <View style={styles.fotoArea}>
-            <TouchableOpacity onPress={trocarFotoPerfil} disabled={enviandoFoto}>
+            <TouchableOpacity onPress={escolherFotoPerfil} disabled={enviandoFoto}>
               <FotoProduto style={styles.avatar} source={usuario.foto} />
               <View style={styles.editarBadge}>
                 <Text style={styles.editarTexto}>✎</Text>

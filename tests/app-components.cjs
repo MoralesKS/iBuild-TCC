@@ -33,7 +33,10 @@ function load(file) {
  if(name==='react-native-safe-area-context')return {SafeAreaProvider:'SafeAreaProvider',SafeAreaView:'SafeAreaView',useSafeAreaInsets:()=>({top:24,bottom:16})};
  if(name==='@expo/vector-icons')return {Ionicons:'Ionicons'};
  if(name==='expo-checkbox')return {__esModule:true,default:'Checkbox'};
- if(name==='expo-image-picker')return {};
+ if(name==='expo-image-picker')return {
+   requestCameraPermissionsAsync:async()=>({granted:true}),
+   launchCameraAsync:async()=>({canceled:false,assets:[{uri:'file:///foto.jpg',base64:'foto'}]})
+ };
  if(name==='expo-location')return {requestForegroundPermissionsAsync:async()=>({status:'granted'}),getCurrentPositionAsync:async()=>({coords:{latitude:-23.5,longitude:-46.6}}),Accuracy:{Balanced:1}};
  if(name==='react-native-maps')return {__esModule:true,default:'MapView',Marker:'Marker'};
  if(name==='@react-native-community/datetimepicker')return {__esModule:true,default:'DateTimePicker'};
@@ -70,14 +73,15 @@ let checks=0;
  assert(fetches.some(([u,o])=>u.endsWith('/usuarios')&&JSON.parse(o.body).versao_documentos==='1'));checks++;
  apiFailure=true;await act(async()=>firebase.signInWithEmailAndPassword());assert(context.erroPerfil);assert.equal(context.usuarioFirebase.uid,'test-user');checks++;apiFailure=false;
  await unmount();
- // Session chat data, correct seller, list screen and Back action.
- let conversations;function ChatCapture(){conversations=chats.useConversas();return null;}
- await mount(React.createElement(chats.ConversasProvider,null,React.createElement(ChatCapture),React.createElement(chats.default,{navigation})));
- const id=chats.garantirConversa(conversations,{id:'u-123',nome:'Loja Teste'});assert.equal(chats.garantirConversa(conversations,{id:'u-123',nome:'Loja Teste'}),id);assert.equal(conversations.filter(c=>c.id===id).length,1);checks++;
+ const ok=data=>({ok:true,status:200,json:async()=>data});
+ respond=async url=>url.includes('/conversas')?ok([]):undefined;
  const Chat2=load(appRoot+'/screens/Chat2.js').default;
- await act(async()=>tree.update(React.createElement(chats.ConversasProvider,null,React.createElement(ChatCapture),React.createElement(Chat2,{navigation,route:{params:{conversaId:id}}}))));
- assert(tree.root.findAllByType('Text').some(t=>text(t)==='Loja Teste'));await act(async()=>button('Voltar da conversa').props.onPress());assert.equal(calls.at(-1)[0],'BACK');checks++;
- await unmount();await mount(React.createElement(chats.ConversasProvider,null,React.createElement(ChatCapture)));assert(!conversations.some(c=>c.id==='u-123'));checks++;await unmount();
+ await mount(React.createElement(apiModule.UsuarioProvider,null,React.createElement(Chat2,{navigation,route:{params:{pessoa:123,nome:'Loja Teste'}}})));
+ await act(async()=>tree.root.findByType('TextInput').props.onChangeText('Tem estoque?'));
+ await act(async()=>button('Enviar').props.onPress());
+ assert(fetches.some(([u,o])=>u.endsWith('/conversas/123') && o.method==='POST' && JSON.parse(o.body).texto==='Tem estoque?'));checks++;
+ await act(async()=>button('Voltar').props.onPress());assert.equal(calls.at(-1)[0],'BACK');checks++;await unmount();
+ respond=null;
  // Obras with missing optionals and inaccessible route.
  const Details=load(appRoot+'/screens/DetalheObras.js').default;
  currentRoute={params:{obra:{id:'demo-test',nome:'Obra sem opcionais'}}};
@@ -90,10 +94,9 @@ let checks=0;
  const Bottom=load(appRoot+'/componentes/BottomBar.js').default;await mount(React.createElement(Bottom,{ativa:'chat'}));const tab=tree.root.findAllByType('TouchableOpacity').find(t=>t.props.accessibilityLabel==='Chat');assert.equal(tab.props.accessibilityState.selected,true);await act(async()=>tab.props.onPress());assert.equal(calls.at(-1)[0],'Chat 1');checks++;await unmount();
  // Profile has only persistent settings; session overlay must not override authenticated data.
  currentRoute={params:{}};const Profile=load(appRoot+'/screens/Perfil.js').default;apiFailure=true;
- await mount(React.createElement(apiModule.UsuarioProvider,null,React.createElement(chats.ConversasProvider,null,React.createElement(Capture),React.createElement(Profile))));
+ await mount(React.createElement(apiModule.UsuarioProvider,null,React.createElement(React.Fragment,null,React.createElement(Capture),React.createElement(Profile))));
  assert(tree.root.findAllByType('Text').some(t=>text(t).includes('Servidor indisponível')));assert(!button('Editar perfil nesta sessão'));checks+=2;
  await act(async()=>button('Sair da conta').props.onPress());await act(async()=>alerts.at(-1)[2].find(b=>b.text==='Sair').onPress());assert.equal(auth.currentUser,null);checks++;await unmount();apiFailure=false;
- const ok=data=>({ok:true,status:200,json:async()=>data});
  const work={id:10,idProprietario:1,nome:'Obra real',etapas:{fundacao:0,estrutura:0,acabamento:0},equipe:{},proximasAcoes:[{id:1,texto:'Uma tarefa',etapa:'estrutura',feito:false}]};
  respond=async(url,o)=>{
    if(url.includes('/obras/participando'))return ok([]);
@@ -114,21 +117,21 @@ let checks=0;
  await act(async()=>tree.root.findByType('Checkbox').props.onValueChange());assert(!work.proximasAcoes[0].feito);checks++;await unmount();
  await mount(React.createElement(apiModule.UsuarioProvider,null,React.createElement(Details)));assert.equal(tree.root.findByType('Checkbox').props.value,false);checks++;await unmount();
  // Checkout: failed call keeps cart and persisted key; repeat sends same request and clears on success.
- respond=null;const cartModule=load(appRoot+'/src/CarrinhoItens.js');const Checkout=load(appRoot+'/screens/Carrinho.js').default;let cart;
+ respond=async u=>u.endsWith('/frete')?ok({frete:12.90}):undefined;const cartModule=load(appRoot+'/src/CarrinhoItens.js');const Checkout=load(appRoot+'/screens/Carrinho.js').default;let cart;
  function CartCapture(){cart=cartModule.useCarrinho();return null;}
  await mount(React.createElement(apiModule.UsuarioProvider,null,React.createElement(cartModule.CarrinhoProvider,null,React.createElement(CartCapture),React.createElement(Checkout))));
  await act(async()=>cart.adicionarAoCarrinho({id:'db-10',idAnuncio:10,nome:'Tijolo',preco:'R$ 10,00'}));
  await act(async()=>tree.root.findAllByType('TextInput').find(t=>t.props.placeholder==='Digite IBUILD10').props.onChangeText('IBUILD10'));
- await act(async()=>button('Aplicar').props.onPress());assert(tree.root.findAllByType('Text').some(t=>text(t)==='R$ 9,00'));checks++;
- await act(async()=>cart.atualizarQuantidade('db-10',2));assert(tree.root.findAllByType('Text').some(t=>text(t)==='R$ 18,00'));checks++;
- await act(async()=>button('Registrar pedido').props.onPress());assert.equal(alerts.at(-1)[0],'Faltam dados');checks++;
- await act(async()=>tree.root.findAllByType('TextInput').find(t=>t.props.placeholder==='Rua, número, bairro e cidade').props.onChangeText('Rua Teste 123, São Paulo'));
+ await act(async()=>button('Aplicar').props.onPress());assert(tree.root.findAllByType('Text').some(t=>text(t)==='R$ 1,00'));checks++;
+ await act(async()=>cart.atualizarQuantidade('db-10',2));assert(tree.root.findAllByType('Text').some(t=>text(t)==='R$ 2,00'));checks++;
+ await act(async()=>button('Registrar pedido').props.onPress());assert.equal(alerts.at(-1)[0],'Endereço pendente');checks++;
+ await act(async()=>tree.root.findAllByType('TextInput').find(t=>t.props.placeholder==='Rua, número, bairro, cidade e CEP').props.onChangeText('Rua Teste 123, São Paulo, 05512-000'));
  await act(async()=>button('Salvar endereço').props.onPress());await act(async()=>button('Pix').props.onPress());
  let pedidoCalls=[];let offline=true;
  respond=async(u,o)=>{if(u.endsWith('/pedidos')){pedidoCalls.push(JSON.parse(o.body));if(offline)throw Error('offline');return ok({id:44,total:30.9,status:'pendente_pagamento'});}};
  await act(async()=>{const click=button('Registrar pedido').props.onPress;await Promise.all([click(),click()]);});
  assert.equal(pedidoCalls.length,1);assert.equal(cart.itens.length,1);assert(storage.size>0);checks+=3;
- offline=false;await act(async()=>button('Confirmar tentativa anterior').props.onPress());assert.equal(pedidoCalls[0].chave,pedidoCalls[1].chave);assert.equal(cart.itens.length,0);assert.equal(storage.size,0);assert.equal(alerts.at(-1)[0],'Pedido registrado');checks+=4;await unmount();
+ offline=false;await act(async()=>button('Confirmar tentativa anterior').props.onPress());assert.equal(pedidoCalls[0].chave,pedidoCalls[1].chave);assert.equal(cart.itens.length,0);assert(![...storage.keys()].some(k=>k.includes('pedido-pendente')));assert.equal(JSON.parse(storage.get('ibuild-checkout-1')).metodo,'Pix');assert.equal(alerts.at(-1)[0],'Pedido registrado');checks+=4;await unmount();
  // Shared avatar handles missing/failed/updated URLs.
  const Avatar=load(appRoot+'/componentes/Avatar.js').default;
  await mount(React.createElement(Avatar,{source:{uri:'https://api.test/uploads/a.png'}}));
@@ -137,7 +140,12 @@ let checks=0;
  await act(async()=>tree.update(React.createElement(Avatar,{})));assert.equal(tree.root.findByType('Image').props.source,1);checks++;await unmount();
  // Map real user ID is independent of the display key.
  respond=async(u)=>u.endsWith('/lojas')?ok([{id:73,nome:'Loja real',endereco:'São Paulo',latitude:-23.5,longitude:-46.6}]):undefined;
- const Map=load(appRoot+'/screens/Mapa.js').default;await mount(React.createElement(Map));
+ const respostaLojas=respond;
+ respond=async(u,o)=>u.includes('/obras/participando')?ok([work]):respostaLojas(u,o);
+ const Map=load(appRoot+'/screens/Mapa.js').default;await mount(React.createElement(apiModule.UsuarioProvider,null,React.createElement(Map)));
+ await act(async()=>tree.root.findByType('TextInput').props.onChangeText('Obra real'));
+ await act(async()=>button('Obra real').props.onPress());assert.equal(calls.at(-1)[0],'DetalhesObra');assert.equal(calls.at(-1)[1].obra.id,10);checks++;
+ await act(async()=>tree.root.findByType('TextInput').props.onChangeText(''));
  const marker=tree.root.findAllByType('Marker').find(n=>n.props.title==='Loja real');await act(async()=>marker.props.onPress());await act(async()=>button('Ver perfil da loja').props.onPress());assert.deepEqual(calls.at(-1).slice(0,1),['PerfilAutonomo']);assert.equal(calls.at(-1)[1].usuarioId,73);checks++;await unmount();
  const back=load(appRoot+'/src/navegacao.js');back.voltar(navigation,'Home');assert.equal(calls.at(-1)[0],'BACK');const fallbackCalls=[];back.voltar({canGoBack:()=>false,navigate:r=>fallbackCalls.push(r)},'Cadastro');assert.equal(fallbackCalls[0],'Cadastro');checks+=2;
  // Logos use contain and fit a 320px screen; keyboard layouts are scrollable.
@@ -153,6 +161,8 @@ let checks=0;
  respond=async(u,o)=>{if(u.includes('/avaliacoes/')){if(o.method==='PUT'){const b=JSON.parse(o.body);resumo={media:b.nota,quantidade:1,minha:b};}return ok(resumo);}};
  const Rating=load(appRoot+'/componentes/Avaliacao.js').default;await mount(React.createElement(apiModule.UsuarioProvider,null,React.createElement(Rating,{tipo:'produto',id:10,dono:2})));
  await act(async()=>button('Nota 4').props.onPress());await act(async()=>button('Enviar avaliação').props.onPress());assert.equal(resumo.media,4);assert(button('Atualizar avaliação'));checks+=2;await unmount();
+ const fotos=await apiModule.escolherImagens({camera:true,aspecto:[1,1]});
+ assert.equal(fotos[0].base64,'foto');assert.equal(fotos[0].ext,'jpg');checks++;
  // A failed read stops loading, and retry restores the evaluation form.
  let falhaAvaliacoes=true;
  respond=async(u)=>{

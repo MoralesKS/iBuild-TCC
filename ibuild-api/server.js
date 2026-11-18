@@ -9,6 +9,8 @@ const firebaseAuth = getAuth(initializeApp({
   projectId: process.env.FIREBASE_PROJECT_ID || 'configure-seu-projeto',
 }));
 
+const { erroCadastro } = require('./lib/cadastro');
+const { cepNoEndereco, cotarFrete } = require('./lib/frete');
 const { createHash } = require('crypto');
 const { ETAPAS, progressoEtapas, validarPedido } = require('./lib/regras');
 const fs = require('fs');
@@ -40,10 +42,17 @@ app.use('/demo-assets', express.static(path.join(__dirname,'demo-assets')));
 
 /* ---------- utilidades ---------- */
 const q = async (sql, params = [], conn = pool) => (await conn.query(sql, params))[0];
+const falhasBanco = {
+  ER_NO_SUCH_TABLE: 'Falta uma tabela desta versão no banco do iBuild. Avise a equipe do aplicativo.',
+  ER_BAD_FIELD_ERROR: 'A estrutura do banco precisa ser atualizada para esta versão do iBuild.',
+  ECONNREFUSED: 'A API não conseguiu se conectar ao banco de dados.',
+  ER_LOCK_WAIT_TIMEOUT: 'Outro pedido está atualizando os mesmos dados. Tente novamente.',
+  ER_LOCK_DEADLOCK: 'Dois pedidos tentaram atualizar os mesmos dados ao mesmo tempo. Tente novamente.',
+};
 const h = (fn) => (req, res) =>
   fn(req, res).catch((e) => {
     console.error(e);
-    res.status(500).json({ erro: 'Não foi possível concluir a operação. Tente novamente.' });
+    res.status(500).json({ erro: falhasBanco[e.code] || 'O servidor não conseguiu concluir a operação. Tente novamente.' });
   });
 const dataBR = (d) => {
   if (!d) return null;
@@ -59,7 +68,7 @@ const notificar = (conn, idUsuario, tipo, titulo, mensagem) =>
   );
 
 // versao: o app confere se a API do PC está atualizada (sem isso, ele avisa)
-const VERSAO_API = 5;
+const VERSAO_API = 6;
 app.get('/', (req, res) => res.json({ ok: true, api: 'iBuild', versao: VERSAO_API }));
 
 /* ================================================================== */
@@ -90,7 +99,7 @@ async function autenticarUsuario(req, res, next) {
   next();
 }
 
-async function carregarUsuario(campo, valor, privado = false) {
+async function carregarUsuario(campo, valor, privado = false, permitirCliente = false) {
   // "campo" só recebe 'id_usuario' ou 'firebase_uid' (valores fixos do código)
   const [u] = await q(
     `SELECT u.id_usuario, u.firebase_uid, u.tipo_perfil, u.nome, u.razao_social, u.email, u.telefone, u.cidade, u.bio,
@@ -103,7 +112,7 @@ async function carregarUsuario(campo, valor, privado = false) {
     [valor]
   );
   if (!u || (campo === 'firebase_uid' && u.firebase_uid !== valor)) return null;
-  if (!privado && u.tipo_perfil === 'pessoa_fisica') {
+  if (!privado && !permitirCliente && u.tipo_perfil === 'pessoa_fisica') {
     const [anuncio] = await q("SELECT id_anuncio FROM anuncios WHERE id_vendedor = ? AND status = 'ativo' LIMIT 1", [u.id_usuario]);
     if (!anuncio) return null;
   }
@@ -141,11 +150,21 @@ app.get('/usuarios/me', autenticarUsuario, h(async (req, res) => {
 }));
 
 app.get('/usuarios/:id', h(async (req, res) => {
-  const u = await carregarUsuario('id_usuario', req.params.id);
+  let permitirCliente = false;
+  if (req.get('Authorization')) {
+    try { await firebaseAuth.verifyIdToken(req.get('Authorization').replace(/^Bearer /i,'')); permitirCliente = true; }
+    catch { return res.status(401).json({erro:'Sessão expirada. Entre novamente.'}); }
+  }
+  const u = await carregarUsuario('id_usuario', req.params.id, false, permitirCliente);
   if (!u) return res.status(404).json({ erro: 'Usuário não encontrado' });
   res.json(u);
 }));
 
+app.post('/cadastro/validar', (req,res) => {
+  const erro = erroCadastro(req.body || {});
+  if (erro) return res.status(400).json({erro});
+  res.json({ok:true});
+});
 app.post('/usuarios', autenticarUsuario, h(async (req, res) => {
   const b = req.body || {};
   const { uid, email, email_verified: emailVerificado, name } = req.conta;
@@ -179,6 +198,10 @@ app.post('/usuarios', autenticarUsuario, h(async (req, res) => {
     return res.status(409).json({ erro: 'Não foi possível vincular este e-mail a um perfil.' });
   }
 
+  if (cadastro) {
+    const erro = erroCadastro(b);
+    if (erro) return res.status(400).json({erro});
+  }
   const dados = cadastro ? b : {};
   const conn = await pool.getConnection();
   let id;
@@ -267,6 +290,7 @@ app.patch('/usuarios/:id', h(async (req, res) => {
   const valores = [];
   const mudar = (coluna, valor) => { if (valor !== undefined) { campos.push(`${coluna} = ?`); valores.push(valor === '' ? null : valor); } };
   if (b.nome !== undefined && String(b.nome).trim() === '') return res.status(400).json({ erro: 'O nome não pode ficar vazio' });
+  if (b.telefone !== undefined && !/^[1-9][1-9]9\d{8}$/.test(String(b.telefone).replace(/[ ()-]/g,''))) return res.status(400).json({erro:'Informe um celular válido de 11 dígitos com DDD.'});
   mudar('nome', b.nome !== undefined ? String(b.nome).trim() : undefined);
   mudar('razao_social', b.razao_social);
   mudar('telefone', b.telefone);
@@ -392,6 +416,8 @@ function validarAnuncio(b) {
   if (!String(b.unidade || '').trim()) erros.push('Escolha a unidade.');
   if (String(b.descricao || '').length > 200) erros.push('A descrição pode ter no máximo 200 caracteres.');
 
+  if (!['Retirada','Entregar','Ambos'].includes(b.disponibilidade)) erros.push('Selecione entrega, retirada ou ambos.');
+  if (['Entregar','Ambos'].includes(b.disponibilidade) && !cepNoEndereco(b.localizacao)) erros.push('Inclua o CEP de origem na localização do produto para oferecer entrega.');
   const local = String(b.localizacao || '').trim();
   if (local.length < 3 || !/[A-Za-zÀ-ÿ]/.test(local)) erros.push('Informe a localização do produto.');
 
@@ -462,7 +488,7 @@ app.post('/anuncios', h(async (req, res) => {
                              estado_material, disponibilidade, localizacao, contato, status_curadoria)
        VALUES (?,?,?,?,?,?,?,?,?,?,?, 'aprovado')`,
       [b.id_vendedor, idCat, String(b.titulo).trim(), b.descricao || null, Number(b.quantidade), b.unidade,
-       Number(b.preco), ESTADO_BANCO[b.estado] || 'bom', b.disponibilidade === 'Entregar' ? 'entrega' : 'retirada',
+       Number(b.preco), ESTADO_BANCO[b.estado] || 'bom', b.disponibilidade === 'Ambos' ? 'ambos' : b.disponibilidade === 'Entregar' ? 'entrega' : 'retirada',
        String(b.localizacao).trim(), b.contato]
     );
     id = r.insertId;
@@ -527,7 +553,7 @@ app.patch('/anuncios/:id', h(async (req, res) => {
       `UPDATE anuncios SET titulo = ?, id_categoria = ?, descricao = ?, quantidade = ?, unidade = ?, preco_unitario = ?,
               estado_material = ?, disponibilidade = ?, localizacao = ?, contato = ? WHERE id_anuncio = ?`,
       [String(b.titulo).trim(), idCat, b.descricao || null, Number(b.quantidade), b.unidade, Number(b.preco),
-       ESTADO_BANCO[b.estado] || 'bom', b.disponibilidade === 'Entregar' ? 'entrega' : 'retirada',
+       ESTADO_BANCO[b.estado] || 'bom', b.disponibilidade === 'Ambos' ? 'ambos' : b.disponibilidade === 'Entregar' ? 'entrega' : 'retirada',
        String(b.localizacao).trim(), b.contato, atual.id_anuncio]
     );
 
@@ -576,6 +602,16 @@ app.delete('/anuncios/:id', h(async (req, res) => {
 /* PEDIDOS (Carrinho -> "Fazer pedido")                                */
 /* ================================================================== */
 // O histórico legado de pedidos não é reclassificado como cobrança real.
+app.post('/frete', h(async (req,res) => {
+  const ids = req.body.anuncios;
+  if (!Array.isArray(ids) || !ids.length || ids.length > 100 || !ids.every(id => Number.isSafeInteger(id) && id > 0)) return res.status(400).json({erro:'Seleção de anúncios inválida.'});
+  const anuncios = await q('SELECT id_vendedor,titulo,localizacao,disponibilidade FROM anuncios WHERE id_anuncio IN (?)',[ids]);
+  if (anuncios.length !== ids.length) return res.status(409).json({erro:'Um anúncio saiu do catálogo.'});
+  const retirada = anuncios.find(a=>a.disponibilidade==='retirada');
+  if (retirada) return res.status(409).json({erro:'O produto "'+retirada.titulo+'" só permite retirada.'});
+  try { res.json({frete:cotarFrete(anuncios,req.body.endereco)/100}); }
+  catch(e) { res.status(400).json({erro:e.message}); }
+}));
 app.post('/pedidos', h(async (req, res) => {
   let dados;
   try { dados = validarPedido(req.body); } catch(e) { return res.status(400).json({erro:e.message}); }
@@ -596,14 +632,22 @@ app.post('/pedidos', h(async (req, res) => {
     const vendedores = new Set();
     for (const i of dados.itens) {
       const a=anuncios.find(a=>Number(a.id_anuncio)===i.id_anuncio);
-      if (!a || a.status!=='ativo' || a.status_curadoria!=='aprovado' || (dados.recebimento==='entrega' && a.disponibilidade!=='entrega') || Number(a.quantidade)<i.quantidade || Number(a.id_vendedor)===Number(req.usuarioId)) {
-        await conn.rollback(); return res.status(409).json({erro:'Um produto está indisponível, sem estoque suficiente, não oferece entrega ou pertence a você. Revise o carrinho.'});
-      }
+      let erro;
+      if (!a || a.status !== 'ativo' || a.status_curadoria !== 'aprovado') erro = 'O anúncio #' + i.id_anuncio + ' saiu do catálogo.';
+      else if (Number(a.id_vendedor) === Number(req.usuarioId)) erro = 'Você está tentando comprar seu próprio anúncio: ' + a.titulo;
+      else if (Number(a.quantidade) < i.quantidade) erro = a.titulo + ': estoque disponível de ' + a.quantidade + ' unidade(s).';
+      else if (a.disponibilidade !== 'ambos' && a.disponibilidade !== dados.recebimento) erro = a.titulo + ': a única opção oferecida é ' + a.disponibilidade + '.';
+      if (erro) { await conn.rollback(); return res.status(409).json({erro}); }
       subtotalCentavos += Math.round(Number(a.preco_unitario)*100)*i.quantidade;
       vendedores.add(Number(a.id_vendedor));
     }
     if (!Number.isSafeInteger(subtotalCentavos) || subtotalCentavos<=0 || subtotalCentavos>999999999999) {await conn.rollback();return res.status(400).json({erro:'Valor do pedido inválido.'});}
-    const frete=dados.recebimento==='entrega'?1290:0; // tarifa fixa de demonstração, explicitamente informada no app
+    let frete = 0;
+    try { if (dados.recebimento === 'entrega') frete = cotarFrete(anuncios,dados.endereco); }
+    catch(e) { await conn.rollback(); return res.status(400).json({erro:e.message}); }
+    if (req.body.freteCotado != null && Math.round(req.body.freteCotado*100) !== frete) {
+      await conn.rollback(); return res.status(409).json({erro:'O frete mudou. Confira a nova cotação antes de confirmar.'});
+    }
     const desconto=dados.cupom ? Math.round(subtotalCentavos*0.10) : 0;
     const total=(subtotalCentavos+frete-desconto)/100;
     const p=await q("INSERT INTO pedidos_app (id_comprador,chave,conteudo_hash,endereco,metodo,cupom,subtotal,frete,desconto,total,status) VALUES (?,?,?,?,?,?,?,?,?,?,'pendente_pagamento')", [req.usuarioId,req.body.chave,hash,dados.endereco,dados.metodo,dados.cupom||null,subtotalCentavos/100,frete/100,desconto/100,total],conn);
@@ -620,21 +664,24 @@ app.post('/pedidos', h(async (req, res) => {
 }));
 app.get('/pedidos/:id', h(async(req,res)=>{
   const [pedido]=await q('SELECT id_pedido,subtotal,frete,desconto,total,status,endereco,metodo,data_criacao FROM pedidos_app WHERE id_pedido=? AND id_comprador=?',[req.params.id,req.usuarioId]);
-  if(!pedido) return res.status(404).json({erro:'Pedido não encontrado.'});
+  if (!pedido) {
+    const itens = await q('SELECT id_anuncio,titulo,quantidade,preco_unitario FROM itens_pedido_app WHERE id_pedido=? AND id_vendedor=?',[req.params.id,req.usuarioId]);
+    if (!itens.length) return res.status(404).json({erro:'Pedido não encontrado.'});
+    const [venda] = await q('SELECT id_pedido,id_comprador,endereco,metodo,status FROM pedidos_app WHERE id_pedido=?',[req.params.id]);
+    return res.json({...venda,itens});
+  }
   pedido.itens=await q('SELECT id_anuncio,titulo,quantidade,preco_unitario FROM itens_pedido_app WHERE id_pedido=?',[req.params.id]);
   res.json(pedido);
 }));
 
-async function alvoAvaliacao(tipo, id, idUsuarioLeitura) {
+async function alvoAvaliacao(tipo, id) {
   if (!Number.isSafeInteger(Number(id)) || Number(id)<1) return null;
   if (tipo==='produto') {
     const [a]=await q("SELECT id_vendedor FROM anuncios WHERE id_anuncio=? AND status='ativo'",[id]);
     return a ? {dono:a.id_vendedor,coluna:'id_anuncio'} : null;
   }
   if (tipo==='perfil') {
-    // O usuário pode consultar o próprio resumo mesmo sem um perfil público.
-    const proprio = Number(id) === Number(idUsuarioLeitura);
-    const u=await carregarUsuario('id_usuario',id,proprio);
+    const u=await carregarUsuario('id_usuario',id,false,true);
     return u ? {dono:u.idUsuario,coluna:'id_avaliado'} : null;
   }
   return null;
@@ -642,10 +689,13 @@ async function alvoAvaliacao(tipo, id, idUsuarioLeitura) {
 async function resumoAvaliacao(coluna,id,usuario) {
   const [r]=await q(`SELECT COALESCE(ROUND(AVG(nota),1),0) media, COUNT(*) quantidade FROM avaliacoes WHERE ${coluna}=? AND status='ativo'`,[id]);
   const [minha]=await q(`SELECT nota,comentario FROM avaliacoes WHERE ${coluna}=? AND id_avaliador=? AND status='ativo'`,[id,usuario]);
-  return {...r,minha:minha||null};
+  const lista = await q(`SELECT a.id_avaliacao AS id, a.nota, a.comentario, COALESCE(u.nome, 'Usuário') AS autor
+    FROM avaliacoes a LEFT JOIN usuarios u ON u.id_usuario=a.id_avaliador
+    WHERE a.${coluna}=? AND a.status='ativo' ORDER BY a.id_avaliacao DESC`,[id]);
+  return {...r,minha:minha||null,lista};
 }
 app.get('/avaliacoes/:tipo/:id',h(async(req,res)=>{
-  const alvo=await alvoAvaliacao(req.params.tipo,req.params.id,req.usuarioId);
+  const alvo=await alvoAvaliacao(req.params.tipo,req.params.id);
   if(!alvo) return res.status(404).json({erro:'Alvo não encontrado.'});
   res.json(await resumoAvaliacao(alvo.coluna,req.params.id,req.usuarioId));
 }));
@@ -845,13 +895,17 @@ app.delete('/obras/:id', h(async (req, res) => {
 }));
 
 // A etapa é explícita: tarefas históricas permanecem sem vínculo até revisão do dono.
+async function integraEquipe(obra, usuario, conn = pool) {
+  const membros = await q('SELECT 1 FROM obra_profissionais op JOIN profissionais p ON p.id_profissional=op.id_profissional WHERE op.id_obra=? AND p.id_usuario=? LIMIT 1', [obra,usuario], conn);
+  return membros.length > 0;
+}
 app.patch('/tarefas/:id', h(async (req, res) => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
     const [t] = await q('SELECT t.*, o.id_proprietario FROM tarefas_obra t JOIN obras o ON o.id_obra=t.id_obra WHERE t.id_tarefa=? FOR UPDATE', [req.params.id], conn);
     if (!t) { await conn.rollback(); return res.status(404).json({erro:'Tarefa não encontrada.'}); }
-    if (Number(t.id_proprietario) !== Number(req.usuarioId)) { await conn.rollback(); return res.status(403).json({erro:'Somente o responsável pode alterar tarefas.'}); }
+    if (Number(t.id_proprietario) !== Number(req.usuarioId) && !await integraEquipe(t.id_obra, req.usuarioId, conn)) { await conn.rollback(); return res.status(403).json({erro:'Somente o responsável ou a equipe da obra pode alterar tarefas.'}); }
     const b = req.body;
     const etapa = b.etapa === undefined ? t.etapa : b.etapa;
     const texto = b.texto === undefined ? t.titulo : String(b.texto).trim();
@@ -867,7 +921,7 @@ app.patch('/tarefas/:id', h(async (req, res) => {
 app.post('/obras/:id/tarefas', h(async (req, res) => {
   const [obra] = await q('SELECT id_proprietario FROM obras WHERE id_obra=?', [req.params.id]);
   if (!obra) return res.status(404).json({erro:'Obra não encontrada.'});
-  if (Number(obra.id_proprietario)!==Number(req.usuarioId)) return res.status(403).json({erro:'Somente o responsável pode adicionar tarefas.'});
+  if (Number(obra.id_proprietario)!==Number(req.usuarioId) && !await integraEquipe(req.params.id, req.usuarioId)) return res.status(403).json({erro:'Somente o responsável ou a equipe da obra pode adicionar tarefas.'});
   const texto=String(req.body.texto || '').trim();
   if (!texto || texto.length>255 || !ETAPAS.includes(req.body.etapa)) return res.status(400).json({erro:'Informe a tarefa e sua etapa.'});
   const r=await q("INSERT INTO tarefas_obra (id_obra,titulo,etapa,status,progresso) VALUES (?,?,?,'pendente',0)", [req.params.id,texto,req.body.etapa]);
@@ -905,6 +959,53 @@ app.delete('/obras/:id/profissionais/:idProf', h(async (req, res) => {
 /* ================================================================== */
 /* NOTIFICAÇÕES                                                        */
 /* ================================================================== */
+// Bancos atualizados por versões anteriores ainda podem não ter a tabela do chat.
+let preparoMensagens;
+async function prepararMensagens() {
+  try {
+    await q('SELECT id,remetente,destinatario,texto,criada_em,chave FROM mensagens_app LIMIT 0');
+  } catch (erro) {
+    if (erro.code !== 'ER_NO_SUCH_TABLE') throw erro;
+    const sql = fs.readFileSync(path.join(__dirname, 'sql', '08-mensagens.sql'), 'utf8');
+    await q(sql);
+  }
+}
+app.use('/conversas', async (req, res, next) => {
+  if (!preparoMensagens) {
+    preparoMensagens = prepararMensagens().catch(erro => { preparoMensagens = undefined; throw erro; });
+  }
+  try { await preparoMensagens; }
+  catch (erro) {
+    console.error('Preparação do chat:', erro.code || erro.message);
+    return res.status(503).json({erro:'O banco não conseguiu abrir o chat. Confira a conexão e a migração 08-mensagens.sql.'});
+  }
+  next();
+});
+app.get('/conversas', h(async (req,res) => {
+  const id = req.usuarioId;
+  res.json(await q(`SELECT u.id_usuario AS id, COALESCE(NULLIF(u.razao_social,''),u.nome) AS nome, m.texto
+    FROM (SELECT IF(remetente=?,destinatario,remetente) AS contato, MAX(id) AS ultima
+          FROM mensagens_app WHERE remetente=? OR destinatario=? GROUP BY contato) c
+    JOIN usuarios u ON u.id_usuario=c.contato JOIN mensagens_app m ON m.id=c.ultima ORDER BY m.id DESC`,[id,id,id]));
+}));
+app.get('/conversas/:id', h(async (req,res) => {
+  res.json(await q(`SELECT id,remetente,texto,criada_em FROM mensagens_app
+    WHERE (remetente=? AND destinatario=?) OR (destinatario=? AND remetente=?) ORDER BY id`,
+    [req.usuarioId,req.params.id,req.usuarioId,req.params.id]));
+}));
+app.post('/conversas/:id', h(async (req,res) => {
+  const autor = Number(req.usuarioId), destino = Number(req.params.id);
+  const texto = String(req.body.texto || '').trim();
+  const chave = req.body.chave;
+  if (!texto || texto.length > 2000) return res.status(400).json({erro:'A mensagem precisa ter entre 1 e 2000 caracteres.'});
+  if (!/^[a-z0-9-]{12,80}$/.test(chave || '')) return res.status(400).json({erro:'Identificador do envio inválido.'});
+  if (autor === destino) return res.status(400).json({erro:'Escolha outra pessoa para conversar.'});
+  const [pessoa] = await q("SELECT id_usuario FROM usuarios WHERE id_usuario=? AND status='ativo'",[destino]);
+  if (!pessoa) return res.status(404).json({erro:'Esta conta está indisponível.'});
+  await q('INSERT INTO mensagens_app(remetente,destinatario,texto,chave) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE id=id',[autor,destino,texto,chave]);
+  res.status(201).json({ok:true});
+}));
+
 app.get('/notificacoes', h(async (req, res) => {
   if (!req.query.usuario) return res.status(400).json({ erro: 'Informe ?usuario=' });
   const rows = await q('SELECT id_notificacao, tipo, titulo, mensagem, lida, data_criacao FROM notificacoes WHERE id_usuario = ? ORDER BY data_criacao DESC, id_notificacao DESC LIMIT 100', [req.query.usuario]);

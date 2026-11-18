@@ -1,6 +1,6 @@
+import Voltar from '../componentes/Voltar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import { voltar } from '../src/navegacao';
 import { api, useUsuario } from '../src/api';
 import BottomBar from '../componentes/BottomBar';
 import { useAreaSegura } from '../src/responsivo';
@@ -11,7 +11,7 @@ import { useCarrinho } from '../src/CarrinhoItens';
 
 const METODOS_PAGAMENTO = ['Pix', 'Cartão de crédito', 'Dinheiro na entrega'];
 const CUPOM_DEMO = 'IBUILD10';
-const FRETE_DEMO = 12.9;
+
 
 function precoParaNumero(precoTexto) {
   return Number(String(precoTexto).replace('R$', '').replace(',', '.').trim()) || 0;
@@ -46,10 +46,40 @@ export default function Carrinho() {
   const [cupomAplicado, setCupomAplicado] = useState(false);
   const [mensagemCupom, setMensagemCupom] = useState('');
 
-  const subtotal = itens.reduce((total, item) => total + precoParaNumero(item.preco) * item.quantidade, 0);
-  const frete = recebimento==='entrega' && endereco ? FRETE_DEMO : 0;
+  const subtotal = itens.reduce((total, item) => total + (item.precoNumero ?? precoParaNumero(item.preco)) * item.quantidade, 0);
+  const chavePreferencias = 'ibuild-checkout-' + usuario?.idUsuario;
+  const [preferenciasLidas,setPreferenciasLidas] = useState('');
+  useEffect(() => {
+    let ativo = true;
+    if (usuario?.idUsuario) AsyncStorage.getItem(chavePreferencias).then(valor => {
+      if (!ativo) return;
+      const salvo = JSON.parse(valor || '{}');
+      setEndereco(salvo.endereco || ''); setMetodoPagamento(salvo.metodo || '');
+      setRecebimento(salvo.recebimento || 'entrega'); setPreferenciasLidas(chavePreferencias);
+    }).catch(() => { if (ativo) Alert.alert('Preferências indisponíveis','Falha ao ler o endereço e o pagamento salvos no aparelho.'); });
+    return () => { ativo = false; };
+  },[chavePreferencias]);
+  useEffect(() => {
+    if (preferenciasLidas === chavePreferencias) AsyncStorage.setItem(chavePreferencias,JSON.stringify({endereco,metodo:metodoPagamento,recebimento}))
+      .catch(() => Alert.alert('Falha ao salvar','O aparelho não conseguiu guardar suas preferências de compra.'));
+  },[preferenciasLidas,chavePreferencias,endereco,metodoPagamento,recebimento]);
+  const ids = itens.map(i => i.idAnuncio).join(',');
+  const chaveCotacao = JSON.stringify([ids,endereco,recebimento]);
+  const [cotacao,setCotacao] = useState(null);
+  const [recalcular,setRecalcular] = useState(0);
+  useEffect(() => {
+    let ativo = true;
+    if (ids && endereco && recebimento === 'entrega') {
+      api.cotarFrete(ids.split(',').map(Number),endereco)
+        .then(r => { if (ativo) setCotacao({chave:chaveCotacao,valor:r.frete}); })
+        .catch(e => { if (ativo) setCotacao({chave:chaveCotacao,erro:e.message}); });
+    }
+    return () => { ativo = false; };
+  },[chaveCotacao,recalcular]);
+  const atual = cotacao?.chave === chaveCotacao ? cotacao : null;
+  const frete = recebimento === 'retirada' ? 0 : atual?.valor;
   const desconto = cupomAplicado ? Number((subtotal * 0.1).toFixed(2)) : 0;
-  const total = Math.max(0, subtotal + frete - desconto);
+  const total = Math.max(0, subtotal + (frete || 0) - desconto);
 
   function aplicarCupom() {
     if (cupom.trim().toUpperCase() !== CUPOM_DEMO) {
@@ -63,14 +93,17 @@ export default function Carrinho() {
   }
 
   async function finalizarPedido() {
-    if(trava.current || carregandoTentativa || erroTentativa || !usuario)return;
+    if (trava.current || carregandoTentativa || erroTentativa) return;
+    if (!usuario) return Alert.alert("Perfil indisponível","O perfil da conta ainda não carregou. Abra o perfil e tente novamente.");
     if (!pendente && !itens.length) return Alert.alert('Carrinho vazio','Adicione um produto.');
-    if (!pendente && ((recebimento==='entrega' && !endereco.trim()) || !metodoPagamento)) return Alert.alert('Faltam dados','Informe endereço e forma de pagamento pretendida. Nenhuma cobrança será realizada.');
+    if (!pendente && recebimento === 'entrega' && !endereco.trim()) return Alert.alert('Endereço pendente','Informe a rua, o número, a cidade e o CEP da entrega.');
+    if (!pendente && !metodoPagamento) return Alert.alert('Pagamento pendente','Selecione a forma de pagamento para registrar o pedido.');
+    if (!pendente && recebimento === 'entrega' && frete == null) return Alert.alert('Frete indisponível',atual?.erro || 'Aguarde a cotação do frete.');
     trava.current=true;setEnviando(true);
     try {
       const tentativa=pendente || {
         chave:`pedido-${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`,
-        endereco,recebimento,metodo:metodoPagamento,cupom:cupomAplicado?'IBUILD10':'',
+        endereco,recebimento,freteCotado:frete,metodo:metodoPagamento,cupom:cupomAplicado?'IBUILD10':'',
         itens:itens.map(i=>({id_anuncio:i.idAnuncio,quantidade:i.quantidade})),
       };
       // Guarda ANTES do envio: timeout/reabertura deve reutilizar a mesma chave.
@@ -80,7 +113,7 @@ export default function Carrinho() {
       confirmarItens(tentativa.itens);setCupomAplicado(false);
       Alert.alert('Pedido registrado',`Pedido #${pedido.id} • R$ ${Number(pedido.total).toFixed(2).replace('.',',')}. Pendente de pagamento. Nenhuma cobrança foi realizada. Confira suas notificações.`);
     } catch(e) {
-      if([400,409].includes(e.status)) {await AsyncStorage.removeItem(armazenamento);setPendente(null);}
+      if([400,409].includes(e.status)) {setRecalcular(n=>n+1);await AsyncStorage.removeItem(armazenamento);setPendente(null);}
       Alert.alert('Pedido não confirmado',e.message+' O carrinho foi preservado.');
     } finally {trava.current=false;setEnviando(false);}
   }
@@ -92,16 +125,17 @@ export default function Carrinho() {
   return (
     <View style={[styles.container, areaSegura]}>
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }} keyboardShouldPersistTaps="handled">
-      <TouchableOpacity onPress={() => voltar(navigation)}><Text>{'<'}</Text></TouchableOpacity>
+      <Voltar destino="Home"/>
       <Text style={styles.titulo}>Finalizar compra</Text>
-      <Text style={styles.avisoDemo}>O pedido será registrado como pendente de pagamento. Não há cobrança pelo app. Entrega: frete simulado fixo de R$ 12,90 por pedido. Retirada: sem frete. Entrega exige que todos os produtos ofereçam essa opção.</Text>
+      <Text style={styles.avisoDemo}>O pedido será registrado como pendente de pagamento. Não há cobrança pelo app. O frete é calculado por faixa de CEP, uma vez por vendedor e CEP de origem. Retirada grátis. Entrega exige que todos os produtos ofereçam essa opção.</Text>
 
       <View pointerEvents={enviando || pendente ? "none" : "auto"} style={{opacity:pendente?0.6:1}}>
       <View style={{flexDirection:'row',gap:16}}>{['entrega','retirada'].map(r=><TouchableOpacity key={r} onPress={()=>setRecebimento(r)}><Text>{recebimento===r?'●':'○'} {r==='entrega'?'Entrega':'Retirada (sem frete)'}</Text></TouchableOpacity>)}</View>
       <TouchableOpacity disabled={recebimento==='retirada'} style={styles.linha} onPress={() => { setEnderecoRascunho(endereco); setModalEndereco(true); }}>
         <Text style={styles.label}>Entrega</Text><Text style={styles.valor}>{recebimento==='retirada'?'Combinar com os vendedores':endereco || 'Adicionar endereço  ›'}</Text>
       </TouchableOpacity>
-      <View style={styles.linha}><Text style={styles.label}>Frete estimado</Text><Text style={styles.valor}>{recebimento==='retirada'?'R$ 0,00':endereco ? `R$ ${FRETE_DEMO.toFixed(2).replace('.', ',')}` : 'Informe o endereço'}</Text></View>
+      <View style={styles.linha}><Text style={styles.label}>Frete estimado</Text><Text style={styles.valor}>{recebimento==='retirada'?'R$ 0,00':frete != null ? `R$ ${frete.toFixed(2).replace('.', ',')}` : atual?.erro || (endereco && ids ? 'Cotando…' : 'Informe o endereço e os itens')}</Text></View>
+      {!!atual?.erro && <TouchableOpacity onPress={()=>setRecalcular(n=>n+1)}><Text>Recalcular frete</Text></TouchableOpacity>}
       <TouchableOpacity style={styles.linha} onPress={() => setModalPagamento(true)}>
         <Text style={styles.label}>Pagamento</Text><Text style={styles.valor}>{metodoPagamento || 'Selecionar forma  ›'}</Text>
       </TouchableOpacity>
@@ -132,10 +166,10 @@ export default function Carrinho() {
       )}
 
       <View style={styles.linha}><Text style={styles.label}>Subtotal</Text><Text>R$ {subtotal.toFixed(2).replace('.', ',')}</Text></View>
-      <View style={styles.linha}><Text style={styles.label}>Frete</Text><Text>R$ {frete.toFixed(2).replace('.', ',')}</Text></View>
+      <View style={styles.linha}><Text style={styles.label}>Frete</Text><Text>{frete == null ? 'A calcular' : 'R$ '+frete.toFixed(2).replace('.', ',')}</Text></View>
       <View style={styles.linha}><Text style={styles.label}>Desconto</Text><Text>R$ {desconto.toFixed(2).replace('.', ',')}</Text></View>
       <Text style={{ color: "#777", marginVertical: 8 }}>O total definitivo é conferido pelo servidor ao registrar o pedido.</Text>
-      <View style={styles.linha}><Text style={styles.totalLabel}>Total</Text><Text style={styles.totalLabel}>R$ {total.toFixed(2).replace('.', ',')}</Text></View>
+      <View style={styles.linha}><Text style={styles.totalLabel}>Total</Text><Text style={styles.totalLabel}>{frete == null ? 'Aguardando frete' : 'R$ '+total.toFixed(2).replace('.', ',')}</Text></View>
       </View>
       {!!erroTentativa && <TouchableOpacity onPress={()=>setReler(r=>r+1)}><Text>{erroTentativa} Tentar novamente</Text></TouchableOpacity>}
       {!!pendente && <Text>Há uma tentativa ainda não confirmada. Reenviar consulta ou registra o mesmo pedido, sem duplicá-lo.</Text>}
@@ -147,7 +181,7 @@ export default function Carrinho() {
       <Modal visible={modalEndereco} transparent animationType="fade" onRequestClose={() => setModalEndereco(false)}>
         <View style={styles.modalFundo}><View style={styles.modalCard}>
           <Text style={styles.tituloSecao}>Endereço de entrega</Text>
-          <TextInput style={styles.enderecoInput} value={enderecoRascunho} onChangeText={setEnderecoRascunho} placeholder="Rua, número, bairro e cidade" />
+          <TextInput style={styles.enderecoInput} value={enderecoRascunho} onChangeText={setEnderecoRascunho} placeholder="Rua, número, bairro, cidade e CEP" />
           <TouchableOpacity style={styles.botaoPedido} onPress={() => { if (!enderecoRascunho.trim()) { Alert.alert('Endereço necessário', 'Preencha o endereço para salvar.'); return; } setEndereco(enderecoRascunho.trim()); setModalEndereco(false); }}><Text style={styles.botaoTexto}>Salvar endereço</Text></TouchableOpacity>
           <TouchableOpacity onPress={() => setModalEndereco(false)}><Text style={styles.fechar}>Cancelar</Text></TouchableOpacity>
         </View></View>

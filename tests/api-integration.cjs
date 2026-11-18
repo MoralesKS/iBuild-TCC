@@ -25,9 +25,13 @@ let server;
  await call('GET','/usuarios/me',null,null,401);
  await call('GET','/usuarios/me',null,'invalid',401);
  await call('POST','/usuarios',{nome:'Teste',tipo_perfil:'pessoa_fisica'},'cliente',400);
+ for (const [campo,valor] of [['cpf','11111111111'],['telefone','123'],['data_nascimento','31/02/2000']]) {
+   await call('POST','/usuarios',{tipo_perfil:'pessoa_fisica',nome:'Pessoa Teste',versao_documentos:'1',
+     cpf:'52998224725',telefone:'11987654321',data_nascimento:'01/01/2000',[campo]:valor},'cliente',400);
+ }
  const users={};
  for(const [token,tipo] of [['cliente','pessoa_fisica'],['autonomo','autonomo'],['loja','loja']]) {
-  users[token]=await call('POST','/usuarios',{nome:'Teste '+token,tipo_perfil:tipo,profissao:'Pedreiro',versao_documentos:'1',endereco:tipo==='loja'?{logradouro:'Rua Teste',cidade:'São Paulo',estado:'SP',latitude:-23.5,longitude:-46.6}:undefined},token,201);
+  users[token]=await call('POST','/usuarios',{nome:'Teste '+token,telefone:'11987654321',cpf:tipo==='pessoa_fisica'?'529.982.247-25':null,data_nascimento:'12/12/2000',cnpj:tipo==='loja'?'11.222.333/0001-81':null,tipo_perfil:tipo,profissao:'Pedreiro',versao_documentos:'1',endereco:tipo==='loja'?{logradouro:'Rua Teste',cidade:'São Paulo',estado:'SP',latitude:-23.5,longitude:-46.6}:undefined},token,201);
   assert.equal((await call('GET','/usuarios/me',null,token)).idUsuario,users[token].idUsuario);
  }
  const [aceites]=await pool.query('SELECT versao_documentos, aceite_documentos_em FROM usuarios');
@@ -35,16 +39,29 @@ let server;
  await call('POST','/usuarios',{nome:'Duplicado',tipo_perfil:'pessoa_fisica',versao_documentos:'1'},'cliente',409);
  await call('GET','/usuarios/'+users.cliente.idUsuario,null,null,404);
  const clienteAvaliacoes='/avaliacoes/perfil/'+users.cliente.idUsuario;
- assert.deepEqual(await call('GET',clienteAvaliacoes),{media:0,quantidade:0,minha:null});
- await call('GET',clienteAvaliacoes,null,'autonomo',404);
- assert.deepEqual(await call('GET','/avaliacoes/perfil/'+users.autonomo.idUsuario),{media:0,quantidade:0,minha:null});
+ assert.deepEqual(await call('GET',clienteAvaliacoes),{media:0,quantidade:0,minha:null,lista:[]});
+ await call('PUT',clienteAvaliacoes,{nota:4,comentario:'Bom cliente'},'autonomo');
+ assert.equal((await call('GET',clienteAvaliacoes)).lista[0].comentario,'Bom cliente');
+ const chat='/conversas/'+users.cliente.idUsuario;
+ const envio={texto:'Seu pedido está pronto',chave:'teste-mensagem-001'};
+ await call('POST',chat,envio,'loja',201);
+ await call('POST',chat,envio,'loja',201);
+ assert.equal((await call('GET','/conversas/'+users.loja.idUsuario)).length,1);
+ assert.equal((await call('GET','/conversas'))[0].id,users.loja.idUsuario);
+ assert.equal((await call('GET',chat,null,'autonomo')).length,0);
+ await call('POST','/conversas/'+users.loja.idUsuario,{texto:'Obrigado!',chave:'teste-resposta-001'},'cliente',201);
+ assert.equal((await call('GET',chat,null,'loja')).length,2);
+ assert.deepEqual(await call('GET','/avaliacoes/perfil/'+users.autonomo.idUsuario),{media:0,quantidade:0,minha:null,lista:[]});
  const publico=await call('GET','/usuarios/'+users.loja.idUsuario,null,null); assert(!('email' in publico)&&!('cpf' in publico));checks++;
  await call('PATCH','/usuarios/'+users.cliente.idUsuario,{nome:'Outro'},'loja',403);
  await call('PATCH','/usuarios/'+users.cliente.idUsuario,{nome:'Cliente Alterado',telefone:'11999999999'});
  assert.equal((await call('GET','/usuarios/me')).nome,'Cliente Alterado');
  await call('GET','/lojas',null,null); await call('GET','/profissionais',null,null);
- const produto={titulo:'Tijolo de teste',categoria:'Tijolos',quantidade:10,preco:1.2,unidade:'un',localizacao:'São Paulo',contato:'11999999999',estado:'Novo',disponibilidade:'Entregar',foto_capa:{base64:'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==',ext:'png'},fotos:[]};
+ const produto={titulo:'Tijolo de teste',categoria:'Tijolos',quantidade:10,preco:1.2,unidade:'un',localizacao:'Rua Origem 20, São Paulo, 05500-000',contato:'11999999999',estado:'Novo',disponibilidade:'Entregar',foto_capa:{base64:'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==',ext:'png'},fotos:[]};
  const anuncio=await call('POST','/anuncios',produto,'loja',201);
+ assert.equal((await call('POST','/frete',{anuncios:[anuncio.id],endereco:'Rua A 12, CEP 05500-003'})).frete,8.9);
+ assert.equal((await call('POST','/frete',{anuncios:[anuncio.id],endereco:'Rua A 12, CEP 20000-000'})).frete,29.9);
+ await call('POST','/frete',{anuncios:[anuncio.id],endereco:'Rua A sem CEP'},'cliente',400);
  await call('GET','/anuncios/'+anuncio.id,null,null);
  await call('PATCH','/anuncios/'+anuncio.id,{...produto,id_usuario:users.loja.idUsuario},'cliente',403);
  await call('DELETE','/anuncios/'+anuncio.id,{id_usuario:users.loja.idUsuario},'cliente',403);
@@ -69,7 +86,7 @@ let server;
  await call('PUT','/usuarios/'+users.autonomo.idUsuario+'/foto',produto.foto_capa,'autonomo');
  assert.notEqual((await call('GET','/profissionais',null,null))[0].foto,fotoAntes);checks++;
  // Checkout: server totals ignore client price, concurrent retries create exactly one order.
- const pedidoDados={chave:'teste-checkout-unico-001',itens:[{id_anuncio:anuncio.id,quantidade:2,preco:0.01}],endereco:'Rua Teste 123, São Paulo',metodo:'Pix',cupom:'IBUILD10',total:0.01};
+ const pedidoDados={chave:'teste-checkout-unico-001',itens:[{id_anuncio:anuncio.id,quantidade:2,preco:0.01}],endereco:'Rua Teste 123, São Paulo, 05512-000',metodo:'Pix',cupom:'IBUILD10',total:0.01};
  await call('POST','/pedidos',pedidoDados,null,401);
  await call('POST','/pedidos',{...pedidoDados,itens:[{id_anuncio:999999,quantidade:1}]},'cliente',409);
  await call('POST','/pedidos',{...pedidoDados,itens:[{id_anuncio:anuncio.id,quantidade:-1}]},'cliente',400);
@@ -85,7 +102,8 @@ let server;
  const [counts]=await pool.query('SELECT COUNT(*) n FROM pedidos_app');assert.equal(counts[0].n,1);checks++;
  const ns=await call('GET','/notificacoes');assert.equal(ns.filter(n=>n.tipo==='compra').length,1);assert(ns.find(n=>n.tipo==='compra').mensagem.includes('pendente'));checks++;
  assert.equal((await call('GET','/notificacoes',null,'loja')).filter(n=>n.tipo==='compra').length,1);checks++;
- await call('GET','/pedidos/'+pedido.id,null,'loja',404);
+ const venda=await call('GET','/pedidos/'+pedido.id,null,'loja');assert.equal(venda.itens[0].quantidade,2);assert.equal(venda.id_comprador,users.cliente.idUsuario);
+ await call('GET','/pedidos/'+pedido.id,null,'autonomo',404);
  await call('GET','/pedidos/'+pedido.id);
  await call('POST','/pedidos',{...pedidoDados,chave:'teste-sem-estoque-002',itens:[{id_anuncio:anuncio.id,quantidade:100}]},'cliente',409);
  // Fail inside transaction and prove stock/order/notification rollback (real SQL failure).
@@ -97,6 +115,9 @@ let server;
  const retirada=await call('POST','/anuncios',{...produto,titulo:'Produto somente retirada',disponibilidade:'Retirada'},'loja',201);
  await call('POST','/pedidos',{...pedidoDados,chave:'teste-entrega-indisponivel',itens:[{id_anuncio:retirada.id,quantidade:1}]},'cliente',409);
  const pedidoRetirada=await call('POST','/pedidos',{...pedidoDados,chave:'teste-retirada-sem-frete',recebimento:'retirada',endereco:'',itens:[{id_anuncio:retirada.id,quantidade:1}]},'cliente',201);assert.equal(pedidoRetirada.total,1.08);checks++;
+ const ambos=await call('POST','/anuncios',{...produto,titulo:'Retirar ou entregar',disponibilidade:'Ambos',quantidade:2},'loja',201);
+ for (const recebimento of ['retirada','entrega']) await call('POST','/pedidos',{...pedidoDados,recebimento,chave:'teste-ambos-'+recebimento,itens:[{id_anuncio:ambos.id,quantidade:1}]},'cliente',201);
+ assert.equal((await call('GET','/anuncios/'+ambos.id,null,null)).quantidade,0);
  // Competing stock reservations: only one can consume six of the remaining eight units.
  const concorrentes=await Promise.all(['a','b'].map(chave=>fetch(url+'/pedidos',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer cliente'},body:JSON.stringify({...pedidoDados,chave:'teste-estoque-concorrente-'+chave,itens:[{id_anuncio:anuncio.id,quantidade:6}]})})));
  assert.deepEqual(concorrentes.map(r=>r.status).sort(),[201,409]);assert.equal((await call('GET','/anuncios/'+anuncio.id,null,null)).quantidade,2);checks+=2;
@@ -106,8 +127,9 @@ let server;
  await call('POST','/obras/'+obra.id+'/profissionais',{id_profissional:users.autonomo.idProfissional,funcao:'Pedreiro'});
  await call('GET','/obras/participando',null,'autonomo');
  await call('GET','/obras/'+obra.id,null,'autonomo');
+ await call('POST','/obras/'+obra.id+'/tarefas',{texto:'Vistoria da equipe',etapa:'acabamento'},'autonomo',201);
  const tarefa=await call('POST','/obras/'+obra.id+'/tarefas',{texto:'Descrição longa para próxima ação',etapa:'estrutura'},'cliente',201);
- await call('PATCH','/tarefas/'+tarefa.id,{feito:true});
+ await call('PATCH','/tarefas/'+tarefa.id,{feito:true},'autonomo');
  detalhes=await call('GET','/obras/'+obra.id);assert.equal(detalhes.etapas.estrutura,100);assert.equal(detalhes.etapas.fundacao,100);checks++;
  await call('PATCH','/tarefas/'+tarefa.id,{feito:false});
  detalhes=await call('GET','/obras/'+obra.id);assert.equal(detalhes.etapas.estrutura,0);checks++;
@@ -115,7 +137,7 @@ let server;
  await call('POST','/obras/'+obra.id+'/tarefas',{texto:'Sem etapa'},'cliente',400);
  await call('PATCH','/tarefas/'+tarefa.id,{etapa:'invalida'},'cliente',400);
  await call('PATCH','/tarefas/'+tarefa.id,{etapa:'acabamento',texto:'Título alterado',feito:true});
- detalhes=await call('GET','/obras/'+obra.id);assert.equal(detalhes.etapas.acabamento,100);assert.equal(detalhes.etapas.estrutura,50);checks++;
+ detalhes=await call('GET','/obras/'+obra.id);assert.equal(detalhes.etapas.acabamento,50);assert.equal(detalhes.etapas.estrutura,50);checks++;
  await pool.query("INSERT INTO tarefas_obra(id_obra,titulo,status) VALUES (?, 'Legada sem etapa', 'concluida')",[obra.id]);
  detalhes=await call('GET','/obras/'+obra.id);assert.equal(detalhes.etapas.estrutura,50);assert(detalhes.proximasAcoes.some(t=>t.etapa===null));checks++;
 

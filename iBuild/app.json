@@ -45,6 +45,7 @@
       [
         "expo-image-picker",
         {
+          "cameraPermission": "O iBuild usa a câmera para tirar sua foto de perfil.",
           "photosPermission": "O iBuild precisa acessar suas fotos para você escolher a foto do perfil."
         }
       ]

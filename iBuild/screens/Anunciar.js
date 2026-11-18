@@ -1,3 +1,4 @@
+import Voltar from '../componentes/Voltar';
 import { voltar as voltarTela } from '../src/navegacao';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -86,7 +87,7 @@ export default function Anunciar() {
     setUnidade(p.unidade || '');
     setDescricao(p.descricao === 'Sem descrição.' ? '' : p.descricao);
     setEstado(ESTADO_LABEL[p.estado] || 'Novo');
-    setDisponibilidade(p.disponibilidade === 'entrega' ? 'Entregar' : 'Retirada');
+    setDisponibilidade(p.disponibilidade === 'ambos' ? 'Ambos' : p.disponibilidade === 'entrega' ? 'Entregar' : 'Retirada');
     setLocalizacao(p.localizacao || '');
     setContato(formatarTelefone(p.contato || ''));
     setCapa(p.imagem ? { uri: p.imagem.uri } : null);
@@ -138,6 +139,7 @@ export default function Anunciar() {
     const erros = validarAnuncio({
       nome, categoria, preco, quantidade, unidade, localizacao, contato, temCapa: !!capa,
     });
+    if (disponibilidade !== 'Retirada' && !/\b\d{5}-?\d{3}\b/.test(localizacao)) erros.push('• Inclua o CEP de origem na localização para oferecer entrega.');
     if (erros.length > 0) {
       alert('Corrija antes de continuar:\n\n' + erros.join('\n'));
       return;
@@ -194,12 +196,7 @@ export default function Anunciar() {
 
         <View style={styles.headerRow}>
           {editando && (
-            <TouchableOpacity
-              style={styles.botaoVoltar}
-              onPress={() => voltarTela(navigation, 'Perfil')}
-            >
-              <Text style={styles.setaVoltar}>{'<'}</Text>
-            </TouchableOpacity>
+            <Voltar destino="Perfil"/>
           )}
           <Text style={styles.titulo}>{editando ? 'Editar anúncio' : 'Anunciar produto'}</Text>
         </View>
@@ -359,14 +356,14 @@ export default function Anunciar() {
               <View>
                 <Text style={styles.label}>Disponibilidade</Text>
                 <Segmentado
-                  opcoes={['Retirada', 'Entregar']}
+                  opcoes={['Retirada', 'Entregar', 'Ambos']}
                   valor={disponibilidade}
                   aoMudar={setDisponibilidade}
                 />
               </View>
             </View>
 
-            <Text style={styles.label}>Localização do produto</Text>
+            <Text style={styles.label}>Localização do produto (inclua o CEP para entrega)</Text>
             <View style={styles.campoComIcone}>
               <Image style={styles.infoIcone} source={require('../assets/icones/localizacao.png')}/>
               <TextInput
@@ -647,7 +644,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   linhaSegmentados: {
-    flexDirection: 'row',
+    gap: 10,
     justifyContent: 'space-between',
   },
   segmentado: {

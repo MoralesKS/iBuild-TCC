@@ -1,20 +1,18 @@
+import Voltar from '../componentes/Voltar';
 import Avaliacao from '../componentes/Avaliacao';
-import { voltar } from '../src/navegacao';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Text, View, TouchableOpacity, ScrollView, FlatList, Image, Linking, StyleSheet, Alert } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { useAppNavigation } from '../src/Functions';
 import { useCarrinho } from '../src/CarrinhoItens';
 import { api, useUsuario } from '../src/api';
 import { useLayout } from '../src/responsivo';
 import FotoProduto from '../src/FotoProduto';
 import BarraInferior from '../src/BarraInferior';
-import { garantirConversa, useConversas } from './Chat1';
 import { useAreaSegura } from '../src/responsivo';
 import { verificarFavorito, alternarFavorito as alternarFavoritoStorage } from '../src/Favoritos';
 
 export default function Produto() {
-  const conversas = useConversas();
   const areaSegura = useAreaSegura();
   const navigation = useNavigation();
   const route = useRoute();
@@ -31,7 +29,7 @@ export default function Produto() {
   const [fotoIndex, setFotoIndex] = useState(0);
   const [favorito, setFavorito] = useState(false);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     let ativo = true;
     if (produtoRecebido) {
       setErroProduto('');
@@ -44,7 +42,7 @@ export default function Produto() {
       }
     }
     return () => { ativo = false; };
-  }, [produtoRecebido?.id, produtoRecebido?.idAnuncio, tentativa]);
+  }, [produtoRecebido?.id, produtoRecebido?.idAnuncio, tentativa]));
 
   useEffect(() => {
     let ativo = true;
@@ -58,7 +56,7 @@ export default function Produto() {
     setFavorito(novoValor);
   }
 
-  if (!produto) return <View style={[styles.container,areaSegura]}><Text>{erroProduto || 'Produto indisponível.'}</Text><TouchableOpacity onPress={()=>setTentativa(t=>t+1)}><Text>Tentar novamente</Text></TouchableOpacity><TouchableOpacity onPress={()=>voltar(navigation)}><Text>Voltar</Text></TouchableOpacity></View>;
+  if (!produto) return <View style={[styles.container,areaSegura]}><Text>{erroProduto || 'Produto indisponível.'}</Text><TouchableOpacity onPress={()=>setTentativa(t=>t+1)}><Text>Tentar novamente</Text></TouchableOpacity><Voltar destino="Home"/></View>;
   // Só quem publicou o anúncio vê o botão de editar
   const ehDono = !!usuario && !!produto.idVendedor && produto.idVendedor === usuario.idUsuario;
 
@@ -81,23 +79,14 @@ export default function Produto() {
 
   // Abre (ou cria) a conversa com quem vende o produto
   function chamarNoChat() {
-    const id = garantirConversa(conversas, {
-      id: produto.idVendedor ? `u-${produto.idVendedor}` : `demo-${produto.vendedor}`,
-      nome: produto.vendedor,
-      status: 'Vendedor',
-      saudacao: `Olá! Aqui é da ${produto.vendedor}. Posso ajudar com o produto "${produto.nome}"?`,
-      padrao: 'Recebi sua mensagem! Já te respondo sobre o produto.',
-    });
-    navigation.navigate('Chat 2', { conversaId: id });
+    navigation.navigate('Chat 2', { pessoa: produto.idVendedor, nome: produto.vendedor });
   }
 
   return (
     <View style={[styles.container, areaSegura]}>
 
       {/* Cabeçalho */}
-      <TouchableOpacity onPress={() => voltar(navigation)}>
-        <Text style={styles.seta}>{'<'}</Text>
-      </TouchableOpacity>
+      <Voltar destino="Home"/>
 
       <ScrollView style={{ flex: 1, paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
 
@@ -182,22 +171,11 @@ export default function Produto() {
         {/* Especificações */}
         <Text style={styles.tituloSecao}>Especificações</Text>
         <View style={styles.especCard}>
-          <View style={styles.especLinha}>
-            <Text style={styles.especLabel}>Material:</Text>
-            <Text style={styles.especValor}>{produto.especificacoes.material}</Text>
-          </View>
-          <View style={styles.especLinha}>
-            <Text style={styles.especLabel}>Cor:</Text>
-            <Text style={styles.especValor}>{produto.especificacoes.cor}</Text>
-          </View>
-          <View style={styles.especLinha}>
-            <Text style={styles.especLabel}>Dimensões:</Text>
-            <Text style={styles.especValor}>{produto.especificacoes.dimensoes}</Text>
-          </View>
-          <View style={styles.especLinha}>
-            <Text style={styles.especLabel}>Quantidade:</Text>
-            <Text style={styles.especValor}>{produto.especificacoes.quantidade}</Text>
-          </View>
+          {[
+            ['Categoria', produto.tipo], ['Condição', ({novo:'Novo',bom:'Seminovo',regular:'Usado'})[produto.estado] || produto.estado], ['Estoque', produto.quantidade + ' ' + produto.unidade],
+            ['Recebimento', { ambos: 'Entrega ou retirada', entrega: 'Entrega', retirada: 'Retirada' }[produto.disponibilidade]],
+            ['Localização', produto.local],
+          ].map(([label, valor]) => <View key={label} style={styles.especLinha}><Text style={styles.especLabel}>{label}</Text><Text style={styles.especValor}>{valor}</Text></View>)}
         </View>
 
         {/* Botões de ação */}
@@ -229,8 +207,8 @@ export default function Produto() {
               <TouchableOpacity style={styles.chatBotao} onPress={chamarNoChat}>
                 <Text style={styles.chatTexto}>Chamar no chat</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.comprarBotao} onPress={comprarAgora}>
-                <Text style={styles.comprarTexto}>Comprar agora</Text>
+              <TouchableOpacity style={styles.comprarBotao} disabled={!Number(produto.quantidade)} onPress={comprarAgora}>
+                <Text style={styles.comprarTexto}>{Number(produto.quantidade) ? 'Comprar agora' : 'Esgotado'}</Text>
               </TouchableOpacity>
             </>
           )}

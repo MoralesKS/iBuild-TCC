@@ -1,15 +1,27 @@
 import BottomBar from '../componentes/BottomBar';
 import { useCallback, useEffect, useState } from 'react';
-import { Text, View, TextInput, TouchableOpacity, Image, Linking, ActivityIndicator, StyleSheet } from 'react-native';
+import { ScrollView, Text, View, TextInput, TouchableOpacity, Image, Linking, ActivityIndicator, StyleSheet } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAppNavigation, abrirNoGoogleMaps } from '../src/Functions';
-import { api, distanciaKm } from '../src/api';
+import { api, distanciaKm, useUsuario } from '../src/api';
 import FotoProduto from '../src/FotoProduto';
 import { useAreaSegura } from '../src/responsivo';
 
 export default function Mapa() {
+  const { usuario } = useUsuario();
+  const [obras, setObras] = useState([]);
+  const [erroObras, setErroObras] = useState('');
+  useFocusEffect(useCallback(() => {
+    let ativo = true;
+    setObras([]); setErroObras('');
+    const id = usuario?.idUsuario;
+    if (id) Promise.all([api.obras(id), api.obrasParticipando(id)]).then(listas => {
+      if (ativo) setObras([...new Map(listas.flat().map(o => [o.id, o])).values()]);
+    }).catch(e => { if (ativo) setErroObras(e.message); });
+    return () => { ativo = false; };
+  }, [usuario?.idUsuario]));
   const navigation = useNavigation();
   const areaSegura = useAreaSegura();
   const [erroLista, setErroLista] = useState('');
@@ -81,43 +93,24 @@ export default function Mapa() {
       }
     }
 
-    pedirLocalizacao();
+    pedirLocalizacao().catch(() => { setErroLocalizacao(true); setCarregando(false); });
   }, []);
 
-  if (carregando) {
-    return (
-      <View style={[styles.container, areaSegura, styles.centralizado]}>
-        <ActivityIndicator size="large" color="#277D2C" />
-      </View>
-    );
-  }
-
-  if (permissaoNegada) {
-    return (
-      <View style={[styles.container, areaSegura, styles.centralizado, { padding: 24 }]}>
-        <Text style={styles.permissaoTexto}>
-          Precisamos da sua localização para mostrar as lojas mais próximas no mapa.
-        </Text>
-        <TouchableOpacity style={styles.selecionarBotao} onPress={() => Linking.openSettings()}>
-          <Text style={styles.selecionarTexto}>Abrir configurações</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
+  const termo = textoBusca.trim().toLocaleLowerCase();
+  const obrasFiltradas = obras.filter(o => [o.nome,o.endereco,o.cidade].join(' ').toLocaleLowerCase().includes(termo));
   return (
     <View style={[styles.container, areaSegura]}>
       <View style={styles.buscaWrapper}>
         <TextInput
           style={styles.busca}
-          placeholder="Pesquisar"
+          placeholder="Pesquisar lojas e minhas obras"
           placeholderTextColor="#828282"
           value={textoBusca}
           onChangeText={setTextoBusca}
         />
       </View>
 
-      {erroLocalizacao && (
+      {(erroLocalizacao || permissaoNegada) && (
         <Text style={styles.avisoLocalizacao}>
           Não conseguimos obter sua localização exata. Mostrando um ponto de referência.
         </Text>
@@ -127,18 +120,16 @@ export default function Mapa() {
       {carregandoLista && <Text>Carregando…</Text>}
       {!!erroLista && <View><Text>{erroLista}</Text><TouchableOpacity onPress={() => setTentativa(t => t + 1)}><Text>Tentar novamente</Text></TouchableOpacity></View>}
       {!carregandoLista && !erroLista && lojasFiltradas.length === 0 && <Text>Nenhuma loja encontrada.</Text>}
-      {/* FILTRAR / CLASSIFICAR */}
-      <View style={styles.filtrosRow}>
-        <TouchableOpacity style={styles.filtroBotao}>
-          <Text style={styles.filtroTexto}>Filtrar</Text>
-          <Text style={styles.filtroSeta}> v</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.filtroBotao}>
-          <Text style={styles.filtroTexto}>Classificar</Text>
-          <Text style={styles.filtroSeta}> v</Text>
-        </TouchableOpacity>
-      </View>
-
+      {!!erroObras && <Text>{erroObras}</Text>}
+      {!!textoBusca.trim() && <ScrollView keyboardShouldPersistTaps="handled" style={{maxHeight:180}}>
+        {obrasFiltradas.map(o =>
+          <View key={o.id}><TouchableOpacity style={{padding:12}} onPress={() => navigation.navigate('DetalhesObra', { obra:o })}>
+            <Text>{o.nome}</Text><Text>{o.endereco}</Text>
+          </TouchableOpacity>
+          {!!o.logradouro && <TouchableOpacity style={{padding:10}} onPress={() => Linking.openURL('https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent([o.logradouro,o.cidade].filter(Boolean).join(', '))).catch(()=>alert('Não foi possível abrir a rota no aplicativo de mapas.'))}><Text>Como chegar</Text></TouchableOpacity>}
+          </View>)}
+        {!obrasFiltradas.length && !erroObras && <Text>Nenhuma obra encontrada.</Text>}
+      </ScrollView>}
       {/* MAPA FUNCIONAL, já centralizado na posição real do usuário */}
       <View style={styles.mapaWrapper}>
         <MapView
@@ -151,11 +142,11 @@ export default function Mapa() {
           }}
         >
           {/* Marcador do usuário */}
-          <Marker coordinate={minhaLocalizacao} title="Você">
+          {!carregando && !permissaoNegada && !erroLocalizacao && <Marker coordinate={minhaLocalizacao} title="Você">
             <View style={styles.marcadorVoce}>
               <Text style={styles.marcadorVoceTexto}>Você</Text>
             </View>
-          </Marker>
+          </Marker>}
 
           {/* Só renderiza os marcadores das lojas que passaram no filtro de busca */}
           {lojasFiltradas.map((loja) => (
@@ -237,29 +228,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 16,
     color: '#000000',
-  },
-  filtrosRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    marginTop: 12,
-  },
-  filtroBotao: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginRight: 8,
-  },
-  filtroTexto: {
-    fontSize: 12,
-    color: '#000000',
-  },
-  filtroSeta: {
-    fontSize: 12,
-    color: '#828282',
   },
   mapaWrapper: {
     flex: 1,
