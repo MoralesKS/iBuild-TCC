@@ -188,19 +188,6 @@ export default function Produto() {
             >
               <Text style={styles.comprarTexto}>Editar anúncio</Text>
             </TouchableOpacity>
-            {produto.idAnuncio && (
-              <TouchableOpacity style={styles.removerBotao} onPress={() => {
-                Alert.alert('Remover produto', 'Deseja retirar este produto do catálogo?', [
-                  { text: 'Cancelar', style: 'cancel' },
-                  { text: 'Remover', style: 'destructive', onPress: async () => {
-                    try { await api.excluirAnuncio(produto.idAnuncio, usuario.idUsuario); navigation.navigate('Home'); }
-                    catch (e) { alert(e.message); }
-                  } },
-                ]);
-              }}>
-                <Text style={styles.removerTexto}>Remover do catálogo</Text>
-              </TouchableOpacity>
-            )}
             </>
           ) : (
             <>
@@ -214,6 +201,19 @@ export default function Produto() {
           )}
         </View>
 
+            {produto.idAnuncio && (ehDono || usuario?.podeModerarAnuncios) && (
+              <TouchableOpacity style={styles.removerBotao} onPress={() => {
+                Alert.alert('Remover produto', 'Deseja retirar este produto do catálogo?', [
+                  { text: 'Cancelar', style: 'cancel' },
+                  { text: 'Remover', style: 'destructive', onPress: async () => {
+                    try { await api.excluirAnuncio(produto.idAnuncio, usuario.idUsuario); navigation.navigate('Home'); }
+                    catch (e) { alert(e.message); }
+                  } },
+                ]);
+              }}>
+                <Text style={styles.removerTexto}>Remover do catálogo</Text>
+              </TouchableOpacity>
+            )}
       </ScrollView>
 
       <BarraInferior ativo="home" />

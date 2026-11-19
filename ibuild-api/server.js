@@ -68,7 +68,8 @@ const notificar = (conn, idUsuario, tipo, titulo, mensagem) =>
   );
 
 // versao: o app confere se a API do PC está atualizada (sem isso, ele avisa)
-const VERSAO_API = 6;
+const UID_MODERADOR = '5lZLbiPcdINQXY7CTu7Nag2uQtz2';
+const VERSAO_API = 7;
 app.get('/', (req, res) => res.json({ ok: true, api: 'iBuild', versao: VERSAO_API }));
 
 /* ================================================================== */
@@ -146,7 +147,7 @@ async function carregarUsuario(campo, valor, privado = false, permitirCliente = 
 app.get('/usuarios/me', autenticarUsuario, h(async (req, res) => {
   const u = await carregarUsuario('firebase_uid', req.conta.uid, true);
   if (!u) return res.status(404).json({ erro: 'Usuário não encontrado' });
-  res.json(u);
+  res.json({...u, podeModerarAnuncios: req.conta.uid === UID_MODERADOR});
 }));
 
 app.get('/usuarios/:id', h(async (req, res) => {
@@ -593,7 +594,7 @@ app.delete('/anuncios/:id', h(async (req, res) => {
   const idUsuario = Number(req.body?.id_usuario);
   const [anuncio] = await q("SELECT id_anuncio, id_vendedor FROM anuncios WHERE id_anuncio = ? AND status <> 'removido'", [req.params.id]);
   if (!anuncio) return res.status(404).json({ erro: 'Produto não encontrado.' });
-  if (!idUsuario || idUsuario !== Number(anuncio.id_vendedor)) return res.status(403).json({ erro: 'Somente o vendedor pode remover este produto.' });
+  if (Number(req.usuarioId) !== Number(anuncio.id_vendedor) && req.conta.uid !== UID_MODERADOR) return res.status(403).json({ erro: 'Somente o vendedor ou a moderação pode remover este produto.' });
   await q("UPDATE anuncios SET status = 'removido' WHERE id_anuncio = ?", [req.params.id]);
   res.json({ ok: true });
 }));
@@ -983,7 +984,7 @@ app.use('/conversas', async (req, res, next) => {
 });
 app.get('/conversas', h(async (req,res) => {
   const id = req.usuarioId;
-  res.json(await q(`SELECT u.id_usuario AS id, COALESCE(NULLIF(u.razao_social,''),u.nome) AS nome, m.texto
+  res.json(await q(`SELECT u.id_usuario AS id, COALESCE(NULLIF(u.razao_social,''),u.nome) AS nome, u.foto_perfil AS foto, m.texto, m.criada_em, m.remetente
     FROM (SELECT IF(remetente=?,destinatario,remetente) AS contato, MAX(id) AS ultima
           FROM mensagens_app WHERE remetente=? OR destinatario=? GROUP BY contato) c
     JOIN usuarios u ON u.id_usuario=c.contato JOIN mensagens_app m ON m.id=c.ultima ORDER BY m.id DESC`,[id,id,id]));
