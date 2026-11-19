@@ -199,7 +199,8 @@ export function UsuarioProvider({ children }) {
         } catch (erro) {
           if (erro.status !== 404 || !ativo || auth.currentUser?.uid !== usuarioFirebase.uid) throw erro;
           // Contas criadas antes do MySQL precisam de um perfil básico para usar as demais telas.
-          dados = await api.criarUsuario(token);
+          await api.criarUsuario(token);
+          dados = await api.usuarioAtual(token);
         }
         if (ativo) setPerfil({ uid: usuarioFirebase.uid, dados });
       } catch (erro) {

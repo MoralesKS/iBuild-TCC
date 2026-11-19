@@ -88,6 +88,20 @@ export default function Produto() {
       {/* Cabeçalho */}
       <Voltar destino="Home"/>
 
+      {produto.idAnuncio && (ehDono || usuario?.podeModerarAnuncios) && (
+              <TouchableOpacity style={styles.removerBotao} onPress={() => {
+                Alert.alert('Remover produto', 'Deseja retirar este produto do catálogo?', [
+                  { text: 'Cancelar', style: 'cancel' },
+                  { text: 'Remover', style: 'destructive', onPress: async () => {
+                    try { await api.excluirAnuncio(produto.idAnuncio, usuario.idUsuario); navigation.navigate('Home'); }
+                    catch (e) { alert(e.message); }
+                  } },
+                ]);
+              }}>
+                <Text style={styles.removerTexto}>Remover do catálogo</Text>
+              </TouchableOpacity>
+            )}
+
       <ScrollView style={{ flex: 1, paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
 
         {/* Carrossel de fotos (deslize para o lado) */}
@@ -201,19 +215,6 @@ export default function Produto() {
           )}
         </View>
 
-            {produto.idAnuncio && (ehDono || usuario?.podeModerarAnuncios) && (
-              <TouchableOpacity style={styles.removerBotao} onPress={() => {
-                Alert.alert('Remover produto', 'Deseja retirar este produto do catálogo?', [
-                  { text: 'Cancelar', style: 'cancel' },
-                  { text: 'Remover', style: 'destructive', onPress: async () => {
-                    try { await api.excluirAnuncio(produto.idAnuncio, usuario.idUsuario); navigation.navigate('Home'); }
-                    catch (e) { alert(e.message); }
-                  } },
-                ]);
-              }}>
-                <Text style={styles.removerTexto}>Remover do catálogo</Text>
-              </TouchableOpacity>
-            )}
       </ScrollView>
 
       <BarraInferior ativo="home" />
@@ -224,7 +225,7 @@ export default function Produto() {
 const styles = StyleSheet.create({
   favoritoBotao: { alignSelf: 'flex-end', paddingVertical: 8, paddingHorizontal: 12, marginTop: 6 },
   favoritoTexto: { color: '#277D2C', fontWeight: 'bold', fontSize: 13 },
-  removerBotao: { flex: 1, borderWidth: 1, borderColor: '#C62828', borderRadius: 8, padding: 10, alignItems: 'center', marginTop: 8 },
+  removerBotao: { minHeight: 44, justifyContent: "center", marginHorizontal: 16, marginBottom: 8, borderWidth: 1, borderColor: '#C62828', borderRadius: 8, padding: 10, alignItems: 'center', marginTop: 8 },
   removerTexto: { color: '#C62828', fontWeight: 'bold' },
   contadorFotos: {
     position: 'absolute',
