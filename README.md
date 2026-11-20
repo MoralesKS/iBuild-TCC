@@ -42,10 +42,7 @@ Para essa primeira entrega, temos as seguintes funcionalidades completas e/ou pa
 ## Demonstração
 
 <p align="center">
-  <img src="./iBuild/assets/prints-do-app/login.jpeg" width="200" alt="Tela de Login" />
-  <img src="./iBuild/assets/prints-do-app/cadastro.jpeg" width="200" alt="Tela de Cadastro" />
-  <img src="./iBuild/assets/prints-do-app/home.jpeg" width="200" alt="Tela Home" />
-  <img src="./iBuild/assets/prints-do-app/gerenciar.jpeg" width="200" alt="Tela de Gerenciamento" />
+  
 </p>
 
 ## Tecnologias Utilizadas
